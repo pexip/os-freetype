@@ -1,0 +1,25 @@
+freetype-2.1.7-backwards.compat.patch -p0
+enable-subpixel-rendering.patch
+enable-gxvalid-otvalid.patch
+CVE-2012-1126.patch
+CVE-2012-1127.patch
+CVE-2012-1128.patch
+CVE-2012-1129.patch
+CVE-2012-1130.patch
+CVE-2012-1131.patch
+CVE-2012-1132.patch
+CVE-2012-1133.patch
+CVE-2012-1134.patch
+CVE-2012-1135.patch
+CVE-2012-1136.patch
+CVE-2012-1137.patch
+CVE-2012-1138.patch
+CVE-2012-1139.patch
+CVE-2012-1140.patch
+CVE-2012-1141.patch
+CVE-2012-1142.patch
+CVE-2012-1143.patch
+CVE-2012-1144.patch
+revert_scalable_fonts_metric.patch
+CVE-2012-5668.patch
+CVE-2012-5669.patch
