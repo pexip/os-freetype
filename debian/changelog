@@ -1,3 +1,9 @@
+freetype (2.4.8-1ubuntu2.1pexip1) pexip; urgency=low
+
+  * Prepare Pexip packaging
+
+ -- John-Mark Bell <jmb@pexip.com>  Tue, 24 Dec 2013 17:01:35 +0000
+
 freetype (2.4.8-1ubuntu2.1) precise-security; urgency=low
 
   * SECURITY UPDATE: denial of service and possible code execution via NULL
