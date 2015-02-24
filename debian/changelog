@@ -1,3 +1,34 @@
+freetype (2.4.8-1ubuntu2.2pexip1) pexip; urgency=low
+
+  * New upstream release
+
+ -- John-Mark Bell <jmb@pexip.com>  Tue, 24 Feb 2015 23:18:47 +0000
+
+freetype (2.4.8-1ubuntu2.2) precise-security; urgency=medium
+
+  * SECURITY UPDATE: denial of service and possible code execution via
+    multiple security issues
+    - debian/patches-freetype/CVE-2014-96xx/*.patch: backport a large
+      quantity of upstream commits to fix multiple security issues.
+    - CVE-2014-9656
+    - CVE-2014-9657
+    - CVE-2014-9658
+    - CVE-2014-9660
+    - CVE-2014-9661
+    - CVE-2014-9663
+    - CVE-2014-9664
+    - CVE-2014-9666
+    - CVE-2014-9667
+    - CVE-2014-9669
+    - CVE-2014-9670
+    - CVE-2014-9671
+    - CVE-2014-9672
+    - CVE-2014-9673
+    - CVE-2014-9674
+    - CVE-2014-9675
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 24 Feb 2015 10:35:56 -0500
+
 freetype (2.4.8-1ubuntu2.1pexip1) pexip; urgency=low
 
   * Prepare Pexip packaging
