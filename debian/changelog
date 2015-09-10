@@ -1,3 +1,18 @@
+freetype (2.4.8-1ubuntu2.3) precise-security; urgency=medium
+
+  * SECURITY UPDATE: uninitialized memory reads (LP: #1449225)
+    - debian/patches-freetype/savannah-bug-41309.patch: fix use of
+      uninitialized data in src/cid/cidload.c, src/psaux/psobjs.c,
+      src/type1/t1load.c, src/type42/t42parse.c.
+    - No CVE number
+  * SECURITY UPDATE: denial of service via infinite loop in parse_encode
+    (LP: #1492124)
+    - debian/patches-freetype/savannah-bug-41590.patch: protect against
+      invalid charcode in src/type1/t1load.c.
+    - No CVE number
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 10 Sep 2015 07:10:41 -0400
+
 freetype (2.4.8-1ubuntu2.2) precise-security; urgency=medium
 
   * SECURITY UPDATE: denial of service and possible code execution via
