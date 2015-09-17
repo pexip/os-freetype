@@ -49,3 +49,5 @@ CVE-2014-96xx/CVE-2014-9674-3.patch
 CVE-2014-96xx/CVE-2014-9674-4.patch
 CVE-2014-96xx/CVE-2014-9675-1.patch
 CVE-2014-96xx/CVE-2014-9675-2.patch
+savannah-bug-41590.patch
+savannah-bug-41309.patch
