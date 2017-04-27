@@ -1,3 +1,17 @@
+freetype (2.5.2-3+deb8u2) jessie-security; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+
+  [ Moritz Mühlenhoff ]
+  * CVE-2016-10244 (Closes: #856971)
+
+  [ Salvatore Bonaccorso ]
+  * [psaux] Better protect `flex' handling (CVE-2017-8105) (Closes: #861220)
+  * t1_builder_close_contour: Add safety guard (CVE-2017-8287)
+    (Closes: #861308)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 27 Apr 2017 12:05:02 +0200
+
 freetype (2.5.2-3+deb8u1) jessie-security; urgency=high
 
   * Non-maintainer upload.
