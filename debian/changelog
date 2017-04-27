@@ -1,26 +1,100 @@
-freetype (2.5.2-3+deb8u2) jessie-security; urgency=high
+freetype (2.6.3-3.2) unstable; urgency=high
 
-  * Non-maintainer upload by the Security Team.
-
-  [ Moritz Mühlenhoff ]
-  * CVE-2016-10244 (Closes: #856971)
-
-  [ Salvatore Bonaccorso ]
-  * [psaux] Better protect `flex' handling (CVE-2017-8105) (Closes: #861220)
+  * Non-maintainer upload.
+  * Better protect `flex' handling (CVE-2017-8105) (Closes: #861220)
   * t1_builder_close_contour: Add safety guard (CVE-2017-8287)
     (Closes: #861308)
 
- -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 27 Apr 2017 12:05:02 +0200
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 27 Apr 2017 20:57:40 +0200
 
-freetype (2.5.2-3+deb8u1) jessie-security; urgency=high
+freetype (2.6.3-3.1) unstable; urgency=medium
 
   * Non-maintainer upload.
-  * CVE-2014-9745: Fix Savannah bug #41590. Protect against invalid number in
-    t1load.c parse_encoding().
-  * CVE-2014-9746, CVE-2014-9747: Fix Savannah bug #41309. Correct use of
-    uninitialized data in t1load.c, cidload.c, t42parse.c and psobjs.c.
+  * CVE-2016-10244: Heap-buffer-overflow
+    src/type1/t1load.c (parse_charstrings): Reject fonts that don't contain
+    glyph names. (Closes: #856971)
 
- -- Santiago Ruano Rincón <santiagorr@riseup.net>  Mon, 05 Oct 2015 11:35:21 +0200
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 30 Mar 2017 19:16:33 +0200
+
+freetype (2.6.3-3) unstable; urgency=medium
+
+  * Install the now-available-upstream manpages for freetype-demos.
+    Closes: #131137.
+  * Register all of the HTML documentation with doc-base.  Closes: #451660.
+  * Suppress lintian warning about symbols file declaring dependency on
+    other package, which is entirely by design.
+
+ -- Steve Langasek <vorlon@debian.org>  Tue, 01 Mar 2016 06:43:44 +0000
+
+freetype (2.6.3-2) unstable; urgency=medium
+
+  * Adjust symbols file to actually produce invalid dependencies when
+    internal symbols are used, as intended.
+
+ -- Steve Langasek <vorlon@debian.org>  Tue, 01 Mar 2016 03:29:18 +0000
+
+freetype (2.6.3-1) unstable; urgency=medium
+
+  * New upstream release.  Closes: #812518, LP: #1521299
+    - stem darkening now disabled by default.  Closes: #801370.
+  * Avoid marking private symbols as supported from 2.6.1 on.  Apparently
+    dpkg-gensymbols doesn't do what I expected for this kind of declaration
+    anyway, but we should at least avoid marking them wrong in the source.
+  * Update to Standards-Version 3.9.7.
+
+ -- Steve Langasek <vorlon@debian.org>  Tue, 01 Mar 2016 00:04:14 +0000
+
+freetype (2.6.1-0.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * New upstream release (Closes: #804050)
+
+ -- Matteo F. Vescovi <mfv@debian.org>  Tue, 10 Nov 2015 21:32:25 +0100
+
+freetype (2.6-2) unstable; urgency=medium
+
+  * Adjust symbols references for private symbols to sort to a higher (fake)
+    version number instead of a lower, so that when linking against
+    libfreetype without using its symbols, we don't get a wrong dependency on
+    libfreetype6 (>= 1.PRIVATE.1).  Closes: #799445.  
+  * Pass --without-harfbuzz in debian/rules, to avoid opportunistically
+    picking this up as a dependency if libharfbuzz-dev is installed.
+
+ -- Steve Langasek <vorlon@debian.org>  Sat, 19 Sep 2015 19:17:07 +0000
+
+freetype (2.6-1) unstable; urgency=medium
+
+  * New upstream release.  Closes: #793751.
+    * Includes a fix for a spurious error in FT_Get_SubGlyph_Info.
+      Closes: #778493.
+    * Includes a fix for an infinite loop in T1 font loading.
+      Closes: #798620.
+    * Includes a fix for an uninitialized memory bug in font parsers.
+      Closes: #798619.
+    * Includes fix for an out-of-bounds rate in the Adobe CFF implementation
+      (which was not previously enabled in the package build).
+      Closes: #773084.
+    * Includes a fix for a crasher in xdvi.  Closes: #733894.
+    * Fixes support for compressed pcf fonts.  Closes: #780340.
+    * Drop various cherrypicked upstream patches from the package.
+    * Ship upstream freetype-config manpage in place of our own.
+      Closes LP: #1390767.
+  * Update symbols file.  Includes dropping various private symbols that
+    don't appear to have ever been part of the API.
+  * Fix exclusion of redundant license file (txt -> TXT)
+  * Re-enable the CFF driver, now that most related fonts have been fixed.
+    Closes: #795653.
+  * Enable stage1 build without X library dependencies for bootstrapping.
+    Closes: #752270, #752271.
+
+ -- Steve Langasek <vorlon@debian.org>  Sat, 12 Sep 2015 07:29:07 +0000
+
+freetype (2.5.2-4) unstable; urgency=medium
+
+  * Fix Savannah bug #43774. Closes #780143.
+  * Release 2.5.2-4
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 15 Mar 2015 22:46:29 -0700
 
 freetype (2.5.2-3) unstable; urgency=medium
 
