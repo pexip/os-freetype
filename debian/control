@@ -7,7 +7,7 @@ XSBC-Pexip-Original-Uploaders: Anthony Fok <foka@debian.org>, Keith Packard <kei
 Build-Depends: bzip2, debhelper (>= 9), docbook-to-man, gettext (>= 0.10.36-2), libx11-dev, x11proto-core-dev, libz-dev, quilt, libpng-dev, autoconf, automake, libtool
 Standards-Version: 3.9.6
 Homepage: http://www.freetype.org
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ jessie
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
 
 Package: libfreetype6
 Architecture: any
