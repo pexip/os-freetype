@@ -1,3 +1,9 @@
+freetype (2.6.3-3.2pexip1) pexip; urgency=medium
+
+  * Migrate to Stretch
+
+ -- John-Mark Bell <jmb@pexip.com>  Tue, 10 Jul 2018 10:53:39 +0000
+
 freetype (2.6.3-3.2) unstable; urgency=high
 
   * Non-maintainer upload.
