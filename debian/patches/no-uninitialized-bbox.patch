@@ -1,0 +1,19 @@
+Description: Ensure that the 'cbox' variable is reliably initialized before use.
+ This fixes a build failure on ppc64el when building with -O3.
+Author: Steve Langasek <vorlon@debian.org>
+Forwarded: https://savannah.nongnu.org/patch/?9667
+Last-Update: 2018-06-26
+
+Index: freetype-2.9.1/src/base/ftoutln.c
+===================================================================
+--- freetype-2.9.1.orig/src/base/ftoutln.c
++++ freetype-2.9.1/src/base/ftoutln.c
+@@ -1044,7 +1044,7 @@
+   FT_EXPORT_DEF( FT_Orientation )
+   FT_Outline_Get_Orientation( FT_Outline*  outline )
+   {
+-    FT_BBox     cbox;
++    FT_BBox     cbox = {0,0,0,0};
+     FT_Int      xshift, yshift;
+     FT_Vector*  points;
+     FT_Vector   v_prev, v_cur;

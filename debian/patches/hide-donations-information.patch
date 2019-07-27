@@ -1,0 +1,514 @@
+Description: Do not display donations information in the menu navigation
+ of the documentation. Commenting out the relevant <li> tag prevents lintian
+ from raising several privacy-breach-donation errors.
+Author: Hugh McMaster
+Bug-Debian: https://bugs.debian.org/873432
+Forwarded: not-needed
+Last-Update: 2018-07-02
+
+Index: freetype-2.9.1/ft2docs/docs/design/design-1.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-1.html
++++ freetype-2.9.1/ft2docs/docs/design/design-1.html
+@@ -159,7 +159,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -179,7 +179,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/design-2.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-2.html
++++ freetype-2.9.1/ft2docs/docs/design/design-2.html
+@@ -214,7 +214,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -234,7 +234,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/design-3.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-3.html
++++ freetype-2.9.1/ft2docs/docs/design/design-3.html
+@@ -366,7 +366,7 @@ FT_Error  FT_New_Face( FT_Library   libr
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -386,7 +386,7 @@ FT_Error  FT_New_Face( FT_Library   libr
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/design-4.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-4.html
++++ freetype-2.9.1/ft2docs/docs/design/design-4.html
+@@ -328,7 +328,7 @@ FT_Add_Module( FT_Library              l
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -348,7 +348,7 @@ FT_Add_Module( FT_Library              l
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/design-5.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-5.html
++++ freetype-2.9.1/ft2docs/docs/design/design-5.html
+@@ -470,7 +470,7 @@ typedef struct  FT_Module_Class_
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -490,7 +490,7 @@ typedef struct  FT_Module_Class_
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/design-6.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/design-6.html
++++ freetype-2.9.1/ft2docs/docs/design/design-6.html
+@@ -336,7 +336,7 @@ error = demo->doSomething(0);
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -356,7 +356,7 @@ error = demo->doSomething(0);
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/design/index.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/design/index.html
++++ freetype-2.9.1/ft2docs/docs/design/index.html
+@@ -161,7 +161,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -181,7 +181,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/documentation.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/documentation.html
++++ freetype-2.9.1/ft2docs/docs/documentation.html
+@@ -126,7 +126,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -146,7 +146,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-1.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-1.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-1.html
+@@ -194,7 +194,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -214,7 +214,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-2.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-2.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-2.html
+@@ -402,7 +402,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -422,7 +422,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-3.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-3.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-3.html
+@@ -451,7 +451,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -471,7 +471,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-4.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-4.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-4.html
+@@ -206,7 +206,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -226,7 +226,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-5.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-5.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-5.html
+@@ -374,7 +374,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -394,7 +394,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-6.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-6.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-6.html
+@@ -458,7 +458,7 @@ height = (ymax - ymin)/64</pre>
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -478,7 +478,7 @@ height = (ymax - ymin)/64</pre>
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/glyphs-7.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/glyphs-7.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/glyphs-7.html
+@@ -356,7 +356,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -376,7 +376,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/glyphs/index.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/glyphs/index.html
++++ freetype-2.9.1/ft2docs/docs/glyphs/index.html
+@@ -211,7 +211,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -231,7 +231,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/index.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/index.html
++++ freetype-2.9.1/ft2docs/docs/index.html
+@@ -264,7 +264,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -284,7 +284,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/subpixel-hinting.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/subpixel-hinting.html
++++ freetype-2.9.1/ft2docs/docs/subpixel-hinting.html
+@@ -252,7 +252,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -272,7 +272,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/text-rendering-general.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/text-rendering-general.html
++++ freetype-2.9.1/ft2docs/docs/text-rendering-general.html
+@@ -446,7 +446,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -466,7 +466,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/tutorial/index.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/tutorial/index.html
++++ freetype-2.9.1/ft2docs/docs/tutorial/index.html
+@@ -149,7 +149,7 @@
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -169,7 +169,7 @@
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/tutorial/step1.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/tutorial/step1.html
++++ freetype-2.9.1/ft2docs/docs/tutorial/step1.html
+@@ -1023,7 +1023,7 @@ for ( n = 0; n &lt; num_chars; n++ )
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -1043,7 +1043,7 @@ for ( n = 0; n &lt; num_chars; n++ )
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/tutorial/step2.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/tutorial/step2.html
++++ freetype-2.9.1/ft2docs/docs/tutorial/step2.html
+@@ -1541,7 +1541,7 @@ pixels_y = design_y * y_scale;</pre>
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -1561,7 +1561,7 @@ pixels_y = design_y * y_scale;</pre>
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
+Index: freetype-2.9.1/ft2docs/docs/tutorial/step3.html
+===================================================================
+--- freetype-2.9.1.orig/ft2docs/docs/tutorial/step3.html
++++ freetype-2.9.1/ft2docs/docs/tutorial/step3.html
+@@ -120,7 +120,7 @@ example5 LiberationSerif-Bold.ttf @</pre
+ 
+ <div id="TOC">
+   <ul>
+-    <li class="funding">
++<!--    <li class="funding">
+       <form action="https://www.paypal.com/cgi-bin/webscr"
+             method="post"
+             target="_top">
+@@ -140,7 +140,7 @@ example5 LiberationSerif-Bold.ttf @</pre
+              width="1"
+              height="1">
+       </form>
+-    </li>
++    </li>-->
+     <li class="primary">
+       <a href="http://freetype.org/index.html">Home</a>
+     </li>
