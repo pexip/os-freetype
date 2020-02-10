@@ -1,3 +1,17 @@
+freetype (2.6.3-3.2+deb9u1pexip1) pexip; urgency=medium
+
+  * New upstream release
+
+ -- John-Mark Bell <jmb@pexip.com>  Mon, 10 Feb 2020 10:19:45 +0000
+
+freetype (2.6.3-3.2+deb9u1) stretch; urgency=medium
+
+  * Add an upstream patch to correctly handle deltas in TrueType GX fonts
+    (Closes: #929982). This patch allows variable hinted fonts to render
+    correctly in Chromium and Firefox.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Sun, 28 Jul 2019 19:35:12 +1000
+
 freetype (2.6.3-3.2pexip1) pexip; urgency=medium
 
   * Migrate to Stretch
