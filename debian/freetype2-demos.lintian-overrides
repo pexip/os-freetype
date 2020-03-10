@@ -1,0 +1,5 @@
+# 'ot' stands for OpenType.
+spelling-error-in-manpage usr/share/man/man1/ftvalid.1.gz ot to
+
+# 'Nam' is part of the 'Lorem ipsum' default text.
+spelling-error-in-binary usr/bin/ftdiff Nam Name

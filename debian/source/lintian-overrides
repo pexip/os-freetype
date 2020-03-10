@@ -1,4 +1,2 @@
-# two separate series files; not getting fixed without extensive changes
-# upstream
-freetype source: quilt-build-dep-but-no-series-file
-
+source-contains-prebuilt-javascript-object ft2docs/docs/js/jquery-1.11.0.min.js
+source-contains-prebuilt-javascript-object ft2docs/docs/js/jquery.ba-resize.min.js

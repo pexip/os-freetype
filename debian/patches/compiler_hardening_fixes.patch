@@ -1,0 +1,17 @@
+Description: Free memory allocated to font->filepathname.
+Author: Steve Langasek
+Forwarded: https://savannah.nongnu.org/patch/?9666
+Last-Updated: 2018-06-30
+
+Index: freetype-2.9.1/ft2demos/src/ftcommon.c
+===================================================================
+--- freetype-2.9.1.orig/ft2demos/src/ftcommon.c
++++ freetype-2.9.1/ft2demos/src/ftcommon.c
+@@ -436,6 +436,7 @@
+ 
+           if ( file == NULL )  /* shouldn't happen */
+           {
++            free( (void *)font->filepathname );
+             free( font );
+             return FT_Err_Invalid_Argument;
+           }
