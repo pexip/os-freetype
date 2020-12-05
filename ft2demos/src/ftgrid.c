@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -18,14 +18,15 @@
 #include "output.h"
 #include "mlgetopt.h"
 #include <stdlib.h>
+#include <math.h>
 
   /* the following header shouldn't be used in normal programs */
-#include FT_INTERNAL_DEBUG_H
+#include <freetype/internal/ftdebug.h>
 
   /* showing driver name */
 #include FT_MODULE_H
-#include FT_INTERNAL_OBJECTS_H
-#include FT_INTERNAL_DRIVER_H
+#include <freetype/internal/ftobjs.h>
+#include <freetype/internal/ftdrv.h>
 
 #include FT_STROKER_H
 #include FT_SYNTHESIS_H
@@ -88,26 +89,30 @@
 
 #define BUFSIZE  256
 
-#define DO_BITMAP      1
-#define DO_OUTLINE     2
-#define DO_DOTS        4
-#define DO_DOTNUMBERS  8
+#define DO_BITMAP       1
+#define DO_GRAY_BITMAP  2
+#define DO_OUTLINE      4
+#define DO_DOTS         8
+#define DO_DOTNUMBERS  16
+
+#define ZOOM( x )  ( (FT_Pos)( (x) * st->scale ) >> 6 )
 
   typedef struct  GridStatusRec_
   {
-    int          width;
-    int          height;
+    const char*  keys;
+    const char*  dims;
+    const char*  device;
 
     int          ptsize;
     int          res;
     int          Num;  /* glyph index */
     int          font_index;
 
-    int          scale;
+    float        scale;
     int          x_origin;
     int          y_origin;
 
-    int          scale_0;
+    float        scale_0;
     int          x_origin_0;
     int          y_origin_0;
 
@@ -159,15 +164,18 @@
 
   static GridStatusRec  status;
 
+  static FT_Glyph  circle;
+
 
   static void
   grid_status_init( GridStatus  st )
   {
-    st->width         = DIM_X;
-    st->height        = DIM_Y;
+    st->keys          = "";
+    st->dims          = DIM;
+    st->device        = NULL;  /* default */
     st->res           = 72;
 
-    st->scale         = 64;
+    st->scale         = 64.0f;
     st->x_origin      = 0;
     st->y_origin      = 0;
 
@@ -231,74 +239,14 @@
 
 
   static void
-  grid_status_rescale_initial( GridStatus      st,
-                               FTDemo_Handle*  handle )
-  {
-    FT_Size     size;
-    FT_Error    err    = FTDemo_Get_Size( handle, &size );
-    FT_F26Dot6  margin = 4;
-
-
-    if ( !err )
-    {
-      FT_Face  face = size->face;
-
-      int  xmin = FT_MulFix( face->bbox.xMin, size->metrics.x_scale );
-      int  ymin = FT_MulFix( face->bbox.yMin, size->metrics.y_scale );
-      int  xmax = FT_MulFix( face->bbox.xMax, size->metrics.x_scale );
-      int  ymax = FT_MulFix( face->bbox.yMax, size->metrics.y_scale );
-
-      FT_F26Dot6  x_scale, y_scale;
-
-
-      xmin &= ~63;
-      ymin &= ~63;
-      xmax  = ( xmax + 63 ) & ~63;
-      ymax  = ( ymax + 63 ) & ~63;
-
-      if ( xmax - xmin )
-        x_scale = st->disp_width  * ( 64 - 2 * margin ) / ( xmax - xmin );
-      else
-        x_scale = 64;
-
-      if ( ymax - ymin )
-        y_scale = st->disp_height * ( 64 - 2 * margin ) / ( ymax - ymin );
-      else
-        y_scale = 64;
-
-      if ( x_scale <= y_scale )
-        st->scale = x_scale;
-      else
-        st->scale = y_scale;
-
-      st->x_origin = st->disp_width  * margin          - xmin * st->scale;
-      st->y_origin = st->disp_height * ( 64 - margin ) + ymin * st->scale;
-    }
-    else
-    {
-      st->scale    = 64;
-      st->x_origin = st->disp_width  * margin;
-      st->y_origin = st->disp_height * ( 64 - margin );
-    }
-
-    st->x_origin >>= 6;
-    st->y_origin >>= 6;
-
-    st->scale_0    = st->scale;
-    st->x_origin_0 = st->x_origin;
-    st->y_origin_0 = st->y_origin;
-  }
-
-
-  static void
   grid_status_draw_grid( GridStatus  st )
   {
     int  x_org   = st->x_origin;
     int  y_org   = st->y_origin;
-    int  xy_incr = st->scale;
+    int  xy_incr = (int)st->scale;
 
 
-    if ( xy_incr >= 2 )
+    if ( xy_incr >= 4 )
     {
       int  x2 = x_org;
       int  y2 = y_org;
@@ -366,14 +314,14 @@
         if ( dimension == 0 ) /* AF_DIMENSION_HORZ is 0 */
         {
           offset = FT_MulFix( offset, x_scale );
-          pos    = x_org + ( ( offset * st->scale ) >> 6 );
+          pos    = x_org + ZOOM( offset );
           grFillVLine( st->disp_bitmap, pos, 0,
                        st->disp_height, st->segment_color );
         }
         else
         {
           offset = FT_MulFix( offset, y_scale );
-          pos    = y_org - ( ( offset * st->scale ) >> 6 );
+          pos    = y_org - ZOOM( offset );
 
           if ( is_blue )
           {
@@ -381,7 +329,7 @@
 
 
             blue_offset = FT_MulFix( blue_offset, y_scale );
-            blue_pos    = y_org - ( ( blue_offset * st->scale ) >> 6 );
+            blue_pos    = y_org - ZOOM( blue_offset );
 
             if ( blue_pos == pos )
               grFillHLine( st->disp_bitmap, 0, blue_pos,
@@ -406,128 +354,20 @@
 
 
   static void
-  ft_bitmap_draw( FT_Bitmap*       bitmap,
-                  int              x,
-                  int              y,
-                  FTDemo_Display*  display,
-                  grColor          color )
+  circle_init( FTDemo_Handle*  handle,
+               FT_F26Dot6      radius )
   {
-    grBitmap  gbit;
-
-
-    gbit.width  = (int)bitmap->width;
-    gbit.rows   = (int)bitmap->rows;
-    gbit.pitch  = bitmap->pitch;
-    gbit.buffer = bitmap->buffer;
-
-    switch ( bitmap->pixel_mode )
-    {
-    case FT_PIXEL_MODE_GRAY:
-      gbit.mode  = gr_pixel_mode_gray;
-      gbit.grays = 256;
-      break;
-
-    case FT_PIXEL_MODE_MONO:
-      gbit.mode  = gr_pixel_mode_mono;
-      gbit.grays = 2;
-      break;
-
-    case FT_PIXEL_MODE_LCD:
-      gbit.mode  = gr_pixel_mode_lcd;
-      gbit.grays = 256;
-      break;
-
-    case FT_PIXEL_MODE_LCD_V:
-      gbit.mode  = gr_pixel_mode_lcdv;
-      gbit.grays = 256;
-      break;
-
-    default:
-      return;
-    }
-
-    grBlitGlyphToBitmap( display->bitmap, &gbit, x, y, color );
-  }
-
-
-  static void
-  ft_outline_draw( FT_Outline*      outline,
-                   double           scale,
-                   int              pen_x,
-                   int              pen_y,
-                   FTDemo_Handle*   handle,
-                   FTDemo_Display*  display,
-                   grColor          color )
-  {
-    FT_Outline  transformed;
-    FT_BBox     cbox;
-    FT_Bitmap   bitm;
-
-
-    FT_Outline_New( handle->library,
-                    (FT_UInt)outline->n_points,
-                    outline->n_contours,
-                    &transformed );
-
-    FT_Outline_Copy( outline, &transformed );
-
-    if ( scale != 1. )
-    {
-      int  nn;
-
-
-      for ( nn = 0; nn < transformed.n_points; nn++ )
-      {
-        FT_Vector*  vec = &transformed.points[nn];
-
-
-        vec->x = (FT_F26Dot6)( vec->x * scale );
-        vec->y = (FT_F26Dot6)( vec->y * scale );
-      }
-    }
-
-    FT_Outline_Get_CBox( &transformed, &cbox );
-    cbox.xMin &= ~63;
-    cbox.yMin &= ~63;
-    cbox.xMax  = ( cbox.xMax + 63 ) & ~63;
-    cbox.yMax  = ( cbox.yMax + 63 ) & ~63;
-
-    bitm.width      = (unsigned int)( ( cbox.xMax - cbox.xMin ) >> 6 );
-    bitm.rows       = (unsigned int)( ( cbox.yMax - cbox.yMin ) >> 6 );
-    bitm.pitch      = (int)bitm.width;
-    bitm.num_grays  = 256;
-    bitm.pixel_mode = FT_PIXEL_MODE_GRAY;
-    bitm.buffer     = (unsigned char*)calloc( (unsigned int)bitm.pitch,
-                                              bitm.rows );
-
-    FT_Outline_Translate( &transformed, -cbox.xMin, -cbox.yMin );
-    FT_Outline_Get_Bitmap( handle->library, &transformed, &bitm );
-
-    ft_bitmap_draw( &bitm,
-                    pen_x + ( cbox.xMin >> 6 ),
-                    pen_y - ( cbox.yMax >> 6 ),
-                    display,
-                    color );
-
-    free( bitm.buffer );
-    FT_Outline_Done( handle->library, &transformed );
-  }
-
-
-  static void
-  ft_outline_new_circle( FT_Outline*     outline,
-                         FT_F26Dot6      radius,
-                         FTDemo_Handle*  handle )
-  {
-    char*       tag;
-    FT_Vector*  vec;
-    FT_F26Dot6  disp = (FT_F26Dot6)( radius * 0.5523 );
+    FT_Outline*  outline;
+    char*        tag;
+    FT_Vector*   vec;
+    FT_F26Dot6   disp = (FT_F26Dot6)( radius * 0.5523 );
     /* so that Bézier curve touches circle at 0, 45, and 90 degrees */
 
 
+    FT_New_Glyph( handle->library, FT_GLYPH_FORMAT_OUTLINE, &circle );
+
+    outline = &((FT_OutlineGlyph)circle)->outline;
     FT_Outline_New( handle->library, 12, 1, outline );
-    outline->n_points    = 12;
-    outline->n_contours  = 1;
     outline->contours[0] = outline->n_points - 1;
 
     vec = outline->points;
@@ -551,28 +391,28 @@
   static void
   circle_draw( FT_F26Dot6       center_x,
                FT_F26Dot6       center_y,
-               FT_F26Dot6       radius,
                FTDemo_Handle*   handle,
                FTDemo_Display*  display,
                grColor          color )
   {
-    FT_Outline  outline;
+    FT_Outline*  outline = &((FT_OutlineGlyph)circle)->outline;
+    int  x = center_x >> 6;
+    int  y = center_y >> 6;
 
 
-    ft_outline_new_circle( &outline, radius, handle );
     /* subpixel adjustment considering downward direction of y-axis */
-    FT_Outline_Translate( &outline, center_x & 63, -( center_y & 63 ) );
+    FT_Outline_Translate( outline, center_x & 63, -( center_y & 63 ) );
 
-    ft_outline_draw( &outline, 1., ( center_x >> 6 ), ( center_y >> 6 ),
-                     handle, display, color );
+    FTDemo_Draw_Glyph_Color( handle, display, circle, &x, &y, color );
 
-    FT_Outline_Done( handle->library, &outline );
+    FT_Outline_Translate( outline, -( center_x & 63 ), center_y & 63 );
   }
 
 
   static void
-  bitmap_scale( grBitmap*  bit,
-                int        scale )
+  bitmap_scale( GridStatus  st,
+                grBitmap*   bit,
+                int         scale )
   {
     unsigned char*  s = bit->buffer;
     unsigned char*  t;
@@ -606,10 +446,16 @@
           for ( k = 1; k < scale; k++, line += pitch * scale )
             memcpy( line + pitch * scale, line, (size_t)( pitch * scale ) );
           line += pitch * scale;
+
+          /* center specks */
+          if ( scale > 8 )
+            for ( j = scale / 2; j < width * scale; j += scale )
+              line[j / 8 - scale / 2 * pitch * scale] ^= 0x80 >> ( j & 7 );
         }
         break;
 
       case gr_pixel_mode_gray:
+      Gray:
         for ( i = 0; i < bit->rows; i++ )
         {
           for ( j = 0; j < pitch; j++ )
@@ -623,6 +469,8 @@
 
       case gr_pixel_mode_lcd:
       case gr_pixel_mode_lcd2:
+        if ( st->work & DO_GRAY_BITMAP )
+          goto Gray;
         for ( i = 0; i < bit->rows; i++ )
         {
           for ( j = 0; j < width; j += 3 )
@@ -641,6 +489,8 @@
 
       case gr_pixel_mode_lcdv:
       case gr_pixel_mode_lcdv2:
+        if ( st->work & DO_GRAY_BITMAP )
+          goto Gray;
         for ( i = 0; i < bit->rows; i += 3 )
         {
           for ( j = 0; j < pitch; j++ )
@@ -681,7 +531,7 @@
     FT_Size       size;
     FT_GlyphSlot  slot;
     FT_UInt       glyph_idx;
-    int           scale = st->scale;
+    int           scale = (int)st->scale;
     int           ox    = st->x_origin;
     int           oy    = st->y_origin;
 
@@ -690,46 +540,28 @@
     if ( err )
       return;
 
+    glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)st->Num );
+
 #ifdef FT_DEBUG_AUTOFIT
-    /* Draw segment before drawing glyph. */
-    if ( status.do_segment )
-    {
-      /* Force hinting first in order to collect segment info. */
-      _af_debug_disable_horz_hints = 0;
-      _af_debug_disable_vert_hints = 0;
-
-      if ( !FT_Load_Glyph( size->face, (FT_UInt)st->Num,
-                           FT_LOAD_DEFAULT        |
-                           FT_LOAD_NO_BITMAP      |
-                           FT_LOAD_FORCE_AUTOHINT |
-                           FT_LOAD_TARGET_NORMAL ) )
-        grid_hint_draw_segment( &status, size, _af_debug_hints );
-    }
-
     _af_debug_disable_horz_hints = !st->do_horz_hints;
     _af_debug_disable_vert_hints = !st->do_vert_hints;
     _af_debug_disable_blue_hints = !st->do_blue_hints;
 #endif
 
-    if ( handle->encoding == FT_ENCODING_ORDER )
-      glyph_idx = (FT_UInt)st->Num;
-    else
-      glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)st->Num );
-
-
     if ( FT_Load_Glyph( size->face, glyph_idx,
                         handle->load_flags | FT_LOAD_NO_BITMAP ) )
       return;
+
+    slot = size->face->glyph;
 
     if ( st->do_grid )
     {
       /* show advance width */
       grFillVLine( st->disp_bitmap,
                    st->x_origin +
-                     ( ( size->face->glyph->metrics.horiAdvance +
-                         size->face->glyph->lsb_delta           -
-                         size->face->glyph->rsb_delta           ) *
-                       scale >> 6 ),
+                   ZOOM( slot->metrics.horiAdvance +
+                         slot->lsb_delta           -
+                         slot->rsb_delta           ),
                    0,
                    st->disp_height,
                    st->axis_color );
@@ -737,17 +569,45 @@
       /* show ascender and descender */
       grFillHLine( st->disp_bitmap,
                    0,
-                   st->y_origin - ( size->metrics.ascender  * scale >> 6 ),
+                   st->y_origin - ZOOM( size->metrics.ascender ),
                    st->disp_width,
                    st->axis_color );
       grFillHLine( st->disp_bitmap,
                    0,
-                   st->y_origin - ( size->metrics.descender * scale >> 6 ),
+                   st->y_origin - ZOOM( size->metrics.descender ),
                    st->disp_width,
                    st->axis_color );
     }
 
-    slot = size->face->glyph;
+    /* render scaled bitmap */
+    if ( st->work & DO_BITMAP && scale == st->scale )
+    {
+      FT_Glyph        glyph, glyf;
+      int             left, top, x_advance, y_advance;
+      grBitmap        bitg;
+
+
+      FT_Get_Glyph( slot, &glyph );
+      error  = FTDemo_Glyph_To_Bitmap( handle, glyph, &bitg, &left, &top,
+                                       &x_advance, &y_advance, &glyf);
+
+      if ( !error )
+      {
+        bitmap_scale( st, &bitg, scale );
+
+        grBlitGlyphToBitmap( display->bitmap, &bitg,
+                             ox + left * scale, oy - top * scale,
+                             st->axis_color );
+
+        free( bitg.buffer );
+
+        if ( glyf )
+          FT_Done_Glyph( glyf );
+      }
+
+      FT_Done_Glyph( glyph );
+    }
+
     if ( slot->format == FT_GLYPH_FORMAT_OUTLINE )
     {
       FT_Glyph     glyph;
@@ -755,34 +615,11 @@
       int          nn;
 
 
-      /* render scaled bitmap */
-      if ( st->work & DO_BITMAP )
-      {
-        int             left, top, x_advance, y_advance;
-        grBitmap        bitg;
-        FT_Glyph        glyf;
-
-
-        FT_Get_Glyph( slot, &glyph );
-        error  = FTDemo_Glyph_To_Bitmap( handle, glyph, &bitg, &left, &top,
-                                         &x_advance, &y_advance, &glyf);
-
-        if ( !error )
-        {
-          bitmap_scale( &bitg, scale );
-
-          grBlitGlyphToBitmap( display->bitmap, &bitg,
-                               ox + left * scale, oy - top * scale,
-                               st->axis_color );
-
-          free( bitg.buffer );
-
-          if ( glyf )
-            FT_Done_Glyph( glyf );
-        }
-
-        FT_Done_Glyph( glyph );
-      }
+#ifdef FT_DEBUG_AUTOFIT
+      /* Draw segment before drawing glyph. */
+      if ( status.do_segment && handle->load_flags & FT_LOAD_FORCE_AUTOHINT )
+        grid_hint_draw_segment( &status, size, _af_debug_hints );
+#endif
 
       /* scale the outline */
       for ( nn = 0; nn < gimage->n_points; nn++ )
@@ -791,8 +628,8 @@
 
 
         /* half-pixel shift hints the stroked path */
-        vec->x = vec->x * scale + 32;
-        vec->y = vec->y * scale - 32;
+        vec->x = (FT_Pos)( vec->x * st->scale ) + 32;
+        vec->y = (FT_Pos)( vec->y * st->scale ) - 32;
       }
 
       /* stroke then draw it */
@@ -801,8 +638,9 @@
         FT_Get_Glyph( slot, &glyph );
         FT_Glyph_Stroke( &glyph, st->stroker, 1 );
 
-        error = FTDemo_Draw_Glyph_Color( handle, display, glyph, &ox, &oy,
-                                         st->outline_color );
+        error = FTDemo_Sketch_Glyph_Color( handle, display, glyph,
+                                           ox, oy,
+                                           st->outline_color );
         if ( !error )
           FT_Done_Glyph( glyph );
       }
@@ -814,7 +652,6 @@
           circle_draw(
             st->x_origin * 64 + gimage->points[nn].x,
             st->y_origin * 64 - gimage->points[nn].y,
-            128,
             handle,
             display,
             ( gimage->tags[nn] & FT_CURVE_TAG_ON ) ? st->on_color
@@ -987,18 +824,12 @@
   event_help( void )
   {
     char  buf[BUFSIZE];
-    char  version[64];
-
-    const char*  format;
-    FT_Int       major, minor, patch;
+    char  version[64] = "";
 
     grEvent  dummy_event;
 
 
-    FT_Library_Version( handle->library, &major, &minor, &patch );
-
-    format = patch ? "%d.%d.%d" : "%d.%d";
-    sprintf( version, format, major, minor, patch );
+    FTDemo_Version( handle, version );
 
     FTDemo_Display_Clear( display );
     grSetLineHeight( 10 );
@@ -1006,9 +837,10 @@
     grSetMargin( 2, 1 );
     grGotobitmap( display->bitmap );
 
-    sprintf( buf,
-            "FreeType Glyph Grid Viewer - part of the FreeType %s test suite",
-             version );
+    snprintf( buf, sizeof ( buf ),
+             "FreeType Glyph Grid Viewer -"
+               " part of the FreeType %s test suite",
+              version );
 
     grWriteln( buf );
     grLn();
@@ -1048,6 +880,7 @@
     grWriteln( "             anti-aliasing modes          F3, F4    adjust current axis by  " );
     grWriteln( "L           cycle through LCD                        1/50th of its range    " );
     grWriteln( "             filters                                                        " );
+    grWriteln( "                                        P           print PNG file          " );
     grWriteln( "g, v        adjust gamma value          q, ESC      quit ftgrid             " );
     /*          |----------------------------------|    |----------------------------------| */
     grLn();
@@ -1098,7 +931,7 @@
 
     if ( status.mm->num_axis >= MAX_MM_AXES )
     {
-      fprintf( stderr, "only handling first %d GX axes (of %d)\n",
+      fprintf( stderr, "only handling first %u GX axes (of %u)\n",
                        MAX_MM_AXES, status.mm->num_axis );
       status.used_num_axis = MAX_MM_AXES;
     }
@@ -1232,10 +1065,10 @@
       event_font_change( 0 );
     }
 
-    sprintf( status.header_buffer,
-             "TrueType engine changed to version %d",
-             status.tt_interpreter_versions[
-               status.tt_interpreter_version_idx]);
+    snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+              "TrueType engine changed to version %u",
+              status.tt_interpreter_versions[
+                status.tt_interpreter_version_idx] );
 
     status.header = (const char *)status.header_buffer;
   }
@@ -1273,20 +1106,6 @@
 
 
   static void
-  event_gamma_change( double  delta )
-  {
-    display->gamma += delta;
-
-    if ( display->gamma > 3.0 )
-      display->gamma = 3.0;
-    else if ( display->gamma < 0.0 )
-      display->gamma = 0.0;
-
-    grSetGlyphGamma( display->gamma );
-  }
-
-
-  static void
   event_grid_reset( GridStatus  st )
   {
     st->x_origin = st->x_origin_0;
@@ -1305,19 +1124,34 @@
 
 
   static void
-  event_grid_zoom( double  zoom )
+  event_grid_zoom( int  step )
   {
-    int  scale_old = status.scale;
+    int  frc, exp;
 
+    /* The floating scale is reversibly adjusted after decomposing it into */
+    /* fraction and exponent. Direct bit manipulation is less portable.    */
+    frc = 8 * frexpf( status.scale, &exp );
 
-    status.scale *= zoom;
+    frc  = ( frc & 3 ) | ( exp << 2 );
+    frc += step;
+    exp  = frc >> 2;
+    frc  = ( frc & 3 ) | 4;
 
-    /* avoid same zoom value due to truncation */
-    /* to integer in above multiplication      */
-    if ( status.scale == scale_old && zoom > 1.0 )
-      status.scale++;
+    status.scale = ldexpf( frc / 8.0f, exp );
 
-    sprintf( status.header_buffer, "zoom scale %d:1", status.scale );
+    exp -= 3;
+    while ( ~frc & 1 )
+    {
+      frc >>= 1;
+      exp ++;
+    }
+
+    if ( exp >= 0 )
+      snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                "zoom scale %d:1", frc << exp );
+    else
+      snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                "zoom scale %d:%d", frc, 1 << -exp );
 
     status.header = (const char *)status.header_buffer;
   }
@@ -1367,8 +1201,9 @@
       event_font_change( 0 );
     }
 
-    sprintf( status.header_buffer, "rendering mode changed to %s",
-             lcd_mode );
+    snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+              "rendering mode changed to %s",
+              lcd_mode );
 
     status.header = (const char *)status.header_buffer;
 
@@ -1418,8 +1253,9 @@
         break;
       }
 
-      sprintf( status.header_buffer, "LCD filter changed to %s",
-               lcd_filter );
+      snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                "LCD filter changed to %s",
+                lcd_filter );
 
       status.header = (const char *)status.header_buffer;
 
@@ -1498,15 +1334,88 @@
   }
 
 
-  static int
-  Process_Event( grEvent*  event )
+  static void
+  grid_status_rescale( GridStatus  st )
   {
-    int  ret = 0;
+    FT_Size     size;
+    FT_Error    err    = FTDemo_Get_Size( handle, &size );
+    FT_F26Dot6  margin = 6;
 
+
+    if ( !err )
+    {
+      int  xmin = 0;
+      int  ymin = size->metrics.descender;
+      int  xmax = size->metrics.max_advance;
+      int  ymax = size->metrics.ascender;
+
+      float  x_scale, y_scale;
+
+
+      if ( ymax < size->metrics.y_ppem << 6 )
+        ymax = size->metrics.y_ppem << 6;
+
+      if ( xmax - xmin )
+        x_scale = st->disp_width  * ( 64.0f - 2 * margin ) / ( xmax - xmin );
+      else
+        x_scale = 64.0f;
+
+      if ( ymax - ymin )
+        y_scale = st->disp_height * ( 64.0f - 2 * margin ) / ( ymax - ymin );
+      else
+        y_scale = 64.0f;
+
+      if ( x_scale <= y_scale )
+        st->scale = x_scale;
+      else
+        st->scale = y_scale;
+
+      event_grid_zoom( 0 );
+
+      st->x_origin = 32 * st->disp_width  -
+                     (FT_Pos)( ( xmax + xmin ) * st->scale ) / 2;
+      st->y_origin = 32 * st->disp_height +
+                     (FT_Pos)( ( ymax + ymin ) * st->scale ) / 2;
+    }
+    else
+    {
+      st->scale    = 64.0f;
+      st->x_origin = st->disp_width  * margin;
+      st->y_origin = st->disp_height * ( 64 - margin );
+    }
+
+    st->x_origin >>= 6;
+    st->y_origin >>= 6;
+
+    st->scale_0    = st->scale;
+    st->x_origin_0 = st->x_origin;
+    st->y_origin_0 = st->y_origin;
+  }
+
+
+  static int
+  Process_Event( void )
+  {
+    grEvent  event;
+    int      ret = 0;
+
+    if ( *status.keys )
+      event.key = grKEY( *status.keys++ );
+    else
+    {
+      grListenSurface( display->surface, 0, &event );
+
+      if ( event.type == gr_event_resize )
+      {
+        grid_status_display( &status, display );
+        grid_status_rescale( &status );
+        return ret;
+      }
+    }
 
     status.header = NULL;
 
-    switch ( event->key )
+    switch ( event.key )
     {
     case grKeyEsc:
     case grKEY( 'q' ):
@@ -1516,6 +1425,16 @@
     case grKeyF1:
     case grKEY( '?' ):
       event_help();
+      break;
+
+    case grKEY( 'P' ):
+      {
+        FT_String  str[64] = "ftgrid (FreeType) ";
+
+
+        FTDemo_Version( handle, str );
+        FTDemo_Display_Print( display, "ftgrid.png", str );
+      }
       break;
 
     case grKEY( 'f' ):
@@ -1580,11 +1499,11 @@
       break;
 
     case grKEY( 'g' ):
-      event_gamma_change( 0.1 );
+      FTDemo_Display_Gamma_Change( display,  1 );
       break;
 
     case grKEY( 'v' ):
-      event_gamma_change( -0.1 );
+      FTDemo_Display_Gamma_Change( display, -1 );
       break;
 
     case grKEY( 'n' ):
@@ -1620,6 +1539,8 @@
 
     case grKEY( 'b' ):
       status.work ^= DO_BITMAP;
+      if ( status.work & DO_BITMAP )
+        status.work ^= DO_GRAY_BITMAP;
       break;
 
     case grKEY( 'p' ):
@@ -1655,9 +1576,10 @@
               event_font_change( 0 );
             }
 
-            sprintf( status.header_buffer, "CFF engine changed to %s",
-                     status.cff_hinting_engine == FT_HINTING_FREETYPE
-                       ? "FreeType" : "Adobe" );
+            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                      "CFF engine changed to %s",
+                      status.cff_hinting_engine == FT_HINTING_FREETYPE
+                        ? "FreeType" : "Adobe" );
 
             status.header = (const char *)status.header_buffer;
           }
@@ -1675,9 +1597,10 @@
               event_font_change( 0 );
             }
 
-            sprintf( status.header_buffer, "Type 1 engine changed to %s",
-                     status.type1_hinting_engine == FT_HINTING_FREETYPE
-                       ? "FreeType" : "Adobe" );
+            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                      "Type 1 engine changed to %s",
+                      status.type1_hinting_engine == FT_HINTING_FREETYPE
+                        ? "FreeType" : "Adobe" );
 
             status.header = (const char *)status.header_buffer;
           }
@@ -1695,9 +1618,10 @@
               event_font_change( 0 );
             }
 
-            sprintf( status.header_buffer, "CID engine changed to %s",
-                     status.t1cid_hinting_engine == FT_HINTING_FREETYPE
-                       ? "FreeType" : "Adobe" );
+            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
+                      "CID engine changed to %s",
+                      status.t1cid_hinting_engine == FT_HINTING_FREETYPE
+                        ? "FreeType" : "Adobe" );
 
             status.header = (const char *)status.header_buffer;
           }
@@ -1778,8 +1702,8 @@
     case grKEY( 'j' ):  event_grid_translate( -1,  0 ); break;
     case grKEY( 'l' ):  event_grid_translate(  1,  0 ); break;
 
-    case grKeyPageUp:   event_grid_zoom( 1.25     ); break;
-    case grKeyPageDown: event_grid_zoom( 1 / 1.25 ); break;
+    case grKeyPageUp:   event_grid_zoom(  1 ); break;
+    case grKeyPageDown: event_grid_zoom( -1 ); break;
 
     case grKeyF2:       if ( status.mm )
                         {
@@ -1855,17 +1779,17 @@
       "            `.afm' or `.pfm').\n"
       "\n" );
     fprintf( stderr,
-      "  -w W      Set the window width to W pixels (default: %dpx).\n"
-      "  -h H      Set the window height to H pixels (default: %dpx).\n"
-      "\n",
-             DIM_X, DIM_Y );
-    fprintf( stderr,
+      "  -d WxH[xD]\n"
+      "            Set the window width, height, and color depth\n"
+      "            (default: 640x480x24).\n"
+      "  -k keys   Emulate sequence of keystrokes upon start-up.\n"
+      "            If the keys contain `q', use batch mode.\n"
       "  -r R      Use resolution R dpi (default: 72dpi).\n"
       "  -f index  Specify first index to display (default: 0).\n"
       "  -e enc    Specify encoding tag (default: no encoding).\n"
       "            Common values: `unic' (Unicode), `symb' (symbol),\n"
       "            `ADOB' (Adobe standard), `ADBC' (Adobe custom).\n"
-      "  -d \"axis1 axis2 ...\"\n"
+      "  -a \"axis1 axis2 ...\"\n"
       "            Specify the design coordinates for each\n"
       "            Multiple Master axis at start-up.  Implies `-n'.\n"
       "  -n        Don't display named instances of variation fonts.\n"
@@ -1889,14 +1813,14 @@
 
     while ( 1 )
     {
-      option = getopt( *argc, *argv, "d:e:f:h:nr:vw:" );
+      option = getopt( *argc, *argv, "a:d:e:f:k:nr:v" );
 
       if ( option == -1 )
         break;
 
       switch ( option )
       {
-      case 'd':
+      case 'a':
         {
           FT_UInt    cnt;
           FT_Fixed*  pos = status.requested_pos;
@@ -1916,6 +1840,10 @@
         }
         break;
 
+      case 'd':
+        status.dims = optarg;
+        break;
+
       case 'e':
         handle->encoding = FTDemo_Make_Encoding_Tag( optarg );
         status.Num       = 0x20;
@@ -1925,10 +1853,12 @@
         status.Num = atoi( optarg );
         break;
 
-      case 'h':
-        status.height = atoi( optarg );
-        if ( status.height < 1 )
-          usage( execname );
+      case 'k':
+        status.keys = optarg;
+        while ( *optarg && *optarg != 'q' )
+          optarg++;
+        if ( *optarg == 'q' )
+          status.device = "batch";
         break;
 
       case 'n':
@@ -1943,24 +1873,14 @@
 
       case 'v':
         {
-          FT_Int  major, minor, patch;
+          FT_String  str[64] = "ftgrid (FreeType) ";
 
 
-          FT_Library_Version( handle->library, &major, &minor, &patch );
-
-          printf( "ftgrid (FreeType) %d.%d", major, minor );
-          if ( patch )
-            printf( ".%d", patch );
-          printf( "\n" );
+          FTDemo_Version( handle, str );
+          printf( "%s\n", str );
           exit( 0 );
         }
         /* break; */
-
-      case 'w':
-        status.width = atoi( optarg );
-        if ( status.width < 1 )
-          usage( execname );
-        break;
 
       default:
         usage( execname );
@@ -1987,7 +1907,6 @@
   main( int    argc,
         char*  argv[] )
   {
-    grEvent       event;
     int           n;
     unsigned int  dflt_tt_interpreter_version;
     unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
@@ -1999,6 +1918,7 @@
     handle = FTDemo_New();
 
     grid_status_init( &status );
+    circle_init( handle, 128 );
     parse_cmdline( &argc, &argv );
 
     /* get the default value as compiled into FreeType */
@@ -2043,34 +1963,29 @@
     FT_Stroker_Set( status.stroker, 32, FT_STROKER_LINECAP_BUTT,
                       FT_STROKER_LINEJOIN_BEVEL, 0x20000 );
 
-    display = FTDemo_Display_New( gr_pixel_mode_rgb24,
-                                  status.width, status.height );
-    if ( !display )
-      Fatal( "could not allocate display surface" );
-
-    grid_status_display( &status, display );
-    grid_status_colors(  &status, display );
-
-    grSetTitle( display->surface,
-                "FreeType Glyph Grid Viewer - press ? for help" );
-
     for ( ; argc > 0; argc--, argv++ )
-    {
-      error = FTDemo_Install_Font( handle, argv[0], 1,
-                                   status.no_named_instances ? 1 : 0 );
-      if ( error == FT_Err_Invalid_Argument )
-        fprintf( stderr, "skipping font `%s' without outlines\n",
-                         argv[0] );
-    }
+      FTDemo_Install_Font( handle, argv[0], 0,
+                           status.no_named_instances ? 1 : 0 );
 
     if ( handle->num_fonts == 0 )
       Fatal( "could not find/open any font file" );
 
+    display = FTDemo_Display_New( status.device, status.dims );
+    if ( !display )
+      Fatal( "could not allocate display surface" );
+
+    grSetTitle( display->surface,
+                "FreeType Glyph Grid Viewer - press ? for help" );
+    FTDemo_Icon( handle, display );
+
+    grid_status_display( &status, display );
+    grid_status_colors(  &status, display );
+
     event_font_change( 0 );
 
-    grid_status_rescale_initial( &status, handle );
+    grid_status_rescale( &status );
 
-    for ( ;; )
+    do
     {
       FTDemo_Display_Clear( display );
 
@@ -2082,10 +1997,7 @@
 
       write_header( 0 );
 
-      grListenSurface( display->surface, 0, &event );
-      if ( Process_Event( &event ) )
-        break;
-    }
+    } while ( !Process_Event() );
 
     printf( "Execution completed successfully.\n" );
 

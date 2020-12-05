@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -22,17 +22,20 @@
 #include <stdio.h>
 
   /* the following header shouldn't be used in normal programs */
-#include FT_INTERNAL_DEBUG_H
+#include <freetype/internal/ftdebug.h>
 
   /* showing driver name */
 #include FT_MODULE_H
-#include FT_INTERNAL_OBJECTS_H
-#include FT_INTERNAL_DRIVER_H
+#include <freetype/internal/ftobjs.h>
+#include <freetype/internal/ftdrv.h>
 
 #include FT_STROKER_H
 #include FT_SYNTHESIS_H
 #include FT_LCD_FILTER_H
 #include FT_DRIVER_H
+
+#include FT_COLOR_H
+#include FT_BITMAP_H
 
 
 #define MAXPTSIZE  500                 /* dtp */
@@ -56,11 +59,10 @@
             y = start_y;                                         \
           } while ( 0 )
 
-#define X_TOO_LONG( x, slot, display )                   \
-          ( (x) + ( (slot)->metrics.horiAdvance >> 6 ) > \
-            (display)->bitmap->width - 3 )
-#define Y_TOO_LONG( y, size, display )       \
-          ( (y) >= (display)->bitmap->rows )
+#define X_TOO_LONG( x, display )                 \
+          ( (x) >= (display)->bitmap->width - 3 )
+#define Y_TOO_LONG( y, display )                \
+          ( (y) >= (display)->bitmap->rows - 3 )
 
 #ifdef _WIN32
 #define snprintf  _snprintf
@@ -96,8 +98,9 @@
   {
     int            update;
 
-    int            width;
-    int            height;
+    const char*    keys;
+    const char*    dims;
+    const char*    device;
     int            render_mode;
 
     int            res;
@@ -127,7 +130,7 @@
     int            fw_idx;
 
   } status = { 1,
-               DIM_X, DIM_Y, RENDER_MODE_ALL,
+               "", DIM, NULL, RENDER_MODE_ALL,
                72, 48, 1, 0.04, 0.04, 0.02, 0.22,
                0, 0, 0, { 0 }, 0, 0, 0, /* default values are set at runtime */
                0, 0, 0, 0, 0,
@@ -175,7 +178,7 @@
   Render_Stroke( int  num_indices,
                  int  offset )
   {
-    int           start_x, start_y, step_y, x, y;
+    int           start_x, start_y, step_y, x, y, width;
     int           i, have_topleft;
     FT_Size       size;
     FT_Face       face;
@@ -185,7 +188,6 @@
 
 
     error = FTDemo_Get_Size( handle, &size );
-
     if ( error )
     {
       /* probably a non-existent bitmap font size */
@@ -210,10 +212,7 @@
       FT_UInt  glyph_idx;
 
 
-      if ( handle->encoding == FT_ENCODING_ORDER )
-        glyph_idx = (FT_UInt)i;
-      else
-        glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
+      glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
 
       error = FT_Load_Glyph( face, glyph_idx,
                              handle->load_flags | FT_LOAD_NO_BITMAP );
@@ -234,16 +233,28 @@
           goto Next;
         }
 
-        if ( X_TOO_LONG( x, slot, display ) )
+        width = slot->advance.x ? slot->advance.x >> 6
+                                : size->metrics.y_ppem / 2;
+
+        if ( X_TOO_LONG( x + width, display ) )
         {
           x  = start_x;
           y += step_y;
 
-          if ( Y_TOO_LONG( y, size, display ) )
+          if ( Y_TOO_LONG( y, display ) )
           {
             FT_Done_Glyph( glyph );
             break;
           }
+        }
+
+        /* extra space between glyphs */
+        x++;
+        if ( slot->advance.x == 0 )
+        {
+          grFillRect( display->bitmap, x, y - width, width, width,
+                      display->warn_color );
+          x += width;
         }
 
         error = FTDemo_Draw_Glyph( handle, display, glyph, &x, &y );
@@ -272,7 +283,7 @@
   Render_Fancy( int  num_indices,
                 int  offset )
   {
-    int           start_x, start_y, step_y, x, y;
+    int           start_x, start_y, step_y, x, y, width;
     int           i, have_topleft;
     FT_Size       size;
     FT_Face       face;
@@ -283,7 +294,6 @@
 
 
     error = FTDemo_Get_Size( handle, &size );
-
     if ( error )
     {
       /* probably a non-existent bitmap font size */
@@ -323,10 +333,7 @@
       FT_UInt  glyph_idx;
 
 
-      if ( handle->encoding == FT_ENCODING_ORDER )
-        glyph_idx = (FT_UInt)i;
-      else
-        glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
+      glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
 
       error = FT_Load_Glyph( face, glyph_idx, handle->load_flags );
       if ( error )
@@ -374,13 +381,25 @@
       if ( slot->format == FT_GLYPH_FORMAT_BITMAP )
         slot->bitmap_top += ystr >> 6;
 
-      if ( X_TOO_LONG( x, slot, display ) )
+      width = slot->advance.x ? slot->advance.x >> 6
+                              : size->metrics.y_ppem / 2;
+
+      if ( X_TOO_LONG( x + width, display ) )
       {
         x  = start_x;
         y += step_y;
 
-        if ( Y_TOO_LONG( y, size, display ) )
+        if ( Y_TOO_LONG( y, display ) )
           break;
+      }
+
+      /* extra space between glyphs */
+      x++;
+      if ( slot->advance.x == 0 )
+      {
+        grFillRect( display->bitmap, x, y - width, width, width,
+                    display->warn_color );
+        x += width;
       }
 
       error = FTDemo_Draw_Slot( handle, display, slot, &x, &y );
@@ -408,15 +427,15 @@
   Render_All( int  num_indices,
               int  offset )
   {
-    int           start_x, start_y, step_y, x, y;
+    int           start_x, start_y, step_y, x, y, width;
     int           i, have_topleft;
     FT_Size       size;
     FT_Face       face;
     FT_GlyphSlot  slot;
+    FT_Color*     palette;
 
 
     error = FTDemo_Get_Size( handle, &size );
-
     if ( error )
     {
       /* probably a non-existent bitmap font size */
@@ -427,29 +446,119 @@
     face = size->face;
     slot = face->glyph;
 
+    error = FT_Palette_Select( face,
+                               handle->current_font->palette_index,
+                               &palette );
+    if ( error )
+      palette = NULL;
+
     have_topleft = 0;
 
     for ( i = offset; i < num_indices; i++ )
     {
-      FT_UInt  glyph_idx;
+      FT_LayerIterator  iterator;
+      FT_UInt           glyph_idx;
+
+      FT_Bool  have_layers;
+      FT_UInt  layer_glyph_idx;
+      FT_UInt  layer_color_idx;
 
 
-      if ( handle->encoding == FT_ENCODING_ORDER )
-        glyph_idx = (FT_UInt)i;
-      else
-        glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
+      glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)i );
 
-      error = FT_Load_Glyph( face, glyph_idx, handle->load_flags );
-      if ( error )
-        goto Next;
+      /* check whether we have glyph color layers */
+      iterator.p  = NULL;
+      have_layers = FT_Get_Color_Glyph_Layer( face,
+                                              glyph_idx,
+                                              &layer_glyph_idx,
+                                              &layer_color_idx,
+                                              &iterator );
 
-      if ( X_TOO_LONG( x, slot, display ) )
+      if ( palette && have_layers && handle->use_layers )
       {
-        x = start_x;
+        FT_Int32  load_flags = handle->load_flags;
+
+        FT_Bitmap  bitmap;
+        FT_Vector  bitmap_offset = { 0, 0 };
+
+
+        /*
+         * We want to handle glyph layers manually, thus switching off
+         * `FT_LOAD_COLOR' and ensuring normal AA render mode.
+         */
+        load_flags &= ~FT_LOAD_COLOR;
+        load_flags |=  FT_LOAD_RENDER;
+
+        load_flags &= ~FT_LOAD_TARGET_( 0xF );
+        load_flags |=  FT_LOAD_TARGET_NORMAL;
+
+        FT_Bitmap_Init( &bitmap );
+
+        do
+        {
+          FT_Vector  slot_offset;
+
+
+          error = FT_Load_Glyph( face, layer_glyph_idx, load_flags );
+          if ( error )
+            break;
+
+          slot_offset.x = slot->bitmap_left * 64;
+          slot_offset.y = slot->bitmap_top * 64;
+
+          error = FT_Bitmap_Blend( handle->library,
+                                   &slot->bitmap,
+                                   slot_offset,
+                                   &bitmap,
+                                   &bitmap_offset,
+                                   palette[layer_color_idx] );
+
+        } while ( FT_Get_Color_Glyph_Layer( face,
+                                            glyph_idx,
+                                            &layer_glyph_idx,
+                                            &layer_color_idx,
+                                            &iterator ) );
+
+        if ( error )
+        {
+          FT_Bitmap_Done( handle->library, &bitmap );
+          goto Next;
+        }
+        else
+        {
+          FT_Bitmap_Done( handle->library, &slot->bitmap );
+
+          slot->bitmap      = bitmap;
+          slot->bitmap_left = bitmap_offset.x / 64;
+          slot->bitmap_top  = bitmap_offset.y / 64;
+        }
+      }
+      else
+      {
+        error = FT_Load_Glyph( face, glyph_idx, handle->load_flags );
+        if ( error )
+          goto Next;
+      }
+
+      width = slot->advance.x ? slot->advance.x >> 6
+                              : size->metrics.y_ppem / 2;
+
+      if ( X_TOO_LONG( x + width, display ) )
+      {
+        x  = start_x;
         y += step_y;
 
-        if ( Y_TOO_LONG( y, size, display ) )
+        if ( Y_TOO_LONG( y, display ) )
           break;
+      }
+
+      /* extra space between glyphs */
+      x++;
+      if ( slot->advance.x == 0 )
+      {
+        grFillRect( display->bitmap, x, y - width, width, width,
+                    display->warn_color );
+        x += width;
       }
 
       error = FTDemo_Draw_Slot( handle, display, slot, &x, &y );
@@ -471,12 +580,6 @@
 
     return FT_Err_Ok;
   }
-
-
-#undef  X_TOO_LONG
-#define X_TOO_LONG( x, size, display )                   \
-          ( (x) + ( (size)->metrics.max_advance >> 6 ) > \
-            (display)->bitmap->width )
 
 
   static FT_Error
@@ -545,15 +648,12 @@
         status.topleft = ch;
       }
 
-      /* Draw_Index adds one pixel space */
-      x--;
-
-      if ( X_TOO_LONG( x, size, display ) )
+      if ( X_TOO_LONG( x + ( size->metrics.max_advance >> 6 ), display ) )
       {
         x  = start_x;
         y += step_y;
 
-        if ( Y_TOO_LONG( y, size, display ) )
+        if ( Y_TOO_LONG( y, display ) )
           break;
       }
 
@@ -586,7 +686,7 @@
 
     have_topleft = 0;
 
-    pt_height = 64 * 72 * status.height / status.res;
+    pt_height = 64 * 72 * display->bitmap->rows / status.res;
     step      = ( mid_size * mid_size / pt_height + 64 ) & ~63;
     pt_size   = mid_size - step * ( mid_size / step );  /* remainder */
 
@@ -664,10 +764,7 @@
           status.topleft = ch;
         }
 
-        /* Draw_Index adds one pixel space */
-        x--;
-
-        if ( X_TOO_LONG( x, size, display ) )
+        if ( X_TOO_LONG( x + ( size->metrics.max_advance >> 6 ), display ) )
           break;
 
         continue;
@@ -696,18 +793,12 @@
   event_help( void )
   {
     char  buf[256];
-    char  version[64];
-
-    const char*  format;
-    FT_Int       major, minor, patch;
+    char  version[64] = "";
 
     grEvent  dummy_event;
 
 
-    FT_Library_Version( handle->library, &major, &minor, &patch );
-
-    format = patch ? "%d.%d.%d" : "%d.%d";
-    sprintf( version, format, major, minor, patch );
+    FTDemo_Version( handle, version );
 
     FTDemo_Display_Clear( display );
     grSetLineHeight( 10 );
@@ -715,9 +806,9 @@
     grSetMargin( 2, 1 );
     grGotobitmap( display->bitmap );
 
-    sprintf( buf,
-             "FreeType Glyph Viewer - part of the FreeType %s test suite",
-             version );
+    snprintf( buf, sizeof ( buf ),
+              "FreeType Glyph Viewer - part of the FreeType %s test suite",
+              version );
 
     grWriteln( buf );
     grLn();
@@ -734,31 +825,33 @@
     grWriteln( "  4         text string                   E         horizontal BGR (LCD)    " );
     grWriteln( "  5         waterfall                     F         vertical RGB (LCD)      " );
     grWriteln( "  space     cycle forwards                G         vertical BGR (LCD)      " );
-    grWriteln( "  backspace cycle backwards             k, l        cycle back and forth    " );
+    grWriteln( "  backspace cycle backwards               k, l      cycle back and forth    " );
     grWriteln( "                                                                            " );
-    grWriteln( "b           toggle embedded bitmaps     x, X        adjust horizontal       " );
+    grWriteln( "b           toggle embedded bitmaps     i, I        cycle through color     " );
+    grWriteln( "                                                      color palette         " );
+    grWriteln( "c           toggle coloured bitmaps     x, X        adjust horizontal       " );
+    grWriteln( "z           toggle colour-layered                    emboldening (in mode 2)" );
+    grWriteln( "              glyphs                    y, Y        adjust vertical         " );
     grWriteln( "                                                     emboldening (in mode 2)" );
-    grWriteln( "K           toggle cache modes          y, Y        adjust vertical         " );
-    grWriteln( "                                                     emboldening (in mode 2)" );
-    grWriteln( "p, n        previous/next font          s, S        adjust slanting         " );
+    grWriteln( "K           toggle cache modes          s, S        adjust slanting         " );
     grWriteln( "                                                     (in mode 2)            " );
-    grWriteln( "Up, Down    adjust size by 1 unit       r, R        adjust stroking radius  " );
-    grWriteln( "PgUp, PgDn  adjust size by 10 units                  (in mode 3)            " );
-    grWriteln( "                                                                            " );
-    grWriteln( "Left, Right adjust index by 1           L           cycle through           " );
-    grWriteln( "F7, F8      adjust index by 16                       LCD filtering          " );
-    grWriteln( "F9, F10     adjust index by 256         [, ]        select custom LCD       " );
-    grWriteln( "F11, F12    adjust index by 4096                      filter weight         " );
-    grWriteln( "                                                      (if custom filtering) " );
-    grWriteln( "h           toggle hinting              -, +(=)     adjust selected custom  " );
-    grWriteln( "H           cycle through hinting                    LCD filter weight      " );
+    grWriteln( "p, n        previous/next font          r, R        adjust stroking radius  " );
+    grWriteln( "                                                     (in mode 3)            " );
+    grWriteln( "Up, Down    adjust size by 1 unit                                           " );
+    grWriteln( "PgUp, PgDn  adjust size by 10 units     L           cycle through           " );
+    grWriteln( "                                                     LCD filtering          " );
+    grWriteln( "Left, Right adjust index by 1           [, ]        select custom LCD       " );
+    grWriteln( "F7, F8      adjust index by 16                        filter weight         " );
+    grWriteln( "F9, F10     adjust index by 256                       (if custom filtering) " );
+    grWriteln( "F11, F12    adjust index by 4096        -, +(=)     adjust selected custom  " );
+    grWriteln( "                                                     LCD filter weight      " );
+    grWriteln( "h           toggle hinting                                                  " );
+    grWriteln( "H           cycle through hinting       g, v        adjust gamma value      " );
     grWriteln( "             engines (if available)                                         " );
-    grWriteln( "f           toggle forced auto-         g, v        adjust gamma value      " );
+    grWriteln( "f           toggle forced auto-         Tab         cycle through charmaps  " );
     grWriteln( "             hinting (if hinting)                                           " );
-    grWriteln( "w           toggle warping              Tab         cycle through charmaps  " );
-    grWriteln( "             (if available)                                                 " );
-    grWriteln( "                                                                            " );
-    grWriteln( "                                        q, ESC      quit ftview             " );
+    grWriteln( "w           toggle warping              P           print PNG file          " );
+    grWriteln( "             (if available)             q, ESC      quit ftview             " );
     /*          |----------------------------------|    |----------------------------------| */
     grLn();
     grLn();
@@ -817,16 +910,23 @@
 
 
   static void
-  event_gamma_change( double  delta )
+  event_fw_change( int  delta )
   {
-    display->gamma += delta;
+    int  i = status.fw_idx;
+    int  j = ( i ^ 1 ) & 1;
 
-    if ( display->gamma > 3.0 )
-      display->gamma = 3.0;
-    else if ( display->gamma < 0.0 )
-      display->gamma = 0.0;
 
-    grSetGlyphGamma( display->gamma );
+    FTC_Manager_RemoveFaceID( handle->cache_manager,
+                              handle->scaler.face_id );
+
+    /* keep it normalized and balanced */
+    status.filter_weights[    i] += delta;
+    status.filter_weights[4 - i] += delta;
+    status.filter_weights[    j] -= delta;
+    status.filter_weights[4 - j] -= delta;
+
+    FT_Library_SetLcdFilterWeights( handle->library,
+                                    status.filter_weights );
   }
 
 
@@ -941,7 +1041,6 @@
   event_encoding_change( void )
   {
     PFont    font = handle->current_font;
-    FT_Face  face;
 
 
     if ( handle->encoding != FT_ENCODING_ORDER )
@@ -949,43 +1048,9 @@
     else
       font->cmap_index = 0;
 
-    error = FTC_Manager_LookupFace( handle->cache_manager,
-                                    handle->scaler.face_id, &face );
+    FTDemo_Set_Current_Font( handle, font );
 
-    if ( font->cmap_index < face->num_charmaps )
-    {
-      handle->encoding = face->charmaps[font->cmap_index]->encoding;
-      status.offset    = 0x20;
-    }
-    else
-    {
-      handle->encoding = FT_ENCODING_ORDER;
-      status.offset    = 0;
-    }
-
-    switch ( handle->encoding )
-    {
-    case FT_ENCODING_ORDER:
-      font->num_indices = face->num_glyphs;
-      break;
-
-    case FT_ENCODING_UNICODE:
-      font->num_indices = 0x110000L;
-      break;
-
-    case FT_ENCODING_ADOBE_LATIN_1:
-    case FT_ENCODING_ADOBE_STANDARD:
-    case FT_ENCODING_ADOBE_EXPERT:
-    case FT_ENCODING_ADOBE_CUSTOM:
-    case FT_ENCODING_APPLE_ROMAN:
-      font->num_indices = 0x100L;
-      break;
-
-    /* some fonts use range 0x00-0x100, others have 0xF000-0xF0FF */
-    case FT_ENCODING_MS_SYMBOL:
-    default:
-      font->num_indices = 0x10000L;
-    }
+    status.offset = handle->encoding == FT_ENCODING_ORDER ? 0 : 0x20;
 
     return 1;
   }
@@ -1017,27 +1082,79 @@
 
 
   static int
-  Process_Event( grEvent*  event )
+  event_palette_change( int  delta )
   {
-    int  ret = 0;
+    FT_Size  size;
+    FT_Face  face;
 
+    FT_Palette_Data  palette;
+
+    int  palette_index     = handle->current_font->palette_index;
+    int  old_palette_index = palette_index;
+
+
+    error = FTDemo_Get_Size( handle, &size );
+    if ( error )
+    {
+      /* probably a non-existent bitmap font size */
+      return 0;
+    }
+
+    face = size->face;
+
+    error = FT_Palette_Data_Get( face, &palette );
+    if ( error || !palette.num_palettes )
+      return 0;
+
+    palette_index += delta;
+
+    if ( palette_index < 0 )
+      palette_index = palette.num_palettes - 1;
+    else if ( palette_index >= palette.num_palettes )
+      palette_index = 0;
+
+    handle->current_font->palette_index = palette_index;
+
+    return old_palette_index == palette_index ? 0 : 1;
+  }
+
+
+  static int
+  Process_Event( void )
+  {
+    grEvent  event;
+    int      ret = 0;
+
+
+    if ( *status.keys )
+      event.key = grKEY( *status.keys++ );
+    else
+    {
+      grListenSurface( display->surface, 0, &event );
+
+      if ( event.type == gr_event_resize )
+      {
+        status.update = 1;
+        return ret;
+      }
+    }
 
     status.update = 0;
 
-    if ( status.render_mode == (int)( event->key - '1' ) )
+    if ( status.render_mode == (int)( event.key - '1' ) )
       return ret;
-    if ( event->key >= '1' && event->key < '1' + N_RENDER_MODES )
+    if ( event.key >= '1' && event.key < '1' + N_RENDER_MODES )
     {
-      status.render_mode = event->key - '1';
+      status.render_mode = (int)( event.key - '1' );
       event_render_mode_change( 0 );
       status.update = 1;
       return ret;
     }
 
-    if ( event->key >= 'A'             &&
-         event->key < 'A' + N_LCD_IDXS )
+    if ( event.key >= 'A'             &&
+         event.key < 'A' + N_LCD_IDXS )
     {
-      int  lcd_idx = (int)( event->key - 'A' );
+      int  lcd_idx = (int)( event.key - 'A' );
 
 
       if ( status.lcd_idx == lcd_idx )
@@ -1050,7 +1167,7 @@
       return ret;
     }
 
-    switch ( event->key )
+    switch ( event.key )
     {
     case grKeyEsc:
     case grKEY( 'q' ):
@@ -1063,12 +1180,41 @@
       status.update = 1;
       break;
 
+    case grKEY( 'P' ):
+      {
+        FT_String  str[64] = "ftview (FreeType) ";
+
+
+        FTDemo_Version( handle, str );
+        FTDemo_Display_Print( display, "ftview.png", str );
+      }
+      status.update = 0;
+      break;
+
     case grKEY( 'b' ):
-      handle->use_sbits++;
-      if ( handle->use_sbits > 2)
-        handle->use_sbits = 0;
+      handle->use_sbits = !handle->use_sbits;
       FTDemo_Update_Current_Flags( handle );
       status.update = 1;
+      break;
+
+    case grKEY( 'c' ):
+      handle->use_color = !handle->use_color;
+      FTDemo_Update_Current_Flags( handle );
+      status.update = 1;
+      break;
+
+    case grKEY( 'z' ):
+      handle->use_layers = !handle->use_layers;
+      FTDemo_Update_Current_Flags( handle );
+      status.update = 1;
+      break;
+
+    case grKEY( 'i' ):
+      status.update = event_palette_change( 1 );
+      break;
+
+    case grKEY( 'I' ):
+      status.update = event_palette_change( -1 );
       break;
 
     case grKEY( 'K' ):
@@ -1138,7 +1284,7 @@
     case grKEY( 'k' ):
       status.lcd_idx =
         ( status.lcd_idx                          +
-          ( event->key == grKEY( 'l' ) ? 1 : -1 ) +
+          ( event.key == grKEY( 'l' ) ? 1 : -1 ) +
           N_LCD_IDXS                              ) % N_LCD_IDXS;
 
       handle->lcd_mode = lcd_modes[status.lcd_idx];
@@ -1205,12 +1351,12 @@
       break;
 
     case grKEY( 'g' ):
-      event_gamma_change( 0.1 );
+      FTDemo_Display_Gamma_Change( display,  1 );
       status.update = 1;
       break;
 
     case grKEY( 'v' ):
-      event_gamma_change( -0.1 );
+      FTDemo_Display_Gamma_Change( display, -1 );
       status.update = 1;
       break;
 
@@ -1264,10 +1410,12 @@
       break;
     }
 
-    if ( handle->lcd_mode < LCD_MODE_RGB )
+    if ( FT_Library_SetLcdFilterWeights( NULL, NULL ) ==
+                         FT_Err_Unimplemented_Feature    ||
+         handle->lcd_mode < LCD_MODE_RGB                 )
       return ret;
 
-    switch ( event->key )
+    switch ( event.key )
     {
     case grKEY( 'L' ):
       FTC_Manager_RemoveFaceID( handle->cache_manager,
@@ -1276,17 +1424,17 @@
       status.lcd_filter++;
       switch ( status.lcd_filter )
       {
-        case FT_LCD_FILTER_NONE:
-        case FT_LCD_FILTER_DEFAULT:
-        case FT_LCD_FILTER_LIGHT:
-        case FT_LCD_FILTER_LEGACY1:
-          FT_Library_SetLcdFilter( handle->library,
-                                   (FT_LcdFilter)status.lcd_filter );
-          break;
-        default:
-          FT_Library_SetLcdFilterWeights( handle->library,
-                                          status.filter_weights );
-          status.lcd_filter = -1;
+      case FT_LCD_FILTER_NONE:
+      case FT_LCD_FILTER_DEFAULT:
+      case FT_LCD_FILTER_LIGHT:
+      case FT_LCD_FILTER_LEGACY1:
+        FT_Library_SetLcdFilter( handle->library,
+                                 (FT_LcdFilter)status.lcd_filter );
+        break;
+      default:
+        FT_Library_SetLcdFilterWeights( handle->library,
+                                        status.filter_weights );
+        status.lcd_filter = -1;
       }
 
       status.update = 1;
@@ -1315,12 +1463,7 @@
     case grKEY( '-' ):
       if ( status.lcd_filter < 0 )
       {
-        FTC_Manager_RemoveFaceID( handle->cache_manager,
-                                  handle->scaler.face_id );
-
-        status.filter_weights[status.fw_idx]--;
-        FT_Library_SetLcdFilterWeights( handle->library,
-                                        status.filter_weights );
+        event_fw_change( -1 );
         status.update = 1;
       }
       break;
@@ -1329,12 +1472,7 @@
     case grKEY( '=' ):
       if ( status.lcd_filter < 0 )
       {
-        FTC_Manager_RemoveFaceID( handle->cache_manager,
-                                  handle->scaler.face_id );
-
-        status.filter_weights[status.fw_idx]++;
-        FT_Library_SetLcdFilterWeights( handle->library,
-                                        status.filter_weights );
+        event_fw_change( 1 );
         status.update = 1;
       }
       break;
@@ -1353,6 +1491,11 @@
     char  buf[256];
     int   line = 4;
 
+    FT_Face  face;
+
+
+    FTC_Manager_LookupFace( handle->cache_manager,
+                            handle->scaler.face_id, &face );
 
     FTDemo_Draw_Header( handle, display, status.ptsize, status.res,
                         status.render_mode != RENDER_MODE_TEXT      &&
@@ -1382,9 +1525,9 @@
         render_mode = "waterfall";
         break;
       }
-      sprintf( buf, "%d: %s",
-                    status.render_mode + 1,
-                    render_mode );
+      snprintf( buf, sizeof ( buf ), "%d: %s",
+                status.render_mode + 1,
+                render_mode );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
     }
@@ -1392,20 +1535,20 @@
     if ( status.render_mode == RENDER_MODE_FANCY )
     {
       /* x emboldening */
-      sprintf( buf, " x: % .3f",
-                    status.xbold_factor );
+      snprintf( buf, sizeof ( buf ), " x: % .3f",
+                status.xbold_factor );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
 
       /* y emboldening */
-      sprintf( buf, " y: % .3f",
-                    status.ybold_factor );
+      snprintf( buf, sizeof ( buf ), " y: % .3f",
+                status.ybold_factor );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
 
       /* slanting */
-      sprintf( buf, " s: % .3f",
-                    status.slant );
+      snprintf( buf, sizeof ( buf ), " s: % .3f",
+                status.slant );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
     }
@@ -1413,8 +1556,8 @@
     if ( status.render_mode == RENDER_MODE_STROKE )
     {
       /* stroking radius */
-      sprintf( buf, " radius: %.3f",
-                    status.radius );
+      snprintf( buf, sizeof ( buf ), " radius: %.3f",
+                status.radius );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
     }
@@ -1455,17 +1598,17 @@
     }
 
     /* hinting */
-    sprintf( buf, "hinting: %s",
-                  handle->hinted ? "on" : "off" );
+    snprintf( buf, sizeof ( buf ), "hinting: %s",
+              handle->hinted ? "on" : "off" );
     grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                        buf, display->fore_color );
 
     if ( handle->hinted )
     {
       /* auto-hinting */
-      sprintf( buf, " forced auto: %s",
-                    ( handle->autohint                   ||
-                      handle->lcd_mode == LCD_MODE_LIGHT ) ? "on" : "off" );
+      snprintf( buf, sizeof( buf ), " forced auto: %s",
+                ( handle->autohint                   ||
+                  handle->lcd_mode == LCD_MODE_LIGHT ) ? "on" : "off" );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
     }
@@ -1474,13 +1617,10 @@
          handle->lcd_mode != LCD_MODE_LIGHT )
     {
       /* hinting engine */
-      FT_Face      face;
       FT_Module    module;
       const char*  hinting_engine = NULL;
 
 
-      FTC_Manager_LookupFace( handle->cache_manager,
-                              handle->scaler.face_id, &face );
       module = &face->driver->root;
 
       if ( !strcmp( module->clazz->module_name, "cff" ) )
@@ -1541,8 +1681,8 @@
 
       if ( hinting_engine )
       {
-        sprintf( buf, "engine: %s",
-                      hinting_engine );
+        snprintf( buf, sizeof ( buf ), "engine: %s",
+                  hinting_engine );
         grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                            buf, display->fore_color );
       }
@@ -1550,8 +1690,8 @@
 
     if ( handle->lcd_mode == LCD_MODE_AA && handle->autohint )
     {
-      sprintf( buf, "warping: %s",
-                    status.warping ? "on" : "off" );
+      snprintf( buf, sizeof ( buf ), "warping: %s",
+                status.warping ? "on" : "off" );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
     }
@@ -1559,28 +1699,54 @@
     line++;
 
     /* embedded bitmaps */
-    sprintf( buf, "bitmaps: %s",
-                  handle->use_sbits == 2 ? "color" :
-                  handle->use_sbits == 1 ? "gray" : "off" );
+    snprintf( buf, sizeof ( buf ), "bitmaps: %s",
+              handle->use_sbits ? "on" : "off" );
     grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                        buf, display->fore_color );
 
+    if ( FT_HAS_COLOR( face ) )
+    {
+      snprintf( buf, sizeof ( buf ), "color:" );
+      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
+                         buf, display->fore_color );
+
+      /* color bitmaps */
+      snprintf( buf, sizeof ( buf ), "  bitmaps: %s",
+                handle->use_color ? "on" : "off" );
+      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
+                         buf, display->fore_color );
+
+      /* color-layered glyphs */
+      snprintf( buf, sizeof ( buf ), "  outlines: %s",
+                handle->use_layers ? "on" : "off" );
+      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
+                         buf, display->fore_color );
+
+      /* color palette */
+      snprintf( buf, sizeof ( buf ), "  palette idx: %d",
+                handle->current_font->palette_index );
+      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
+                         buf, display->fore_color );
+    }
+
     /* cache */
-    sprintf( buf, "cache: %s",
-                  handle->use_sbits_cache ? "on" : "off" );
+    snprintf( buf, sizeof ( buf ), "cache: %s",
+              handle->use_sbits_cache ? "on" : "off" );
     grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                        buf, display->fore_color );
 
     line++;
 
     /* LCD filtering */
-    if ( handle->lcd_mode >= LCD_MODE_RGB )
+    if ( FT_Library_SetLcdFilterWeights( NULL, NULL ) !=
+                         FT_Err_Unimplemented_Feature    &&
+         handle->lcd_mode >= LCD_MODE_RGB                )
     {
-      sprintf( buf, "filter: %s",
-                    status.lcd_filter == 0 ? "none" :
-                    status.lcd_filter == 1 ? "default" :
-                    status.lcd_filter == 2 ? "light" :
-                    status.lcd_filter == 3 ? "legacy" : "custom" );
+      snprintf( buf, sizeof ( buf ), "filter: %s",
+                status.lcd_filter == 0 ? "none" :
+                status.lcd_filter == 1 ? "default" :
+                status.lcd_filter == 2 ? "light" :
+                status.lcd_filter == 3 ? "legacy" : "custom" );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
 
@@ -1594,11 +1760,11 @@
 
         for ( i = 0; i < 5; i++ )
         {
-          sprintf( buf,
-                   " %s0x%02X%s",
-                   fwi == i ? "[" : " ",
-                   fw[i],
-                   fwi == i ? "]" : " " );
+          snprintf( buf, sizeof ( buf ),
+                    " %s0x%02X%s",
+                    fwi == i ? "[" : " ",
+                    fw[i],
+                    fwi == i ? "]" : " " );
           grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                              buf, display->fore_color );
         }
@@ -1632,11 +1798,11 @@
       "            `.afm' or `.pfm').\n"
       "\n" );
     fprintf( stderr,
-      "  -w W      Set the window width to W pixels (default: %dpx).\n"
-      "  -h H      Set the window height to H pixels (default: %dpx).\n"
-      "\n",
-             DIM_X, DIM_Y );
-    fprintf( stderr,
+      "  -d WxH[xD]\n"
+      "            Set the window width, height, and color depth\n"
+      "            (default: 640x480x24).\n"
+      "  -k keys   Emulate sequence of keystrokes upon start-up.\n"
+      "            If the keys contain `q', use batch mode.\n"
       "  -r R      Use resolution R dpi (default: 72dpi).\n"
       "  -f index  Specify first index to display (default: 0).\n"
       "  -e enc    Specify encoding tag (default: no encoding).\n"
@@ -1647,6 +1813,7 @@
       "  -l mode   Set start-up rendering mode (0 <= mode <= %d).\n",
              N_LCD_IDXS - 1 );
     fprintf( stderr,
+      "  -L N,...  Set LCD filter or geometry by comma-separated values.\n"
       "  -p        Preload file in memory to simulate memory-mapping.\n"
       "\n"
       "  -v        Show version.\n"
@@ -1668,13 +1835,17 @@
 
     while ( 1 )
     {
-      option = getopt( *argc, *argv, "e:f:h:l:m:pr:vw:" );
+      option = getopt( *argc, *argv, "d:e:f:k:L:l:m:pr:v" );
 
       if ( option == -1 )
         break;
 
       switch ( option )
       {
+      case 'd':
+        status.dims = optarg;
+        break;
+
       case 'e':
         handle->encoding = FTDemo_Make_Encoding_Tag( optarg );
         break;
@@ -1683,10 +1854,12 @@
         status.offset = atoi( optarg );
         break;
 
-      case 'h':
-        status.height = atoi( optarg );
-        if ( status.height < 1 )
-          usage( execname );
+      case 'k':
+        status.keys = optarg;
+        while ( *optarg && *optarg != 'q' )
+          optarg++;
+        if ( *optarg == 'q' )
+          status.device = "batch";
         break;
 
       case 'l':
@@ -1698,6 +1871,42 @@
           exit( 3 );
         }
         handle->lcd_mode = lcd_modes[status.lcd_idx];
+        break;
+
+      case 'L':
+        {
+          int i, buf[6];
+
+
+          i = sscanf( optarg, "%d,%d,%d,%d,%d,%d",
+                      buf, buf + 1, buf + 2, buf + 3, buf + 4, buf + 5 );
+          if ( FT_Library_SetLcdFilterWeights( NULL, NULL ) !=
+                               FT_Err_Unimplemented_Feature    &&
+               i == 5                                          )
+          {
+            status.filter_weights[0] = (unsigned char)buf[0];
+            status.filter_weights[1] = (unsigned char)buf[1];
+            status.filter_weights[2] = (unsigned char)buf[2];
+            status.filter_weights[3] = (unsigned char)buf[3];
+            status.filter_weights[4] = (unsigned char)buf[4];
+
+            FT_Library_SetLcdFilterWeights( handle->library,
+                                            status.filter_weights );
+
+            status.lcd_filter = -1;
+          }
+          else if ( FT_Library_SetLcdGeometry( NULL, NULL ) !=
+                               FT_Err_Unimplemented_Feature    &&
+                    i == 6                                     )
+          {
+            FT_Vector  sub[3] = { { buf[0], buf[1] },
+                                  { buf[2], buf[3] },
+                                  { buf[4], buf[5] } };
+
+
+            FT_Library_SetLcdGeometry( handle->library, sub );
+          }
+        }
         break;
 
       case 'm':
@@ -1717,24 +1926,14 @@
 
       case 'v':
         {
-          FT_Int  major, minor, patch;
+          FT_String  str[64] = "ftview (FreeType) ";
 
 
-          FT_Library_Version( handle->library, &major, &minor, &patch );
-
-          printf( "ftview (FreeType) %d.%d", major, minor );
-          if ( patch )
-            printf( ".%d", patch );
-          printf( "\n" );
+          FTDemo_Version( handle, str );
+          printf( "%s\n", str );
           exit( 0 );
         }
         /* break; */
-
-      case 'w':
-        status.width = atoi( optarg );
-        if ( status.width < 1 )
-          usage( execname );
-        break;
 
       default:
         usage( execname );
@@ -1761,7 +1960,6 @@
   main( int    argc,
         char*  argv[] )
   {
-    grEvent  event;
     unsigned int  dflt_tt_interpreter_version;
     int           i;
     unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
@@ -1774,7 +1972,9 @@
 
     parse_cmdline( &argc, &argv );
 
-    FT_Library_SetLcdFilter( handle->library, FT_LCD_FILTER_DEFAULT );
+    if ( status.lcd_filter != -1 )
+      FT_Library_SetLcdFilter( handle->library,
+                               (FT_LcdFilter)status.lcd_filter );
 
     /* get the default values as compiled into FreeType */
     FT_Property_Get( handle->library,
@@ -1819,13 +2019,13 @@
     if ( handle->num_fonts == 0 )
       Fatal( "could not find/open any font file" );
 
-    display = FTDemo_Display_New( gr_pixel_mode_rgb24,
-                                  status.width, status.height );
+    display = FTDemo_Display_New( status.device, status.dims );
     if ( !display )
       Fatal( "could not allocate display surface" );
 
     grSetTitle( display->surface,
                 "FreeType Glyph Viewer - press ? for help" );
+    FTDemo_Icon( handle, display );
 
     status.num_fails = 0;
 
@@ -1834,7 +2034,7 @@
     do
     {
       if ( !status.update )
-        goto Listen;
+        continue;
 
       FTDemo_Display_Clear( display );
 
@@ -1866,9 +2066,7 @@
 
       write_header( error );
 
-    Listen:
-      grListenSurface( display->surface, 0, &event );
-    } while ( Process_Event( &event ) == 0 );
+    } while ( Process_Event() == 0 );
 
     printf( "Execution completed successfully.\n" );
     printf( "Fails = %d\n", status.num_fails );

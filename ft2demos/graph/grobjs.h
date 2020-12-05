@@ -4,7 +4,8 @@
  *
  *    basic object classes definitions
  *
- *  Copyright 1999 - The FreeType Development Team - www.freetype.org
+ *  Copyright (C) 1999-2020 by
+ *  The FreeType Development Team - www.freetype.org
  *
  *
  *
@@ -14,9 +15,12 @@
 #ifndef GROBJS_H_
 #define GROBJS_H_
 
+#include <stdlib.h>
+
 #include "graph.h"
 #include "grconfig.h"
 #include "grtypes.h"
+#include "gblender.h"
 
 
   typedef struct grBiColor_
@@ -92,6 +96,9 @@
   typedef void (*grSetTitleFunc)( grSurface*   surface,
                                   const char*  title_string );
 
+  typedef int  (*grSetIconFunc)( grSurface*  surface,
+                                 grBitmap*   icon );
+
   typedef void (*grRefreshRectFunc)( grSurface*  surface,
                                      int         x,
                                      int         y,
@@ -105,11 +112,33 @@
                                      grEvent   *event );
 
 
+  typedef struct grSpan_
+  {
+    short           x;
+    unsigned short  len;
+    unsigned char   coverage;
+
+  } grSpan;
+
+  typedef void
+  (*grSpanFunc)( int            y,
+                 int            count,
+                 const grSpan*  spans,
+                 grSurface*     surface );
+
+
 
   struct grSurface_
   {
-    grDevice*          device;
     grBitmap           bitmap;
+
+    GBlenderRec        gblender[1];
+
+    unsigned char*     origin;      /* span origin   */
+    GBlenderPixel      gcolor;      /* span color    */
+    grSpanFunc         gray_spans;  /* span function */
+
+    grDevice*          device;
     grBool             refresh;
     grBool             owner;
 
@@ -118,6 +147,7 @@
 
     grRefreshRectFunc  refresh_rect;
     grSetTitleFunc     set_title;
+    grSetIconFunc      set_icon;
     grListenEventFunc  listen_event;
     grDoneSurfaceFunc  done;
   };
@@ -141,7 +171,7 @@
   ********************************************************************/
 
   extern unsigned char*
-  grAlloc( unsigned long  size );
+  grAlloc( size_t  size );
 
 
  /********************************************************************

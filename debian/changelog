@@ -1,19 +1,195 @@
-freetype (2.9.1-3+deb10u2) buster-security; urgency=high
+freetype (2.10.4+dfsg-1) unstable; urgency=medium
 
-  * Non-maintainer upload by the Security Team.
-  * Fix heap buffer overflow (CVE-2020-15999) (Closes: #972586)
-
- -- Salvatore Bonaccorso <carnil@debian.org>  Tue, 20 Oct 2020 21:15:41 +0200
-
-freetype (2.9.1-3+deb10u1) buster; urgency=medium
-
+  * New upstream version:
+    - Fix for CVE-2020-15999 (heap buffer overflow) now included.
+    - New flag `FT_OUTLINE_OVERLAP' available to make the smooth rasterizer do
+      4x4 oversampling to mitigate artifacts in pixels partially covered by
+      overlapping contours. This at least quadruples the rendering time.
+      FreeType automatically uses this rendering mode if a glyph in a TrueType
+      font has the `OVERLAP_SIMPLE' or `OVERLAP_COMPOUND' bit set.
+    - Including FreeType header files via FT_*_H macros is no longer required.
+      Downstream packages are encouraged to include the FreeType headers via
+      standard paths, e.g. #include <freetype/freetype.h>.
+    - Support for building with Meson.
+    - Fixes for various memory leaks, primarily in the CFF driver module.
+    - Jam support has been removed.
+    - Many improvements to demo programs.
+    - The obsolete `HAVE_STDINT_H' probing macro has been removed.
+    - Public macro definitions required by the FreeType API have been moved to
+      include/freetype/config/public-macros.h.
+    - Private macro definitions used by the FreeType API have been moved to
+      include/freetype/config/compiler-macros.h.
+    - New common header for integer data types added.
   * debian/control:
+    - Build-Depend on zlib1g-dev | libz-dev.
+    - Raise Standards-Version from 4.5.0 to 4.5.1 (no changes needed).
+  * debian/copyright:
+    - Update for FreeType 2.10.4.
+    - Remove redundant globbing patterns.
+  * debian/patches:
+    - Drop cve-2020-15999.patch (fix included in FreeType 2.10.4).
+    - Refresh enable-subpixel-rendering.patch.
+    - Refresh hide-donations-information.patch.
+  * debian/rules: Remove debian/udeb directory before building.
+  * debian/tests/libfreetype-dev: Replace the FT_FREETYPE_H macro with a
+    standard header inclusion.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Sat, 05 Dec 2020 19:20:58 +1100
+
+freetype (2.10.2+dfsg-4) unstable; urgency=high
+
+  * debian/patches: Add upstream patch for CVE-2020-15999 (Closes: #972586).
+    - Prevent heap buffer overflow when handling embedded PNG bitmaps
+      in malformed TrueType font files.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Wed, 21 Oct 2020 09:39:47 +1100
+
+freetype (2.10.2+dfsg-3) unstable; urgency=medium
+
+  [ Simon McVittie ]
+  * d/tests: Add a superficial compile/link/run autopkgtest (Closes: #964246).
+
+  [ Hugh McMaster ]
+  * debian/rules:
+    - Update a comment.
+    - Fix whitespace formatting.
+    - Override dh_auto_clean to clean up ft2demos.
+    - Override dh_auto_clean to remove objs/.libs/libfreetype.ver.
+    - Run a separate build sequence for libfreetype6-udeb, which should not
+      depend on libbrotli1 (Closes: #964774).
+  * Minor stylistic changes to d/tests/libfreetype-dev.
+    - Thanks to Simon McVittie for writing the autopkgtest.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Wed, 15 Jul 2020 22:10:01 +1000
+
+freetype (2.10.2+dfsg-2) unstable; urgency=medium
+
+  * debian/control: Add libbrotli-dev as a dependency of libfreetype-dev
+    (Closes: #964185).
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Fri, 03 Jul 2020 22:40:45 +1000
+
+freetype (2.10.2+dfsg-1) unstable; urgency=medium
+
+  * New upstream version:
+    - Support for WOFF2 fonts.
+    - Type 1 fonts with non-integer metrics are now supported by the new
+      (CFF) engine introduced in FreeType 2.9.
+    - Auto-hinter support for Hanifi Rohingya.
+  * Repack to remove non-DFSG-compatible minified JavaScript files from the
+    main upstream tarball.
+  * debian/control:
+    - Raise Standards-Version to 4.5.0 from 4.4.1.
+    - Sort Build-Depends list.
+    - Use debhelper-compat version 13.
+    - Build-Depend on libbrotli-dev to support WOFF2 fonts.
+    - Sort the libfreetype-dev Depends field.
+    - Recommend fonts-material-design-icons-iconfont with freetype2-doc.
+  * debian/copyright:
+    - Update for FreeType 2.10.2.
+    - Add Files-Excluded field.
+    - Remove copyright information for Excluded files.
+  * debian/gbp.conf:
+    - Always use pristine-tar.
+    - Add component option for import-orig and export-orig.
+  * Add debian/not-installed.
+  * debian/patches:
+    - Drop scale-phantom-points.patch and verbose-libtool.patch.
+    - remove-gstatic-code.patch: Update file paths and patch content.
+    - fix-js-doc-paths.patch: Add missing HTML files.
+    - hide-donations-information.patch: Refresh patch.
+    - Update patch order in the series file.
+  * debian/rules:
+    - Remove the dh_auto_install override.
+    - Stop moving the HTML documentation (problem fixed upstream).
+    - Force installation of correct ChangeLog for freetype2-demos.
+    - Install the HTML documentation in libfreetype-dev but package the files
+      in freetype2-doc (as preferred by Debian Policy section 12.3).
+    - Install the CHANGES and PCF README files in libfreetype-dev.
+    - Do not install docs/reference/assets/images. These files are not used.
+    - Drop the reference/README installation exclusion in freetype2-docs.
+  * debian/watch:
+    - Download xz-compressed tarballs (Closes: #952973).
+    - Update the filenamemangle used with the ft2docs tarball component.
+    - Don't call uupdate.
+    - Repack the main upstream source tarball to comply with the DFSG.
+  * freetype2-demos:
+    - Update manpage source path.
+    - Use renamed lintian tag.
+  * freetype2-doc:
+    - Update doc-base registration paths.
+    - Install jQuery symlink in libfreetype-dev.
+    - Update paths in lintian overrides.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Thu, 02 Jul 2020 22:00:01 +1000
+
+freetype (2.10.1-2) unstable; urgency=medium
+
+  * Release to unstable.
+  * debian/control:
+    - Raise Standards-Version to 4.4.1 from 4.4.0 (no changes needed).
+    - Add Rules-Requires-Root: no.
+  * debian/rules:
+    - Move the FreeType API Reference location to docs/reference to revert an
+      incorrect upstream change introduced in FreeType 2.10.
+    - Update dh_installdocs-indep path exclusion to account for the change to
+      the API Reference path.
+  * debian/patches:
+    - Drop fix-api-reference-hyperlink.patch.
+    - Add a patch to fix broken JavaScript paths in the documentation.
+  * freetype2-doc:
+    - Update the API Reference path in the doc-base file.
+    - Update Lintian overrides.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Mon, 07 Oct 2019 23:42:48 +1100
+
+freetype (2.10.1-1) experimental; urgency=medium
+
+  * New upstream release.
+  * libfreetype6-dev has been renamed to libfreetype-dev.
+    - libfreetype6-dev is now a transitional package.
+    - Please update your build dependencies accordingly.
+  * debian/libfreetype6.symbols: Update for FreeType 2.10.1
+    - FT_Outline_New_Internal and FT_Outline_Done_Internal have been removed.
+      These functions were public by oversight only and were never documented.
+    - FreeType's library soname remains unchanged.
+  * debian/control:
+    - freetype2-doc now Recommends fonts-noto-core.
+  * debian/copyright: Update for FreeType 2.10.1.
+    - Upstream removed several files in FreeType 2.10.
+    - Some new files were added and have their own licences.
+  * debian/patches:
+    - Drop no-uninitialized-bbox.patch and compiler_hardening_fixes.patch.
+      These patches were accepted upstream.
+    - Drop revert-wrong-extern.patch (no longer needed).
+    - Add a patch to prevent use of fonts.gstatic.com and fonts.googleapis.com
+      in the FreeType 2 documentation.
+    - Add a patch to fix broken hyperlinks to the FreeType API Reference.
+    - Refresh all other patches.
+  * debian/rules:
+    - Correctly parse FreeType's release version for dh_makeshlibs.
+  * freetype2-doc:
+    - Most of the documentation is now located in the 'site' sub-directory
+      due to an upstream change.
+    - Exclude Material Icons and Font Awesome from installation.
+    - Add a Lintian override to prevent warnings about duplicate favicons.
+    - Update the doc-base file.
+  * Add a Debian upstream metadata file.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Fri, 16 Aug 2019 20:42:30 +1000
+
+freetype (2.9.1-4) unstable; urgency=medium
+
+  * debian/compat: Remove legacy file.
+  * debian/control:
+    - Build-Depend on debhelper-compat (version 12).
+    - Raise Standards-Version to 4.4.0 (no changes needed).
     - Demote Recommends: freetype2-doc to Suggests (Closes: #919284).
   * debian/patches:
     - Add an upstream patch to properly handle phantom points for variable
       hinted fonts (Closes: #932303).
 
- -- Hugh McMaster <hugh.mcmaster@outlook.com>  Sat, 27 Jul 2019 23:19:28 +1000
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Wed, 24 Jul 2019 19:59:39 +1000
 
 freetype (2.9.1-3) unstable; urgency=medium
 

@@ -3,8 +3,21 @@ Section: libs
 Priority: optional
 Maintainer: Hugh McMaster <hugh.mcmaster@outlook.com>
 Uploaders: Anthony Fok <foka@debian.org>, Keith Packard <keithp@keithp.com>
-Build-Depends: bzip2, debhelper (>= 11~), gettext, libx11-dev <!stage1>, x11proto-core-dev <!stage1>, libz-dev, pkg-config, libpng-dev, autoconf, libtool, libjs-jquery
-Standards-Version: 4.2.1
+Build-Depends:
+ debhelper-compat (= 13),
+ autoconf,
+ bzip2,
+ gettext,
+ libbrotli-dev,
+ libjs-jquery,
+ libpng-dev,
+ libtool,
+ libx11-dev <!stage1>,
+ zlib1g-dev | libz-dev,
+ pkg-config,
+ x11proto-core-dev <!stage1>
+Standards-Version: 4.5.1
+Rules-Requires-Root: no
 Homepage: https://www.freetype.org
 Vcs-Git: https://salsa.debian.org/debian/freetype.git
 Vcs-Browser: https://salsa.debian.org/debian/freetype
@@ -42,13 +55,21 @@ Description: FreeType 2 font engine, shared library files
  This package contains the files needed to run programs that use the
  FreeType 2 library.
 
-Package: libfreetype6-dev
+Package: libfreetype-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: libfreetype6 (= ${binary:Version}), libc6-dev | libc-dev, zlib1g-dev | libz-dev, libpng-dev, ${misc:Depends}
+Depends:
+ libfreetype6 (= ${binary:Version}),
+ libbrotli-dev,
+ libc6-dev | libc-dev,
+ libpng-dev,
+ zlib1g-dev | libz-dev,
+ ${misc:Depends}
 Suggests: freetype2-doc (= ${binary:Version})
+Replaces: libfreetype6-dev (<< 2.10.1)
+Breaks: libfreetype6-dev (<< 2.10.1)
 Description: FreeType 2 font engine, development files
  The FreeType project is a team of volunteers who develop free,
  portable and high-quality software solutions for digital typography.
@@ -57,6 +78,22 @@ Description: FreeType 2 font engine, development files
  .
  This package contains all of the supplementary files you need to develop your
  own programs using the FreeType 2 library.
+
+Package: libfreetype6-dev
+Architecture: any
+Multi-Arch: same
+Depends: libfreetype-dev (= ${binary:Version}), ${misc:Depends}
+Section: oldlibs
+Description: FreeType 2 font engine, development files (transitional package)
+ The FreeType project is a team of volunteers who develop free,
+ portable and high-quality software solutions for digital typography.
+ They specifically target embedded systems and focus on providing small,
+ efficient and ubiquitous products.
+ .
+ This package contains all of the supplementary files you need to develop your
+ own programs using the FreeType 2 library.
+ .
+ This is a transitional package. It can safely be removed.
 
 Package: freetype2-demos
 Section: utils
@@ -79,6 +116,9 @@ Section: doc
 Architecture: all
 Multi-Arch: foreign
 Depends: libjs-jquery, ${misc:Depends}
+Recommends:
+ fonts-material-design-icons-iconfont,
+ fonts-noto-core
 Replaces: libfreetype6-dev (<< 2.9.1)
 Breaks: libfreetype6-dev (<< 2.9.1)
 Description: FreeType 2 font engine, development documentation
