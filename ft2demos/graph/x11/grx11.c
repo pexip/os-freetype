@@ -5,7 +5,7 @@
  *  This is the driver for displaying inside a window under X11,
  *  used by the graphics utility of the FreeType test suite.
  *
- *  Copyright (C) 1999-2020 by
+ *  Copyright 1999-2018 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  This file is part of the FreeType project, and may only be used
@@ -26,17 +26,7 @@
 #define xxTEST
 
 #ifdef TEST
-#include <ctype.h>
-#define LOG(x)  printf x
-#define visualClass(x)  ( x == StaticGray  ? "StaticGray"  : \
-                          x == GrayScale   ? "GrayScale"   : \
-                          x == StaticColor ? "StaticColor" : \
-                          x == PseudoColor ? "PseudoColor" : \
-                          x == TrueColor   ? "TrueColor"   : \
-                          x == DirectColor ? "DirectColor" : "unknown" )
-#define grAlloc  malloc
-#else
-#define LOG(x)  /* nothing */
+#include "grfont.h"
 #endif
 
 #include <stdio.h>
@@ -134,6 +124,11 @@ typedef  unsigned long   uint32;
   typedef XPixmapFormatValues  XDepth;
 
 
+#ifdef TEST
+#define grAlloc  malloc
+#endif
+
+
   /************************************************************************/
   /************************************************************************/
   /*****                                                              *****/
@@ -162,7 +157,7 @@ typedef  unsigned long   uint32;
   static int
   gr_x11_blitter_reset( grX11Blitter*  blit,
                         grBitmap*      source,
-                        XImage*        target,
+                        grBitmap*      target,
                         int            x,
                         int            y,
                         int            width,
@@ -198,7 +193,7 @@ typedef  unsigned long   uint32;
     if ( delta > 0 )
       width -= delta;
 
-    delta = y + height - target->height;
+    delta = y + height - target->rows;
     if ( delta > 0 )
       height -= delta;
 
@@ -212,11 +207,11 @@ typedef  unsigned long   uint32;
     if ( pitch < 0 )
       blit->src_line -= ( source->rows - 1 ) * pitch;
 
-    pitch = blit->dst_pitch = target->bytes_per_line;
+    pitch = blit->dst_pitch = target->pitch;
 
-    blit->dst_line = (unsigned char*)target->data + y * pitch;
+    blit->dst_line = target->buffer + y * pitch;
     if ( pitch < 0 )
-      blit->dst_line -= ( target->height - 1 ) * pitch;
+      blit->dst_line -= ( target->rows - 1 ) * pitch;
 
     blit->x      = x;
     blit->y      = y;
@@ -629,20 +624,20 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*   lread  = line_read;
-      uint32*          lwrite = (uint32*)line_write;
+      unsigned char*   lwrite = line_write;
       int              x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread += 3, lwrite++ )
+      for ( ; x > 0; x--, lread += 3, lwrite += 4 )
       {
         uint32  r = lread[0];
         uint32  g = lread[1];
         uint32  b = lread[2];
 
 
-        *lwrite = ( r << 24 ) |
-                  ( g << 16 ) |
-                  ( b <<  8 );
+        *(uint32*)lwrite = ( r << 24 ) |
+                           ( g << 16 ) |
+                           ( b <<  8 );
       }
 
       line_read  += blit->src_pitch;
@@ -662,18 +657,18 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      unsigned char*  lwrite = line_write;
       int             x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread++, lwrite++ )
+      for ( ; x > 0; x--, lread ++, lwrite += 4 )
       {
         uint32  p = lread[0];
 
 
-        *lwrite = ( p << 24 ) |
-                  ( p << 16 ) |
-                  ( p <<  8 );
+        *(uint32*)lwrite = ( p << 24 ) |
+                           ( p << 16 ) |
+                           ( p <<  8 );
       }
 
       line_read  += blit->src_pitch;
@@ -709,20 +704,20 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      unsigned char*  lwrite = line_write;
       int             x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread += 3, lwrite++ )
+      for ( ; x > 0; x--, lread += 3, lwrite += 4 )
       {
         uint32  r = lread[0];
         uint32  g = lread[1];
         uint32  b = lread[2];
 
 
-        *lwrite = ( r << 16 ) |
-                  ( g <<  8 ) |
-                  ( b <<  0 );
+        *(uint32*)lwrite = ( r << 16 ) |
+                           ( g <<  8 ) |
+                           ( b <<  0 );
       }
 
       line_read  += blit->src_pitch;
@@ -742,18 +737,18 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      unsigned char*  lwrite = line_write;
       int             x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread++, lwrite++ )
+      for ( ; x > 0; x--, lread ++, lwrite += 4 )
       {
         uint32  p = lread[0];
 
 
-        *lwrite = ( p << 16 ) |
-                  ( p <<  8 ) |
-                  ( p <<  0 );
+        *(uint32*)lwrite = ( p << 16 ) |
+                           ( p <<  8 ) |
+                           ( p <<  0 );
       }
 
       line_read  += blit->src_pitch;
@@ -789,20 +784,20 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      unsigned char*  lwrite = line_write;
       int             x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread += 3, lwrite++ )
+      for ( ; x > 0; x--, lread += 3, lwrite += 4 )
       {
         uint32  r = lread[0];
         uint32  g = lread[1];
         uint32  b = lread[2];
 
 
-        *lwrite = ( r <<  8 ) |
-                  ( g << 16 ) |
-                  ( b << 24 );
+        *(uint32*)lwrite = ( r <<  8 ) |
+                           ( g << 16 ) |
+                           ( b << 24 );
       }
 
       line_read  += blit->src_pitch;
@@ -838,20 +833,20 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      unsigned char*  lwrite = line_write;
       int             x      = blit->width;
 
 
-      for ( ; x > 0; x--, lread += 3, lwrite++ )
+      for ( ; x > 0; x--, lread += 3, lwrite += 4 )
       {
         uint32  r = lread[0];
         uint32  g = lread[1];
         uint32  b = lread[2];
 
 
-        *lwrite = ( r <<  0 ) |
-                  ( g <<  8 ) |
-                  ( b << 16 );
+        *(uint32*)lwrite = ( r <<  0 ) |
+                           ( g <<  8 ) |
+                           ( b << 16 );
       }
 
       line_read  += blit->src_pitch;
@@ -878,16 +873,16 @@ typedef  unsigned long   uint32;
 
   static const grX11Format*  gr_x11_formats[] =
   {
-    &gr_x11_format_rgb0888,
-    &gr_x11_format_bgr0888,
-    &gr_x11_format_rgb8880,
-    &gr_x11_format_bgr8880,
-    &gr_x11_format_rgb888,
-    &gr_x11_format_bgr888,
     &gr_x11_format_rgb565,
     &gr_x11_format_bgr565,
     &gr_x11_format_rgb555,
     &gr_x11_format_bgr555,
+    &gr_x11_format_rgb888,
+    &gr_x11_format_bgr888,
+    &gr_x11_format_rgb0888,
+    &gr_x11_format_bgr0888,
+    &gr_x11_format_rgb8880,
+    &gr_x11_format_bgr8880,
     NULL
   };
 
@@ -936,69 +931,123 @@ typedef  unsigned long   uint32;
 
     x11dev.idle = XCreateFontCursor( x11dev.display, XC_left_ptr );
     x11dev.busy = XCreateFontCursor( x11dev.display, XC_watch );
-    x11dev.scanline_pad = BitmapPad( x11dev.display );
-
-    LOG(( "Display: BitmapUnit = %d, BitmapPad = %d, ByteOrder = %s\n",
-          BitmapUnit( x11dev.display ), BitmapPad( x11dev.display ),
-          ImageByteOrder( x11dev.display ) == LSBFirst ? "LSBFirst"
-                                                       : "MSBFirst" ));
 
     {
-      const grX11Format**  pformat = gr_x11_formats;
-      XDepth*              format;
-      XDepth*              formats;
-      XVisualInfo          templ;
-      XVisualInfo*         visual;
-      int                  i, count, count2;
-
+      int          count;
+      XDepth*      format;
+      XDepth*      formats;
+      XVisualInfo  templ;
 
       templ.screen = DefaultScreen( x11dev.display );
       formats      = XListPixmapFormats( x11dev.display, &count );
 
-      /* compare to the list of supported formats first */
-      for ( pformat = gr_x11_formats; *pformat; pformat++ )
+#ifdef TEST
+      printf( "available pixmap formats\n" );
+      printf( "depth  pixbits  scanpad\n" );
+#endif /* TEST */
+
+      for ( format = formats; count > 0; count--, format++ )
       {
-        for ( format = formats, i = count; i > 0; i--, format++ )
+#ifdef TEST
+        printf( " %3d     %3d      %3d\n",
+                format->depth,
+                format->bits_per_pixel,
+                format->scanline_pad );
+#endif /* TEST */
+
+        /* note, the 32-bit modes return a depth of 24, */
+        /* and 32 bits per pixel                        */
+        switch ( format->depth )
         {
-          if ( format->depth          != (*pformat)->x_depth          ||
-               format->bits_per_pixel != (*pformat)->x_bits_per_pixel )
-            continue;
-
-          LOG(( "> R:G:B %0*lx:%0*lx:%0*lx",
-                format->bits_per_pixel/4, (*pformat)->x_red_mask,
-                format->bits_per_pixel/4, (*pformat)->x_green_mask,
-                format->bits_per_pixel/4, (*pformat)->x_blue_mask ));
-
-          templ.depth      = format->depth;
-          templ.red_mask   = (*pformat)->x_red_mask;
-          templ.green_mask = (*pformat)->x_green_mask;
-          templ.blue_mask  = (*pformat)->x_blue_mask;
-
-          visual = XGetVisualInfo( x11dev.display,
-                                   VisualScreenMask    |
-                                   VisualDepthMask     |
-                                   VisualRedMaskMask   |
-                                   VisualGreenMaskMask |
-                                   VisualBlueMaskMask,
-                                   &templ,
-                                   &count2 );
-
-          if ( visual )
+        case 16:
+        case 24:
+        case 32:
           {
-            LOG(( ", colors %3d, bits %2d, %s\n",
-                               visual->colormap_size,
-                               visual->bits_per_rgb,
-                  visualClass( visual->Class ) ));
+            int           count2;
+            XVisualInfo*  visual;
+            XVisualInfo*  visuals;
 
-            x11dev.format       = *pformat;
-            x11dev.visual       = visual->visual;
+            templ.depth  = format->depth;
+            visuals      = XGetVisualInfo( x11dev.display,
+                                           VisualScreenMask | VisualDepthMask,
+                                          &templ,
+                                          &count2 );
 
-            XFree( visual );
-            XFree( formats );
-            return 0;
+            for ( visual = visuals; count2 > 0; count2--, visual++ )
+            {
+#ifdef TEST
+              const char*  visualClass;
+
+              switch ( visual->Class )
+              {
+              case TrueColor:
+                visualClass = "TrueColor";
+                break;
+              case DirectColor:
+                visualClass = "DirectColor";
+                break;
+              case PseudoColor:
+                visualClass = "PseudoColor";
+                break;
+              case StaticGray:
+                visualClass = "StaticGray";
+                break;
+              case StaticColor:
+                visualClass = "StaticColor";
+                break;
+              case GrayScale:
+                visualClass = "GrayScale";
+                break;
+              default:
+                visualClass = "unknown";
+              }
+
+              printf( ">   RGB %04lx:%04lx:%04lx, colors %3d, bits %2d  %s\n",
+                      visual->red_mask,
+                      visual->green_mask,
+                      visual->blue_mask,
+                      visual->colormap_size,
+                      visual->bits_per_rgb,
+                      visualClass );
+#endif /* TEST */
+
+              /* compare to the list of supported formats */
+              {
+                const grX11Format**  pcur_format = gr_x11_formats;
+                const grX11Format*   cur_format;
+
+
+                for (;;)
+                {
+                  cur_format = *pcur_format++;
+                  if ( cur_format == NULL )
+                    break;
+
+                  if ( format->depth          == cur_format->x_depth          &&
+                       format->bits_per_pixel == cur_format->x_bits_per_pixel &&
+                       visual->red_mask       == cur_format->x_red_mask       &&
+                       visual->green_mask     == cur_format->x_green_mask     &&
+                       visual->blue_mask      == cur_format->x_blue_mask      )
+                  {
+                    x11dev.format       = cur_format;
+                    x11dev.scanline_pad = format->scanline_pad;
+                    x11dev.visual       = visual->visual;
+
+                    XFree( visuals );
+                    XFree( formats );
+                    return 0;
+                  }
+                }
+              }
+            } /* for visuals */
+
+            XFree( visuals );
           }
-          LOG(( "\n" ));
-        }
+          break;
+
+        default:
+          ;
+        } /* switch format depth */
       } /* for formats */
       XFree( formats );
     }
@@ -1025,10 +1074,16 @@ typedef  unsigned long   uint32;
     Visual*             visual;
     Colormap            colormap;
     GC                  gc;
-    Atom                wm_delete_window;
-
+    int                 depth;
     XImage*             ximage;
+    grBitmap            ximage_bitmap;
+
+    const grX11Format*  format;
     grX11ConvertFunc    convert;
+
+    int                 win_org_x,   win_org_y;
+    int                 win_width,   win_height;
+    int                 image_width, image_height;
 
     char                key_buffer[10];
     int                 key_cursor;
@@ -1073,74 +1128,37 @@ typedef  unsigned long   uint32;
     grX11Blitter  blit;
 
 
-    if ( !gr_x11_blitter_reset( &blit, &surface->root.bitmap, surface->ximage,
+    if ( !gr_x11_blitter_reset( &blit, &surface->root.bitmap,
+                                &surface->ximage_bitmap,
                                 x, y, w, h ) )
     {
       surface->convert( &blit );
 
-      /* without background defined, this only generates Expose event */
-      XClearArea( surface->display, surface->win, x, y, w, h, True );
+      XPutImage( surface->display,
+                 surface->win,
+                 surface->gc,
+                 surface->ximage,
+                 blit.x, blit.y,
+                 blit.x, blit.y,
+                 (unsigned int)blit.width, (unsigned int)blit.height );
     }
   }
 
 
   static void
-  gr_x11_surface_set_title( grX11Surface*  surface,
-                            const char*    title )
+  gr_x11_surface_refresh( grX11Surface*  surface )
   {
-    XStoreName( surface->display, surface->win, title );
+    gr_x11_surface_refresh_rect( surface, 0, 0,
+                                 surface->root.bitmap.width,
+                                 surface->root.bitmap.rows );
   }
 
 
-  static int
-  gr_x11_surface_set_icon( grX11Surface*  surface,
-                           grBitmap*      icon )
+  static void
+  gr_x11_surface_set_title( grX11Surface*  surface,
+                             const char*   title )
   {
-    const unsigned char*  s = (const unsigned char*)"\x80\x40\x20\x10";
-    unsigned long*        buffer;
-    unsigned long*        dst;
-    uint32*               src;
-    int                   sz, i, j;
-
-
-    if ( !icon )
-      return s[0];
-
-    if ( icon->mode != gr_pixel_mode_rgb32 )
-      return 0;
-
-    sz = icon->rows * icon->width;
-
-    buffer = (unsigned long*)malloc( ( 2 + sz ) * sizeof( long) );
-    if ( !buffer )
-      return 0;
-
-    buffer[0] = icon->width;
-    buffer[1] = icon->rows;
-
-    /* must convert to long array */
-    dst = buffer + 2;
-    src = (uint32*)icon->buffer;
-    if ( icon->pitch < 0 )
-       src -= ( icon->rows - 1 ) * icon->pitch / 4;
-
-    for ( i = 0; i < icon->rows; i++,
-          dst += icon->width, src += icon->pitch / 4 )
-      for ( j = 0; j < icon->width; j++ )
-        dst[j] = src[j];
-
-    XChangeProperty( surface->display,
-                     surface->win,
-                     XInternAtom( surface->display, "_NET_WM_ICON", False ),
-                     XA_CARDINAL, 32, PropModeAppend,
-                     (unsigned char*)buffer, 2 + sz );
-
-    free( buffer );
-
-    while ( *s * *s >= sz )
-      s++;
-
-    return  *s;
+    XStoreName( surface->display, surface->win, title );
   }
 
 
@@ -1170,100 +1188,44 @@ typedef  unsigned long   uint32;
   }
 
 
-  static int
-  gr_x11_surface_resize( grX11Surface*  surface,
-                         int            width,
-                         int            height )
-  {
-    grBitmap*  bitmap  = &surface->root.bitmap;
-    XImage*    ximage  = surface->ximage;
-    int        pitch;
-    char*      buffer;
-
-
-    /* resize the bitmap */
-    if ( grNewBitmap( bitmap->mode,
-                      bitmap->grays,
-                      width,
-                      height,
-                      bitmap ) )
-      return 0;
-
-    /* reallocate surface image */
-    pitch  = width * ximage->bits_per_pixel >> 3;
-
-    if ( ximage->bits_per_pixel != ximage->bitmap_pad )
-    {
-      int  over = width * ximage->bits_per_pixel
-                        % ximage->bitmap_pad;
-
-      if ( over )
-        pitch += ( ximage->bitmap_pad - over ) >> 3;
-    }
-
-    buffer = (char*)realloc( ximage->data, (size_t)height * (size_t)pitch );
-    if ( !buffer && height && pitch )
-      return 0;
-
-    ximage->data           = buffer;
-    ximage->bytes_per_line = pitch;
-    ximage->width          = width;
-    ximage->height         = height;
-
-    return 1;
-  }
-
-
-  static int
+  static void
   gr_x11_surface_listen_event( grX11Surface*  surface,
                                int            event_mask,
                                grEvent*       grevent )
   {
-    Display*      display = surface->display;
-    XEvent        x_event;
-    XExposeEvent  exposed;
-    KeySym        key;
+    XEvent     x_event;
+    KeySym     key;
+    Display*   display = surface->display;
 
-    int           num;
-    grKey         grkey;
+    int        bool_exit;
+    grKey      grkey;
+
+    XComposeStatus  compose;
 
     /* XXX: for now, ignore the event mask, and only exit when */
     /*      a key is pressed                                   */
     (void)event_mask;
 
-    /* reset exposed area */
-    exposed.x = exposed.y = exposed.width = exposed.height = 0;
+    bool_exit = surface->key_cursor < surface->key_number;
 
     XDefineCursor( display, surface->win, x11dev.idle );
 
-    while ( surface->key_cursor >= surface->key_number )
+    while ( !bool_exit )
     {
       XNextEvent( display, &x_event );
 
       switch ( x_event.type )
       {
-      case ClientMessage:
-        if ( (Atom)x_event.xclient.data.l[0] == surface->wm_delete_window )
-        {
-          grkey = grKeyEsc;  /* signal to exit gracefully */
-          goto Set_Key;
-        }
-        break;
-
       case KeyPress:
-        num = XLookupString( &x_event.xkey,
-                             surface->key_buffer,
-                             sizeof ( surface->key_buffer ),
-                             &key,
-                             NULL );
+        surface->key_number = XLookupString( &x_event.xkey,
+                                             surface->key_buffer,
+                                             sizeof ( surface->key_buffer ),
+                                             &key,
+                                             &compose );
+        surface->key_cursor = 0;
 
-        LOG(( num ? isprint( surface->key_buffer[0] ) ?
-                  "KeyPress: KeySym = 0x%04x, Char = '%c'\n" :
-                  "KeyPress: KeySym = 0x%04x, Char = <%02x>\n" :
-                  "KeyPress: KeySym = 0x%04x\n",
-              (unsigned int)key, surface->key_buffer[0] ));
-
-        if ( num == 0 || key > 512 )
+        if ( surface->key_number == 0 ||
+             key > 512       )
         {
           /* this may be a special key like F1, F2, etc. */
           grkey = KeySymTogrKey( key );
@@ -1271,71 +1233,41 @@ typedef  unsigned long   uint32;
             goto Set_Key;
         }
         else
-        {
-          surface->key_number = num;
-          surface->key_cursor = 0;
-        }
+          bool_exit = 1;
         break;
 
       case MappingNotify:
         XRefreshKeyboardMapping( &x_event.xmapping );
         break;
 
-      case ConfigureNotify:
-        if ( ( x_event.xconfigure.width  != surface->ximage->width  ||
-               x_event.xconfigure.height != surface->ximage->height )    &&
-             gr_x11_surface_resize( surface, x_event.xconfigure.width,
-                                             x_event.xconfigure.height ) )
-        {
-          grevent->type = gr_event_resize;
-          grevent->x    = x_event.xconfigure.width;
-          grevent->y    = x_event.xconfigure.height;
-
-          return 1;
-        }
-        break;
-
-      case VisibilityNotify:
-        /* reset exposed area */
-        exposed.x = exposed.y = exposed.width = exposed.height = 0;
-        break;
-
       case Expose:
-        LOG(( "Expose (%lu,%d): %dx%d ",
-              x_event.xexpose.serial, x_event.xexpose.count,
-              x_event.xexpose.width,  x_event.xexpose.height ));
-
-        /* paint only newly exposed areas */
-        if ( x_event.xexpose.x < exposed.x              ||
-             x_event.xexpose.y < exposed.y              ||
-             x_event.xexpose.x + x_event.xexpose.width
-                   > exposed.x +         exposed.width  ||
-             x_event.xexpose.y + x_event.xexpose.height
-                   > exposed.y +         exposed.height )
-        {
-          XPutImage( surface->display,
-                     surface->win,
-                     surface->gc,
-                     surface->ximage,
-                     x_event.xexpose.x,
-                     x_event.xexpose.y,
-                     x_event.xexpose.x,
-                     x_event.xexpose.y,
-                     (unsigned int)x_event.xexpose.width,
-                     (unsigned int)x_event.xexpose.height );
-
-          exposed = x_event.xexpose;
-          LOG(( "painted\n" ));
-        }
-        else
-        {
-          LOG(( "ignored\n" ));
-        }
+#if 1
+        /* we don't need to convert the bits on each expose! */
+        XPutImage( surface->display,
+                   surface->win,
+                   surface->gc,
+                   surface->ximage,
+                   x_event.xexpose.x,
+                   x_event.xexpose.y,
+                   x_event.xexpose.x,
+                   x_event.xexpose.y,
+                   (unsigned int)x_event.xexpose.width,
+                   (unsigned int)x_event.xexpose.height );
+#else
+        gr_x11_surface_refresh_rectangle( surface,
+                                          x_event.xexpose.x,
+                                          x_event.xexpose.y,
+                                          x_event.xexpose.width,
+                                          x_event.xexpose.height );
+#endif
         break;
 
       /* You should add more cases to handle mouse events, etc. */
       }
     }
+
+    XDefineCursor( display, surface->win, x11dev.busy );
+    XFlush       ( display );
 
     /* now, translate the keypress to a grKey; */
     /* if this wasn't part of the simple translated keys, */
@@ -1345,10 +1277,6 @@ typedef  unsigned long   uint32;
   Set_Key:
     grevent->type = gr_key_down;
     grevent->key  = grkey;
-
-    XDefineCursor( display, surface->win, x11dev.busy );
-
-    return 1;
   }
 
 
@@ -1357,32 +1285,62 @@ typedef  unsigned long   uint32;
                        grBitmap*      bitmap )
   {
     Display*            display;
+    int                 screen;
+    grBitmap*           pximage = &surface->ximage_bitmap;
+    const grX11Format*  format;
 
 
     surface->key_number = 0;
     surface->key_cursor = 0;
     surface->display    = display = x11dev.display;
-    surface->visual     = x11dev.visual;
+
+    screen = DefaultScreen( display );
+
+    surface->depth    = x11dev.format->x_depth;
+    surface->visual   = x11dev.visual;
+
+    surface->format      = format = x11dev.format;
+    surface->root.bitmap = *bitmap;
 
     switch ( bitmap->mode )
     {
     case gr_pixel_mode_rgb24:
-      surface->convert = x11dev.format->rgb_convert;
+      surface->convert = format->rgb_convert;
       break;
 
     case gr_pixel_mode_gray:
       /* we only support 256-gray level 8-bit pixmaps */
       if ( bitmap->grays == 256 )
       {
-        surface->convert = x11dev.format->gray_convert;
+        surface->convert = format->gray_convert;
         break;
       }
-      /* fall through */
 
     default:
       /* we don't support other modes */
       return 0;
     }
+
+    /* allocate surface image */
+    {
+      int  bits, over;
+
+
+      bits = bitmap->width * format->x_bits_per_pixel;
+      over = bits % x11dev.scanline_pad;
+
+      if ( over )
+        bits += x11dev.scanline_pad - over;
+
+      pximage->pitch  = bits >> 3;
+      pximage->width  = bitmap->width;
+      pximage->rows   = bitmap->rows;
+    }
+
+    pximage->buffer = (unsigned char*)grAlloc(
+                        (unsigned long)( pximage->pitch * pximage->rows ) );
+    if ( !pximage->buffer )
+      return 0;
 
     /* create the bitmap */
     if ( grNewBitmap( bitmap->mode,
@@ -1397,49 +1355,50 @@ typedef  unsigned long   uint32;
     /* Now create the surface X11 image */
     surface->ximage = XCreateImage( display,
                                     surface->visual,
-                                    (unsigned int)x11dev.format->x_depth,
+                                    (unsigned int)format->x_depth,
                                     ZPixmap,
                                     0,
-                                    NULL,
-                                    (unsigned int)bitmap->width,
-                                    (unsigned int)bitmap->rows,
+                                    (char*)pximage->buffer,
+                                    (unsigned int)pximage->width,
+                                    (unsigned int)pximage->rows,
                                     x11dev.scanline_pad,
                                     0 );
     if ( !surface->ximage )
       return 0;
 
-    /* allocate surface image data */
-    surface->ximage->data = (char*)grAlloc( (size_t)bitmap->rows *
-                         (size_t)surface->ximage->bytes_per_line );
-    if ( !surface->ximage->data )
-      return 0;
-
     {
-      int                   screen = DefaultScreen( display );
-      XTextProperty         xtp  = { (unsigned char*)"FreeType", 31, 8, 8 };
+      XColor                color, dummy;
+      XTextProperty         xtp;
+      XSizeHints            xsh;
       XSetWindowAttributes  xswa;
-      unsigned long         xswa_mask = CWEventMask | CWCursor;
+      unsigned long         xswa_mask = CWBackPixel | CWEventMask | CWCursor;
 
       pid_t                 pid;
       Atom                  NET_WM_PID;
 
 
-      xswa.cursor     = x11dev.busy;
-      xswa.event_mask = ExposureMask | VisibilityChangeMask |
-                        KeyPressMask | StructureNotifyMask ;
+      xswa.border_pixel = BlackPixel( display, screen );
 
-      if ( surface->visual == DefaultVisual( display, screen ) )
+      if (surface->visual == DefaultVisual( display, screen ) )
+      {
+        xswa.background_pixel = WhitePixel( display, screen );
         surface->colormap     = DefaultColormap( display, screen );
+      }
       else
       {
-        xswa_mask            |= CWBorderPixel | CWColormap;
-        xswa.border_pixel     = BlackPixel( display, screen );
+        xswa_mask             |= CWColormap | CWBorderPixel;
         xswa.colormap         = XCreateColormap( display,
                                                  RootWindow( display, screen ),
                                                  surface->visual,
                                                  AllocNone );
+        XAllocNamedColor( display, xswa.colormap, "white", &color, &dummy );
+        xswa.background_pixel = color.pixel;
         surface->colormap     = xswa.colormap;
       }
+
+      xswa.cursor           = x11dev.busy;
+
+      xswa.event_mask = KeyPressMask | ExposureMask;
 
       surface->win = XCreateWindow( display,
                                     RootWindow( display, screen ),
@@ -1448,7 +1407,7 @@ typedef  unsigned long   uint32;
                                     (unsigned int)bitmap->width,
                                     (unsigned int)bitmap->rows,
                                     10,
-                                    x11dev.format->x_depth,
+                                    format->x_depth,
                                     InputOutput,
                                     surface->visual,
                                     xswa_mask,
@@ -1458,13 +1417,25 @@ typedef  unsigned long   uint32;
 
       surface->gc = XCreateGC( display, surface->win,
                                0L, NULL );
+      XSetForeground( display, surface->gc, xswa.border_pixel     );
+      XSetBackground( display, surface->gc, xswa.background_pixel );
+
+      /* make window manager happy :-) */
+      xtp.value    = (unsigned char*)"FreeType";
+      xtp.encoding = 31;
+      xtp.format   = 8;
+      xtp.nitems   = strlen( (char*)xtp.value );
+
+      xsh.x = 0;
+      xsh.y = 0;
+
+      xsh.width  = bitmap->width;
+      xsh.height = bitmap->rows;
+      xsh.flags  = PPosition | PSize;
+      xsh.flags  = 0;
 
       XSetWMProperties( display, surface->win, &xtp, &xtp,
-                        NULL, 0, NULL, NULL, NULL );
-
-      surface->wm_delete_window = XInternAtom( display,
-                                               "WM_DELETE_WINDOW", False );
-      XSetWMProtocols( display, surface->win, &surface->wm_delete_window, 1);
+                        NULL, 0, &xsh, NULL, NULL );
 
       pid = getpid();
       NET_WM_PID = XInternAtom( display, "_NET_WM_PID", False );
@@ -1476,8 +1447,9 @@ typedef  unsigned long   uint32;
     surface->root.done         = (grDoneSurfaceFunc)gr_x11_surface_done;
     surface->root.refresh_rect = (grRefreshRectFunc)gr_x11_surface_refresh_rect;
     surface->root.set_title    = (grSetTitleFunc)   gr_x11_surface_set_title;
-    surface->root.set_icon     = (grSetIconFunc)    gr_x11_surface_set_icon;
     surface->root.listen_event = (grListenEventFunc)gr_x11_surface_listen_event;
+
+    gr_x11_surface_refresh( surface );
 
     return 1;
   }
@@ -1499,7 +1471,6 @@ typedef  unsigned long   uint32;
 
 
 #ifdef TEST
-#if 0
 
   typedef struct  grKeyName
   {
@@ -1538,6 +1509,7 @@ typedef  unsigned long   uint32;
   };
 
 
+#if 0
   int
   main( void )
   {

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright 1996-2018 by                                                  */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -21,7 +21,6 @@
 
 #include "common.h"
 #include "mlgetopt.h"
-#include "strbuf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +51,8 @@
                                             unsigned int   delta );
 
 
-  static char         Header[256];
-  static const char*  new_header = NULL;
+  static char   Header[256];
+  static char*  new_header = NULL;
 
   static const unsigned char*  Text = (unsigned char*)
     "The quick brown fox jumps over the lazy dog 0123456789 "
@@ -80,7 +79,7 @@
   static FT_Error      error;        /* error returned by FreeType? */
 
   static grSurface*    surface;      /* current display surface     */
-  static grBitmap*     bit;          /* current display bitmap      */
+  static grBitmap      bit;          /* current display bitmap      */
 
   static int  width     = DIM_X;     /* window width                */
   static int  height    = DIM_Y;     /* window height               */
@@ -89,7 +88,6 @@
   static int  ptsize;                /* current point size          */
 
   static int  hinted    = 1;         /* is glyph hinting active?    */
-  static int  grouping  = 1;         /* is axis grouping active?    */
   static int  antialias = 1;         /* is anti-aliasing active?    */
   static int  use_sbits = 1;         /* do we use embedded bitmaps? */
   static int  Num;                   /* current first glyph index   */
@@ -110,16 +108,6 @@
   static unsigned int  requested_cnt = 0;
   static unsigned int  used_num_axis = 0;
 
-  /*
-   * We use the following arrays to support both the display of all axes and
-   * the grouping of axes.  If grouping is active, hidden axes that have the
-   * same tag as a non-hidden axis are not displayed; instead, they receive
-   * the same axis value as the non-hidden one.
-   */
-  static unsigned int  hidden[MAX_MM_AXES];
-  static int           shown_axes[MAX_MM_AXES];  /* array of axis indices */
-  static unsigned int  num_shown_axes;
-
 
 #define DEBUGxxx
 
@@ -132,8 +120,7 @@
 
 #ifdef DEBUG
   static void
-  LogMessage( const char*  fmt,
-              ... )
+  LogMessage( const char*  fmt, ... )
   {
     va_list  ap;
 
@@ -176,8 +163,7 @@
   static void
   parse_design_coords( char  *s )
   {
-    for ( requested_cnt = 0;
-          requested_cnt < MAX_MM_AXES && *s;
+    for ( requested_cnt = 0; requested_cnt < MAX_MM_AXES && *s;
           requested_cnt++ )
     {
       requested_pos[requested_cnt] = (FT_Fixed)( strtod( s, &s ) * 65536.0 );
@@ -188,102 +174,16 @@
   }
 
 
-  static void
-  set_up_axes( void )
-  {
-    if ( grouping )
-    {
-      int  i, j, idx;
-
-
-      /*
-       * `ftmulti' is a diagnostic tool that should be able to handle
-       * pathological situations also; for this reason the looping code
-       * below is a bit more complicated in comparison to normal
-       * applications.
-       *
-       * In particular, the loop handles the following cases gracefully,
-       * avoiding grouping.
-       *
-       * . multiple non-hidden axes have the same tag
-       *
-       * . multiple hidden axes have the same tag without a corresponding
-       *   non-hidden axis
-       */
-
-      idx = -1;
-      for ( i = 0; i < (int)used_num_axis; i++ )
-      {
-        int            do_skip;
-        unsigned long  tag = multimaster->axis[i].tag;
-
-
-        do_skip = 0;
-        if ( hidden[i] )
-        {
-          /* if axis is hidden, check whether an already assigned */
-          /* non-hidden axis has the same tag; if yes, skip it    */
-          for ( j = 0; j <= idx; j++ )
-            if ( !hidden[shown_axes[j]]                      &&
-                 multimaster->axis[shown_axes[j]].tag == tag )
-            {
-              do_skip = 1;
-              break;
-            }
-        }
-        else
-        {
-          /* otherwise check whether we have already assigned this axis */
-          for ( j = 0; j <= idx; j++ )
-            if ( shown_axes[j] == i )
-            {
-              do_skip = 1;
-              break;
-            }
-        }
-        if ( do_skip )
-          continue;
-
-        /* we have a new axis to display */
-        shown_axes[++idx] = i;
-
-        /* if axis is hidden, use a non-hidden axis */
-        /* with the same tag instead if available   */
-        if ( hidden[i] )
-        {
-          for ( j = i + 1; j < (int)used_num_axis; j++ )
-            if ( !hidden[j]                      &&
-                 multimaster->axis[j].tag == tag )
-              shown_axes[idx] = j;
-        }
-      }
-
-      num_shown_axes = idx + 1;
-    }
-    else
-    {
-      unsigned int  i;
-
-
-      /* show all axes */
-      for ( i = 0; i < used_num_axis; i++ )
-        shown_axes[i] = i;
-
-      num_shown_axes = used_num_axis;
-    }
-  }
-
-
-  /* Clear `bit' bitmap/pixmap */
+  /* Clears the Bit bitmap/pixmap */
   static void
   Clear_Display( void )
   {
-    long  bitmap_size = (long)bit->pitch * bit->rows;
+    long  bitmap_size = (long)bit.pitch * bit.rows;
 
 
     if ( bitmap_size < 0 )
       bitmap_size = -bitmap_size;
-    memset( bit->buffer, 0, (unsigned long)bitmap_size );
+    memset( bit.buffer, 0, (unsigned long)bitmap_size );
   }
 
 
@@ -291,16 +191,16 @@
   static void
   Init_Display( void )
   {
-    grBitmap  bitmap = { height, width, 0, gr_pixel_mode_gray, 256, NULL };
-
-
     grInitDevices();
 
-    surface = grNewSurface( 0, &bitmap );
+    bit.mode  = gr_pixel_mode_gray;
+    bit.width = width;
+    bit.rows  = height;
+    bit.grays = 256;
+
+    surface = grNewSurface( 0, &bit );
     if ( !surface )
       PanicZ( "could not allocate display surface\n" );
-
-    bit = (grBitmap*)surface;
 
     graph_init = 1;
   }
@@ -346,8 +246,7 @@
     x_top = x_offset + glyph->bitmap_left;
     y_top = y_offset - glyph->bitmap_top;
 
-    grBlitGlyphToBitmap( bit, &bit3,
-                         x_top, y_top, fore_color );
+    grBlitGlyphToBitmap( &bit, &bit3, x_top, y_top, fore_color );
 
     return 0;
   }
@@ -390,7 +289,7 @@
 
 
     start_x = 4;
-    start_y = pt_size + ( num_shown_axes > MAX_MM_AXES / 2 ? 52 : 44 );
+    start_y = pt_size + ( used_num_axis > MAX_MM_AXES / 2 ? 52 : 44 );
 
     step_y = size->metrics.y_ppem + 10;
 
@@ -424,12 +323,12 @@
 
         x += ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
 
-        if ( x + size->metrics.x_ppem > bit->width )
+        if ( x + size->metrics.x_ppem > bit.width )
         {
           x  = start_x;
           y += step_y;
 
-          if ( y >= bit->rows )
+          if ( y >= bit.rows )
             return FT_Err_Ok;
         }
       }
@@ -454,7 +353,7 @@
 
 
     start_x = 4;
-    start_y = pt_size + ( num_shown_axes > MAX_MM_AXES / 2 ? 52 : 44 );
+    start_y = pt_size + ( used_num_axis > MAX_MM_AXES / 2 ? 52 : 44 );
 
     step_y = size->metrics.y_ppem + 10;
 
@@ -492,12 +391,12 @@
 
         x += ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
 
-        if ( x + size->metrics.x_ppem > bit->width )
+        if ( x + size->metrics.x_ppem > bit.width )
         {
           x  = start_x;
           y += step_y;
 
-          if ( y >= bit->rows )
+          if ( y >= bit.rows )
             return FT_Err_Ok;
         }
       }
@@ -518,40 +417,35 @@
     char  buf[256];
     char  version[64];
 
-    FT_Int  major, minor, patch;
+    const char*  format;
+    FT_Int       major, minor, patch;
 
     grEvent  dummy_event;
 
 
     FT_Library_Version( library, &major, &minor, &patch );
 
-    if ( patch )
-      snprintf( version, sizeof ( version ),
-                "%d.%d.%d", major, minor, patch );
-    else
-      snprintf( version, sizeof ( version ),
-                "%d.%d", major, minor );
+    format = patch ? "%d.%d.%d" : "%d.%d";
+    sprintf( version, format, major, minor, patch );
 
     Clear_Display();
     grSetLineHeight( 10 );
     grGotoxy( 0, 0 );
     grSetMargin( 2, 1 );
-    grGotobitmap( bit );
+    grGotobitmap( &bit );
 
-    snprintf( buf, sizeof ( buf ),
-              "FreeType MM Glyph Viewer -"
-                " part of the FreeType %s test suite",
-              version );
+    sprintf( buf,
+             "FreeType MM Glyph Viewer - part of the FreeType %s test suite",
+             version );
 
     grWriteln( buf );
     grLn();
     grWriteln( "This program displays all glyphs from one or several" );
-    grWriteln( "Multiple Masters, GX, or OpenType Variation font files." );
+    grWriteln( "Multiple Masters or GX font files, with the FreeType library." );
     grLn();
     grWriteln( "Use the following keys:");
     grLn();
     grWriteln( "?           display this help screen" );
-    grWriteln( "A           toggle axis grouping" );
     grWriteln( "a           toggle anti-aliasing" );
     grWriteln( "h           toggle outline hinting" );
     grWriteln( "b           toggle embedded bitmaps" );
@@ -576,8 +470,6 @@
     grWriteln( "3, 4        adjust fifth axis by 1/50th of its range" );
     grWriteln( "5, 6        adjust sixth axis by 1/50th of its range" );
     grLn();
-    grWriteln( "Axes marked with an asterisk are hidden." );
-    grLn();
     grLn();
     grWriteln( "press any key to exit this help screen" );
 
@@ -600,19 +492,13 @@
 
 
   static int
-  Process_Event( void )
+  Process_Event( grEvent*  event )
   {
-    grEvent       event;
     int           i;
     unsigned int  axis;
 
 
-    grListenSurface( surface, 0, &event );
-
-    if ( event.type == gr_event_resize )
-      return 1;
-
-    switch ( event.key )
+    switch ( event->key )
     {
     case grKeyEsc:            /* ESC or q */
     case grKEY( 'q' ):
@@ -620,44 +506,37 @@
 
     case grKEY( '?' ):
       Help();
-      break;
+      return 1;
 
     /* mode keys */
 
-    case grKEY( 'A' ):
-      grouping = !grouping;
-      new_header = grouping ? "axis grouping is now on"
-                            : "axis grouping is now off";
-      set_up_axes();
-      break;
-
     case grKEY( 'a' ):
       antialias  = !antialias;
-      new_header = antialias ? "anti-aliasing is now on"
-                             : "anti-aliasing is now off";
-      break;
+      new_header = antialias ? (char *)"anti-aliasing is now on"
+                             : (char *)"anti-aliasing is now off";
+      return 1;
 
     case grKEY( 'b' ):
       use_sbits  = !use_sbits;
       new_header = use_sbits
-                     ? "embedded bitmaps are now used if available"
-                     : "embedded bitmaps are now ignored";
-      break;
+                     ? (char *)"embedded bitmaps are now used if available"
+                     : (char *)"embedded bitmaps are now ignored";
+      return 1;
 
     case grKEY( 'n' ):
     case grKEY( 'p' ):
-      return (int)event.key;
+      return (int)event->key;
 
     case grKEY( 'h' ):
       hinted     = !hinted;
-      new_header = hinted ? "glyph hinting is now active"
-                          : "glyph hinting is now ignored";
+      new_header = hinted ? (char *)"glyph hinting is now active"
+                          : (char *)"glyph hinting is now ignored";
       break;
 
     case grKEY( ' ' ):
       render_mode ^= 1;
-      new_header   = render_mode ? "rendering all glyphs in font"
-                                 : "rendering test text string";
+      new_header   = render_mode ? (char *)"rendering all glyphs in font"
+                                 : (char *)"rendering test text string";
       break;
 
     case grKEY( 'H' ):
@@ -797,18 +676,11 @@
     return 1;
 
   Do_Axis:
-    if ( axis < num_shown_axes )
+    if ( axis < used_num_axis )
     {
-      FT_Var_Axis*  a;
-      FT_Fixed      pos;
-      unsigned int  n;
+      FT_Var_Axis*  a   = multimaster->axis + axis;
+      FT_Fixed      pos = design_pos[axis];
 
-
-      /* convert to real axis index */
-      axis = (unsigned int)shown_axes[axis];
-
-      a   = multimaster->axis + axis;
-      pos = design_pos[axis];
 
       /*
        * Normalize i.  Changing by 20 is all very well for PostScript fonts,
@@ -822,33 +694,24 @@
       if ( pos > a->maximum )
         pos = a->maximum;
 
+      design_pos[axis] = pos;
+
       /* for MM fonts, round the design coordinates to integers,         */
       /* otherwise round to two decimal digits to make the PS name short */
       if ( !FT_IS_SFNT( face ) )
-        pos = FT_RoundFix( pos );
+        design_pos[axis] = FT_RoundFix( design_pos[axis] );
       else
       {
         double  x;
 
 
-        x  = pos / 65536.0 * 100.0;
+        x  = design_pos[axis] / 65536.0 * 100.0;
         x += x < 0.0 ? -0.5 : 0.5;
         x  = (int)x;
         x  = x / 100.0 * 65536.0;
         x += x < 0.0 ? -0.5 : 0.5;
 
-        pos = (int)x;
-      }
-
-      design_pos[axis] = pos;
-
-      if ( grouping )
-      {
-        /* synchronize hidden axes with visible axis */
-        for ( n = 0; n < used_num_axis; n++ )
-          if ( hidden[n]                          &&
-               multimaster->axis[n].tag == a->tag )
-            design_pos[n] = pos;
+        design_pos[axis] = (int)x;
       }
 
       FT_Set_Var_Design_Coordinates( face, used_num_axis, design_pos );
@@ -905,7 +768,7 @@
       "  -f index     Specify first glyph index to display.\n"
       "  -d \"axis1 axis2 ...\"\n"
       "               Specify the design coordinates for each\n"
-      "               variation axis at start-up.\n"
+      "               Multiple Master axis at start-up.\n"
       "\n"
       "  -v           Show version."
       "\n" );
@@ -926,6 +789,8 @@
     int    file_loaded;
 
     unsigned int  n;
+
+    grEvent  event;
 
     unsigned int  dflt_tt_interpreter_version;
     unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
@@ -1072,30 +937,16 @@
       goto Display_Font;
     }
 
-    /* if the user specified a position, use it, otherwise  */
-    /* set the current position to the default of each axis */
+    /* if the user specified a position, use it, otherwise */
+    /* set the current position to the median of each axis */
     if ( multimaster->num_axis > MAX_MM_AXES )
     {
-      fprintf( stderr, "only handling first %u variation axes (of %u)\n",
+      fprintf( stderr, "only handling first %d GX axes (of %d)\n",
                        MAX_MM_AXES, multimaster->num_axis );
       used_num_axis = MAX_MM_AXES;
     }
     else
       used_num_axis = multimaster->num_axis;
-
-    for ( n = 0; n < MAX_MM_AXES; n++ )
-      shown_axes[n] = -1;
-
-    for ( n = 0; n < used_num_axis; n++ )
-    {
-      unsigned int  flags;
-
-
-      (void)FT_Get_Var_Axis_Flags( multimaster, n, &flags );
-      hidden[n] = flags & FT_VAR_AXIS_FLAG_HIDDEN;
-    }
-
-    set_up_axes();
 
     for ( n = 0; n < used_num_axis; n++ )
     {
@@ -1148,8 +999,7 @@
 
     for ( ;; )
     {
-      int     key;
-      StrBuf  header[1];
+      int  key;
 
 
       Clear_Display();
@@ -1166,65 +1016,62 @@
           Render_All( (unsigned int)Num, ptsize );
         }
 
-        strbuf_init( header, Header, sizeof ( Header ) );
-        strbuf_format( header, "%.50s %.50s (file %.100s)",
-                       face->family_name,
-                       face->style_name,
-                       ft_basename( argv[file] ) );
+        sprintf( Header, "%.50s %.50s (file %.100s)",
+                         face->family_name,
+                         face->style_name,
+                         ft_basename( argv[file] ) );
 
         if ( !new_header )
           new_header = Header;
 
-        grWriteCellString( bit, 0, 0, new_header, fore_color );
+        grWriteCellString( &bit, 0, 0, new_header, fore_color );
         new_header = NULL;
 
-        strbuf_reset( header );
-        strbuf_format( header, "PS name: %s",
-                       FT_Get_Postscript_Name( face ) );
-        grWriteCellString( bit, 0, 16, Header, fore_color );
+        sprintf( Header, "PS name: %s",
+                         FT_Get_Postscript_Name( face ) );
+        grWriteCellString( &bit, 0, 16, Header, fore_color );
 
-        strbuf_reset( header );
-        strbuf_add( header, "axes:" );
-
+        sprintf( Header, "axes:" );
         {
-          unsigned int  limit = num_shown_axes > MAX_MM_AXES / 2
+          unsigned int  limit = used_num_axis > MAX_MM_AXES / 2
                                   ? MAX_MM_AXES / 2
-                                  : num_shown_axes;
+                                  : used_num_axis;
 
 
           for ( n = 0; n < limit; n++ )
           {
-            int  axis = shown_axes[n];
+            char  temp[100];
 
 
-            strbuf_format( header, "  %.50s%s: %.02f",
-                           multimaster->axis[axis].name,
-                           hidden[axis] ? "*" : "",
-                           design_pos[axis] / 65536.0 );
+            sprintf( temp, "  %.50s: %.02f",
+                           multimaster->axis[n].name,
+                           design_pos[n] / 65536.0 );
+            strncat( Header, temp,
+                     sizeof ( Header ) - strlen( Header ) - 1 );
           }
         }
-        grWriteCellString( bit, 0, 24, Header, fore_color );
+        grWriteCellString( &bit, 0, 24, Header, fore_color );
 
-        if ( num_shown_axes > MAX_MM_AXES / 2 )
+        if ( used_num_axis > MAX_MM_AXES / 2 )
         {
-          unsigned int  limit = num_shown_axes;
+          unsigned int  limit = used_num_axis;
 
 
-          strbuf_reset( header );
-          strbuf_add( header, "     " );
+          sprintf( Header, "     " );
 
           for ( n = MAX_MM_AXES / 2; n < limit; n++ )
           {
-            int  axis = shown_axes[n];
+            char  temp[100];
 
 
-            strbuf_format( header, "  %.50s%s: %.02f",
-                           multimaster->axis[axis].name,
-                           hidden[axis] ? "*" : "",
-                           design_pos[axis] / 65536.0 );
+            sprintf( temp, "  %.50s: %.02f",
+                           multimaster->axis[n].name,
+                           design_pos[n] / 65536.0 );
+            strncat( Header, temp,
+                     sizeof ( Header ) - strlen( Header ) - 1 );
           }
 
-          grWriteCellString( bit, 0, 32, Header, fore_color );
+          grWriteCellString( &bit, 0, 32, Header, fore_color );
         }
 
         {
@@ -1252,23 +1099,23 @@
                                        ? "TrueType (v38)"
                                        : "TrueType (v40)" ) );
 
-          strbuf_reset( header );
-          strbuf_format( header,
-                         "at %d points, first glyph = %d, format = %s",
-                         ptsize,
-                         Num,
-                         format_str );
+          sprintf( Header, "at %d points, first glyph = %d, format = %s",
+                           ptsize,
+                           Num,
+                           format_str );
         }
       }
       else
-        strbuf_format( header,
-                       "%.100s: not an MM font file, or could not be opened",
-                       ft_basename( argv[file] ) );
+      {
+        sprintf( Header, "%.100s: not an MM font file, or could not be opened",
+                         ft_basename( argv[file] ) );
+      }
 
-      grWriteCellString( bit, 0, 8, Header, fore_color );
+      grWriteCellString( &bit, 0, 8, Header, fore_color );
       grRefreshSurface( surface );
 
-      if ( !( key = Process_Event() ) )
+      grListenSurface( surface, 0, &event );
+      if ( !( key = Process_Event( &event ) ) )
         goto End;
 
       if ( key == 'n' )

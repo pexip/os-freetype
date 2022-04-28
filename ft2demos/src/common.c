@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <string.h>
 
 
   char*
@@ -34,25 +33,6 @@
     }
 
     return (char*)base;
-  }
-
-
-  char*
-  ft_strdup( const char*  str )
-  {
-    char*   result;
-    size_t  len;
-
-
-    if ( !str )
-      return NULL;
-
-    len    = strlen( str );
-    result = (char *)malloc( len + 1 );
-    if ( result )
-      memcpy( result, str, len + 1 );
-
-    return result;
   }
 
 
@@ -124,5 +104,6 @@
   BAD_DATA:
     return -1;
   }
+
 
 /* End */

@@ -1,33 +1,30 @@
 #include "grobjs.h"
 #include "grdevice.h"
+#include <stdlib.h>
 #include <string.h>
 
-  grDeviceChain*  gr_device_chain;
+  grDeviceChain   gr_device_chain[ GR_MAX_DEVICES ];
+  int             gr_num_devices = 0;
 
   static
   grDevice*  find_device( const char*  device_name )
   {
-    grDeviceChain*  chain = gr_device_chain;
-    grDevice*       device = NULL;
+    int  idx = 0;
 
     if (device_name)
-      while (chain)
-      {
-        if ( strcmp( device_name, chain->name ) == 0 )
-        {
-          device = chain->device;
+    {
+      for ( idx = gr_num_devices-1; idx > 0; idx-- )
+        if ( strcmp( device_name, gr_device_chain[idx].name ) == 0 )
           break;
-        }
+    }
 
-        chain = chain->next;
-      }
-    else if (chain)
-      device = chain->device;
-
-    if (!device)
+    if ( idx < 0 || gr_num_devices <= 0 || !gr_device_chain[idx].device )
+    {
       grError = gr_err_invalid_device;
+      return 0;
+    }
 
-    return device;
+    return gr_device_chain[idx].device;
   }
 
 
@@ -109,6 +106,11 @@
   *               for the surface. the bitmap's 'pitch' and 'buffer'
   *               fields are ignored on input.
   *
+  *               On output, the bitmap describes the surface's image
+  *               completely. It is possible to write directly in it
+  *               with grBlitGlyphToBitmap, even though the use of
+  *               grBlitGlyphToSurface is recommended.
+  *
   * <Return>
   *    handle to the corresponding surface object. 0 in case of error
   *
@@ -131,8 +133,8 @@
   *
   **********************************************************************/
 
-  grSurface*  grNewSurface( const char*  device_name,
-                            grBitmap*    bitmap )
+  extern grSurface*  grNewSurface( const char*  device_name,
+                                   grBitmap*    bitmap )
   {
     grDevice*   device;
     grSurface*  surface;
@@ -144,16 +146,11 @@
     surface = (grSurface*)grAlloc( device->surface_objsize );
     if (!surface) return 0;
 
-    bitmap->buffer = NULL;
-
     if ( !device->init_surface( surface, bitmap ) )
     {
       grFree( (void *)surface );
       surface = 0;
     }
-    else
-      grSetTargetGamma( (grBitmap*)surface, 1.8 );
-
     return surface;
   }
 
@@ -309,6 +306,7 @@
   }
 
 
+
  /**********************************************************************
   *
   * <Function>
@@ -331,35 +329,6 @@
   }
 
 
- /**********************************************************************
- *
- * <Function>
- *    grSetIcon
- *
- * <Description>
- *    set the icon of a given windowed surface.
- *
- * <Input>
- *    surface :: handle to target surface
- *    icon    :: handle to icon bitmap
- *
- * <Return>
- *    the next appropriate icon size in pixels.
- *
- * <Note>
- *    Returns the largest appropriate icon size if icon is NULL.
- *
- *
- **********************************************************************/
-
-  extern int  grSetIcon( grSurface*  surface,
-                         grBitmap*   icon )
-  {
-    if (surface->set_icon)
-      return surface->set_icon( surface, icon );
-
-    return 0;
-  }
 
 
  /**********************************************************************

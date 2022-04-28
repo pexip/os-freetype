@@ -6,45 +6,31 @@
 #**************************************************************************
 
 
-#############################################################################
+#########################################################################
 #
 # Try to detect an X11 setup.
 #
-# The goal is to define variable `X11_PATH', consisting of a list of
-# directories `A', `B', `C', ..., separated by spaces.  While compiling the
-# demo programs that need X11 support, include file directories `A/include',
-# `B/include', etc., are passed to the compiler.  While linking, directories
-# `A/lib', `A/lib64', `B/lib', `B/lib64', etc., are passed to the linker.
-# Note that it doesn't pose a problem to specify both 32bit and 64bit library
-# directories at the same time since the linker will properly reject the
-# incorrect ones.
+# We try to detect the following directories (in that order) in the current
+# path:
 #
-# 1) We try to detect the following directories (in that order) as substrings
-#    in the current path:
+#   X11   (usually a symlink to the current release)
+#   X11R6
+#   X11R5
 #
-#      X11/bin   (usually a symlink to the current release)
-#      X11R6/bin
-#      X11R5/bin
+# If no success, we directly check the directories
 #
-#    From the first hit we derive `X11_PATH' (by removing the `/bin' part).
+#   /usr
+#   /usr/X11R6
+#   /usr/local/X11R6
 #
-# 2) If no success, we directly check the directories
+# whether they contain `include/X11/Xlib.h'.  Note that the Makefile
+# silently assumes that they will also contain `lib/X11/libX11.(a|so)'.
 #
-#      /usr
-#      /usr/X11R6
-#      /usr/local/X11R6
+# If the variable X11_PATH is set (to specify unusual locations of X11), no
+# other directory is searched.  More than one directory must be separated
+# with spaces.  Example:
 #
-#    whether they contain `include/X11/Xlib.h'.  The first hit sets up
-#    `X11_PATH'.
-#
-# 3) If the variable `X11_PATH' is already set (to specify unusual locations
-#    of X11), no other directories are searched.  For instance, let us assume
-#    that the X11 header files are located in `/usr/local/X11/R6/include',
-#    and the X11 library files in `/usr/openwin/lib'.  Calling
-#
-#      make X11_PATH="/usr/openwin /usr/local/X11R6"
-#
-#    should then work.
+#   make X11_PATH="/usr/openwin /usr/local/X11R6"
 #
 FT_PATH := $(subst ;, ,$(subst :, ,$(subst $(SEP),/,$(PATH))))
 
@@ -112,7 +98,7 @@ ifneq ($(X11_PATH),)
 
   # the rule used to compile the X11 driver
   #
-  $(OBJ_DIR_2)/grx11.$(O): $(GR_X11)/grx11.c $(GR_X11)/grx11.h $(GRAPH_H)
+  $(OBJ_DIR_2)/grx11.$(O): $(GR_X11)/grx11.c $(GR_X11)/grx11.h
   ifneq ($(LIBTOOL),)
 	  $(LIBTOOL) --mode=compile $(CC) -static $(CFLAGS) \
                      $(GRAPH_INCLUDES:%=$I%) \

@@ -1,35 +1,36 @@
-/****************************************************************************
- *
- * ftutil.c
- *
- *   FreeType utility file for memory and list management (body).
- *
- * Copyright (C) 2002-2020 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ftutil.c                                                               */
+/*                                                                         */
+/*    FreeType utility file for memory and list management (body).         */
+/*                                                                         */
+/*  Copyright 2002-2018 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-#include <freetype/internal/ftdebug.h>
-#include <freetype/internal/ftmemory.h>
-#include <freetype/internal/ftobjs.h>
-#include <freetype/ftlist.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_MEMORY_H
+#include FT_INTERNAL_OBJECTS_H
+#include FT_LIST_H
 
 
-  /**************************************************************************
-   *
-   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
-   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
-   * messages during execution.
-   */
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  memory
+#define FT_COMPONENT  trace_memory
 
 
   /*************************************************************************/
@@ -53,7 +54,7 @@
     FT_Error    error;
     FT_Pointer  block = ft_mem_qalloc( memory, size, &error );
 
-    if ( !error && block && size > 0 )
+    if ( !error && size > 0 )
       FT_MEM_ZERO( block, size );
 
     *p_error = error;
@@ -100,7 +101,7 @@
 
     block = ft_mem_qrealloc( memory, item_size,
                              cur_count, new_count, block, &error );
-    if ( !error && block && new_count > cur_count )
+    if ( !error && new_count > cur_count )
       FT_MEM_ZERO( (char*)block + cur_count * item_size,
                    ( new_count - cur_count ) * item_size );
 
@@ -184,7 +185,7 @@
     FT_Pointer  p = ft_mem_qalloc( memory, (FT_Long)size, &error );
 
 
-    if ( !error && address && size > 0 )
+    if ( !error && address )
       ft_memcpy( p, address, size );
 
     *p_error = error;
@@ -235,7 +236,7 @@
   /*************************************************************************/
 
 #undef  FT_COMPONENT
-#define FT_COMPONENT  list
+#define FT_COMPONENT  trace_list
 
   /* documentation is in ftlist.h */
 

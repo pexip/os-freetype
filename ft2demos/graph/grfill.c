@@ -170,9 +170,9 @@ grFillHLine( grBitmap*  target,
   }
   delta = x + width - target->width;
   if ( delta > 0 )
-    width -= delta;
+    width -= x;
 
-  if ( y < 0 || y >= target->rows || width <= 0 || hline_func == NULL )
+  if ( y < 0 || y >= target->rows || width < 0 || hline_func == NULL )
     return;
 
   line = target->buffer + y*target->pitch;
@@ -191,7 +191,10 @@ grFillVLine( grBitmap*  target,
 {
   int              delta;
   unsigned char*   line;
-  grFillHLineFunc  hline_func = gr_fill_hline_funcs[ target->mode ];
+  grFillHLineFunc  hline_func;
+
+  if ( x < 0 || x >= target->width )
+    return;
 
   if ( y < 0 )
   {
@@ -202,15 +205,19 @@ grFillVLine( grBitmap*  target,
   if ( delta > 0 )
     height -= delta;
 
-  if ( x < 0 || x >= target->width || height <= 0 || hline_func == NULL )
+  if ( height <= 0 )
     return;
 
-  line = target->buffer + y*target->pitch;
-  if ( target->pitch < 0 )
-    line -= target->pitch*(target->rows-1);
+  hline_func = gr_fill_hline_funcs[ target->mode ];
+  if ( hline_func )
+  {
+    line = target->buffer + y*target->pitch;
+    if ( target->pitch < 0 )
+      line -= target->pitch*(target->rows-1);
 
-  for ( ; height > 0; height--, line += target->pitch )
-    hline_func( line, x, 1, color );
+    for ( ; height > 0; height--, line += target->pitch )
+      hline_func( line, x, 1, color );
+  }
 }
 
 extern void
@@ -224,11 +231,11 @@ grFillRect( grBitmap*   target,
   int              delta;
   unsigned char*   line;
   grFillHLineFunc  hline_func;
-  int              size = 0;
+  size_t           size = 0;
 
   if ( x < 0 )
   {
-    width += x;
+    width -= x;
     x      = 0;
   }
   delta = x + width - target->width;
@@ -256,21 +263,20 @@ grFillRect( grBitmap*   target,
   switch ( target->mode )
   {
   case gr_pixel_mode_rgb32:
-    size++;
-    /* fall through */
+    size += width;
   case gr_pixel_mode_rgb24:
-    size++;
-    /* fall through */
+    size += width;
   case gr_pixel_mode_rgb565:
   case gr_pixel_mode_rgb555:
-    size += 2;
-    hline_func( line, x, width, color );
-    for ( line += size * x; --height > 0; line += target->pitch )
-      memcpy( line + target->pitch, line, (size_t)size * (size_t)width );
-    break;
-
+    size += width;
   case gr_pixel_mode_gray:
   case gr_pixel_mode_pal8:
+    size += width;
+    hline_func( line, x, width, color );
+    for ( ; --height > 0; line += target->pitch )
+      memcpy( line + target->pitch, line, size );
+    break;
+
   case gr_pixel_mode_pal4:
   case gr_pixel_mode_mono:
     for ( ; height-- > 0; line += target->pitch )

@@ -15,14 +15,10 @@ space := $(empty) $(empty)
 # TOP_DIR is the directory where the main FreeType source is found,
 # as well as the `config.mk' file.
 #
-# TOP_DIR_2 is the directory containing the top of the demonstration
+# TOP_DIR_2 is the directory is the top of the demonstration
 # programs directory.
 #
 # OBJ_DIR gives the objects directory of the FreeType library.
-#
-# IF DEVEL_DIR is set, do a development build (i.e., use development
-# versions of the FreeType configuration header files `ft2build.h'
-# and `ftoption.h' given in this directory).
 #
 TOP_DIR   ?= ../freetype2
 TOP_DIR_2 ?= .
@@ -55,7 +51,7 @@ endif
 ####################################################################
 #
 # Check that we have a working `config.mk' in the above directory.
-# Otherwise issue a warning message and stop.
+# If not, issue a warning message, then stop there.
 #
 ifeq ($(wildcard $(CONFIG_MK)),)
   no_config_mk := 1
@@ -126,14 +122,16 @@ else
   endif
 
   FT_INCLUDES := $(OBJ_BUILD) \
+                 $(BUILD_DIR) \
                  $(DEVEL_DIR) \
                  $(TOP_DIR)/include \
                  $(SRC_DIR)
 
-  COMPILE = $(CC) $(ANSIFLAGS) \
+  COMPILE = $(CC) $(CPPFLAGS) \
+                  $(CFLAGS) \
+                  $(ANSIFLAGS) \
                   $(INCLUDES:%=$I%) \
-                  $(CPPFLAGS) \
-                  $(CFLAGS)
+                  $DFT_CONFIG_MODULES_H="<ftmodule.h>"
 
   # Enable C99 for gcc to avoid warnings.
   # Note that clang++ aborts with an error if we use `-std=C99',
@@ -164,18 +162,16 @@ else
   LINK_ITEMS = $T$(subst /,$(COMPILER_SEP),$@ $<)
 
   ifeq ($(PLATFORM),unix)
-    override CC = $(CCraw)
-    LINK_CMD    = $(subst /,$(SEP),$(OBJ_BUILD)/libtool) \
-                  --mode=link $(CC) \
-                  $(subst /,$(COMPILER_SEP),$(LDFLAGS))
-    LINK_LIBS   = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) $(LIB_CLOCK_GETTIME)
+    CC        = $(CCraw)
+    LINK_CMD  = $(subst /,$(SEP),$(OBJ_BUILD)/libtool) \
+                --mode=link $(CC) \
+                $(subst /,$(COMPILER_SEP),$(LDFLAGS))
+    LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) $(LIB_CLOCK_GETTIME)
   else
     LINK_CMD = $(CC) $(subst /,$(COMPILER_SEP),$(LDFLAGS))
     ifeq ($(PLATFORM),unixdev)
-      LINK_LIBS := $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) -lm -lrt -lz -lbz2
-      LINK_LIBS += $(shell pkg-config --libs libpng)
-      LINK_LIBS += $(shell pkg-config --libs harfbuzz)
-      LINK_LIBS += $(shell pkg-config --libs libbrotlidec)
+      LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) -lm -lrt -lz -lbz2
+      LINK_LIBS += $(shell pkg-config --libs libpng harfbuzz)
     else
       LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE))
     endif
@@ -333,11 +329,9 @@ else
   # Rules for compiling object files for text-only demos.
   #
   $(OBJ_DIR_2)/common.$(SO): $(SRC_DIR)/common.c
-  $(OBJ_DIR_2)/strbuf.$(SO): $(SRC_DIR)/strbuf.c
   $(OBJ_DIR_2)/output.$(SO): $(SRC_DIR)/output.c
   $(OBJ_DIR_2)/mlgetopt.$(SO): $(SRC_DIR)/mlgetopt.c
   COMMON_OBJ := $(OBJ_DIR_2)/common.$(SO) \
-                $(OBJ_DIR_2)/strbuf.$(SO) \
                 $(OBJ_DIR_2)/output.$(SO) \
                 $(OBJ_DIR_2)/mlgetopt.$(SO)
 
@@ -564,19 +558,19 @@ ifneq ($(findstring distx,$(MAKECMDGOALS)x),)
   minor := $(shell sed -n 's/.*FREETYPE_MINOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
   patch := $(shell sed -n 's/.*FREETYPE_PATCH[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
 
-#  ifneq ($(findstring x0x,x$(patch)x),)
-#    version := $(major).$(minor)
-#    winversion := $(major)$(minor)
-#  else
+  ifneq ($(findstring x0x,x$(patch)x),)
+    version := $(major).$(minor)
+    winversion := $(major)$(minor)
+  else
     version := $(major).$(minor).$(patch)
     winversion := $(major)$(minor)$(patch)
-#  endif
+  endif
 endif
 
 dist:
 	-rm -rf tmp
 	rm -f ft2demos-$(version).tar.gz
-	rm -f ft2demos-$(version).tar.xz
+	rm -f ft2demos-$(version).tar.bz2
 	rm -f ftdmo$(winversion).zip
 
 	for d in `find . -wholename '*/.git' -prune \
@@ -602,7 +596,7 @@ dist:
 	tar -H ustar -chf - ft2demos-$(version) \
 	| gzip -c > ft2demos-$(version).tar.gz
 	tar -H ustar -chf - ft2demos-$(version) \
-	| xz -c > ft2demos-$(version).tar.xz
+	| bzip2 -c > ft2demos-$(version).tar.bz2
 
 	@# Use CR/LF for zip files.
 	zip -lr ftdmo$(winversion).zip ft2demos-$(version)

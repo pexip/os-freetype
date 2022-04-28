@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2007-2020 by                                              */
+/*  Copyright 2007-2018 by                                                  */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -24,8 +24,8 @@
   /* showing driver name -- the two internal header files */
   /* shouldn't be used in normal programs                 */
 #include FT_MODULE_H
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdrv.h>
+#include FT_INTERNAL_OBJECTS_H
+#include FT_INTERNAL_DRIVER_H
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -52,8 +52,11 @@
       "            `.afm' or `.pfm').\n"
       "\n" );
     fprintf( stderr,
-      "  -w W         Set the window width to W pixels (default: 640px).\n"
-      "  -h H         Set the window height to H pixels (default: 480px).\n"
+      "  -w W         Set the window width to W pixels (default: %dpx).\n"
+      "  -h H         Set the window height to H pixels (default: %dpx).\n"
+      "\n",
+             DIM_X, DIM_Y );
+    fprintf( stderr,
       "  -r R         Use resolution R dpi (default: 72dpi).\n"
       "  -s S         Set character size to S points (default: 16pt).\n"
       "  -f TEXTFILE  Change displayed text, using text in TEXTFILE\n"
@@ -460,17 +463,19 @@
           fn = face->family_name;
         else
           fn = (char*)"(unknown family)";
-        family_name = ft_strdup( fn );
+        family_name = (char*)malloc( strlen( fn ) + 1 );
         if ( family_name == NULL )
           panic( "ftdiff: not enough memory\n" );
+        strcpy( family_name, fn );
 
         if ( face->style_name )
           sn = face->style_name;
         else
           sn = (char*)"(unknown style)";
-        style_name = ft_strdup( sn );
+        style_name = (char*)malloc( strlen( sn ) + 1 );
         if ( style_name == NULL )
           panic( "ftdiff: not enough memory\n" );
+        strcpy( style_name, sn );
 
         faces[num_faces].filepath    = files[0];
         faces[num_faces].index       = count;
@@ -716,9 +721,9 @@
       if ( rmode != HINT_MODE_AUTOHINT_LIGHT_SUBPIXEL &&
            column->use_deltas                         )
       {
-        if ( prev_rsb_delta - face->glyph->lsb_delta > 32 )
+        if ( prev_rsb_delta - face->glyph->lsb_delta >= 32 )
           x_origin -= 64;
-        else if ( prev_rsb_delta - face->glyph->lsb_delta < -31 )
+        else if ( prev_rsb_delta - face->glyph->lsb_delta < -32 )
           x_origin += 64;
       }
       prev_rsb_delta = face->glyph->rsb_delta;
@@ -874,8 +879,8 @@
       else if ( rmode == HINT_MODE_AUTOHINT )
         extra = warping ? " (+warp)" : " (-warp)";
 
-      snprintf( temp, sizeof ( temp ), "%s%s",
-                render_mode_names[column->hint_mode], extra );
+      sprintf( temp, "%s%s",
+               render_mode_names[column->hint_mode], extra );
       state->display.disp_text( disp, left,
                                 bottom + 5, temp );
 
@@ -894,19 +899,19 @@
           unsigned char*  fw  = column->filter_weights;
 
 
-          snprintf( temp, sizeof ( temp ),
-                    "%s0x%02X%s0x%02X%s0x%02X%s0x%02X%s0x%02X%s",
-                    fwi == 0 ? "[" : " ",
-                      fw[0],
-                    fwi == 0 ? "]" : ( fwi == 1 ? "[" : " " ),
-                      fw[1],
-                    fwi == 1 ? "]" : ( fwi == 2 ? "[" : " " ),
-                      fw[2],
-                    fwi == 2 ? "]" : ( fwi == 3 ? "[" : " " ),
-                      fw[3],
-                    fwi == 3 ? "]" : ( fwi == 4 ? "[" : " " ),
-                      fw[4],
-                    fwi == 4 ? "]" : " " );
+          sprintf( temp,
+                   "%s0x%02X%s0x%02X%s0x%02X%s0x%02X%s0x%02X%s",
+                   fwi == 0 ? "[" : " ",
+                     fw[0],
+                   fwi == 0 ? "]" : ( fwi == 1 ? "[" : " " ),
+                     fw[1],
+                   fwi == 1 ? "]" : ( fwi == 2 ? "[" : " " ),
+                     fw[2],
+                   fwi == 2 ? "]" : ( fwi == 3 ? "[" : " " ),
+                     fw[3],
+                   fwi == 3 ? "]" : ( fwi == 4 ? "[" : " " ),
+                     fw[4],
+                   fwi == 4 ? "]" : " " );
           state->display.disp_text( disp, left,
                                     bottom + 2 * HEADER_HEIGHT + 5, temp );
         }
@@ -937,13 +942,13 @@
                                   bottom + 2 * HEADER_HEIGHT + 5, msg );
       }
 
-      snprintf( temp, sizeof ( temp ), "%s %s %s",
-                column->use_kerning ? "+kern"
-                                    : "-kern",
-                column->use_deltas ? "+delta"
-                                   : "-delta",
-                column->use_cboxes ? "glyph boxes"
-                                   : "adv. widths" );
+      sprintf( temp, "%s %s %s",
+               column->use_kerning ? "+kern"
+                                   : "-kern",
+               column->use_deltas ? "+delta"
+                                  : "-delta",
+               column->use_cboxes ? "glyph boxes"
+                                  : "adv. widths" );
       state->display.disp_text( disp, left,
                                 bottom + 3 * HEADER_HEIGHT + 5, temp );
 
@@ -1012,7 +1017,7 @@
     display->bitmap  = &surface->bitmap;
     display->gamma   = GAMMA;
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetGlyphGamma( display->gamma );
 
     memset( &display->fore_color, 0, sizeof( grColor ) );
     memset( &display->back_color, 0xff, sizeof( grColor ) );
@@ -1121,7 +1126,7 @@
     else if ( display->gamma < 0.0001 )
       display->gamma = 0.0;
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetGlyphGamma( display->gamma );
   }
 
 
@@ -1141,7 +1146,7 @@
     FT_Library_Version( state->library, &major, &minor, &patch );
 
     format = patch ? "%d.%d.%d" : "%d.%d";
-    snprintf( version, sizeof ( version ), format, major, minor, patch );
+    sprintf( version, format, major, minor, patch );
 
     adisplay_clear( display );
     grSetLineHeight( 10 );
@@ -1149,42 +1154,42 @@
     grSetMargin( 2, 1 );
     grGotobitmap( display->bitmap );
 
-    snprintf( buf, sizeof ( buf ),
-              "FreeType Hinting Mode Comparator -"
-                " part of the FreeType %s test suite",
-              version );
+    sprintf( buf,
+             "FreeType Hinting Mode Comparator - part of the FreeType %s test suite",
+             version );
 
     grWriteln( buf );
     grLn();
+    grWriteln( "This program displays text using various hinting algorithms." );
+    grLn();
     grWriteln( "Use the following keys:" );
     grLn();
-    /*          |----------------------------------|    |----------------------------------| */
-    grWriteln( "F1, ?       display this help screen                                        " );
-    grWriteln( "                                                                            " );
-    grWriteln( "global parameters:                                                          " );
-    grWriteln( "  p, n        previous/next font        1, 2, 3      select column          " );
-    grWriteln( "  Up, Down    adjust size by 0.5pt      Left, Right  switch between columns " );
-    grWriteln( "  PgUp, PgDn  adjust size by 5pt        g, v         adjust gamma value     " );
-    grWriteln( "                                                                            " );
-    grWriteln( " per-column parameters:                                                     " );
-    grWriteln( "  d           toggle lsb/rsb deltas     hinting modes:                      " );
-    grWriteln( "  h           cycle hinting mode          A          unhinted               " );
-    grWriteln( "  H           cycle hinting engine        B          auto-hinter            " );
-    grWriteln( "               (if CFF or TTF)            C          light auto-hinter      " );
-    grWriteln( "  w           toggle warping (if          D          light auto-hinter      " );
-    grWriteln( "               normal auto-hinting)                   (subpixel)            " );
-    grWriteln( "  k           toggle kerning (only        E          native hinter          " );
-    grWriteln( "               from `kern' table)                                           " );
-    grWriteln( "  r           toggle rendering mode                                         " );
-    grWriteln( "  x           toggle layout mode                                            " );
-    grWriteln( "                                                                            " );
-    grWriteln( "  l           cycle LCD filtering                                           " );
-    grWriteln( "  [, ]        select custom LCD                                             " );
-    grWriteln( "               filter weight                                                " );
-    grWriteln( "  -, +(=)     adjust selected custom                                        " );
-    grWriteln( "               LCD filter weight                                            " );
-    /*          |----------------------------------|    |----------------------------------| */
+    grWriteln( "  F1, ?        display this help screen" );
     grLn();
+    grWriteln( "  p, n         select previous/next font" );
+    grLn();
+    grWriteln( " global parameters:" );
+    grLn();
+    grWriteln( "  Up, Down     adjust pointsize by 0.5 unit" );
+    grWriteln( "  PgUp, PgDn   adjust pointsize by 5 units" );
+    grWriteln( "  g, v         adjust gamma value" );
+    grLn();
+    grWriteln( "  1, 2, 3      select left, middle, or right column" );
+    grWriteln( "  Left, Right  switch between columns" );
+    grLn();
+    grWriteln( " per-column parameters:" );
+    grLn();
+    grWriteln( "  d            toggle lsb/rsb deltas" );
+    grWriteln( "  h            cycle hinting mode" );
+    grWriteln( "  H            cycle hinting engine (if CFF or TTF)" );
+    grWriteln( "  w            toggle warping (if normal auto-hinting" );
+    grWriteln( "  k            toggle kerning (only from `kern' table)" );
+    grWriteln( "  r            toggle rendering mode" );
+    grWriteln( "  x            toggle layout mode" );
+    grLn();
+    grWriteln( "  l            change LCD filter type" );
+    grWriteln( "  [, ]         select custom LCD filter weight" );
+    grWriteln( "  -, +(=)      adjust selected custom LCD filter weight");
     grLn();
     grWriteln( "press any key to exit this help screen" );
 
@@ -1242,13 +1247,6 @@
     int          ret    = 0;
     ColumnState  column = &state->columns[state->col];
 
-
-    if ( event->key >= 'A'                &&
-         event->key < 'A' + HINT_MODE_MAX )
-    {
-      column->hint_mode = (HintMode)( event->key - 'A' );
-      return ret;
-    }
 
     switch ( event->key )
     {
@@ -1478,20 +1476,20 @@
 
 
     basename = ft_basename( state->filename );
-    snprintf( buf, sizeof ( buf ), "%.50s %.50s (file `%.100s')",
-              face->family_name,
-              face->style_name,
-              basename );
+    sprintf( buf, "%.50s %.50s (file `%.100s')",
+                  face->family_name,
+                  face->style_name,
+                  basename );
     grWriteCellString( adisplay->bitmap, 0, 5,
                        buf, adisplay->fore_color );
 
     if ( adisplay->gamma != 0.0 )
-      snprintf( gamma, sizeof ( gamma ), "%.1f", adisplay->gamma );
-    snprintf( buf, sizeof ( buf ), "%.1fpt (%dppem) at %udpi, gamma: %s",
-              state->char_size,
-              (int)( state->char_size * state->resolution / 72 + 0.5 ),
-              state->resolution,
-              gamma );
+      sprintf( gamma, "%.1f", adisplay->gamma );
+    sprintf( buf, "%.1fpt (%dppem) at %ddpi, gamma: %s",
+                  state->char_size,
+                  (int)(state->char_size * state->resolution / 72 + 0.5),
+                  state->resolution,
+                  gamma );
     grWriteCellString( adisplay->bitmap, 0, 5 + HEADER_HEIGHT,
                        buf, adisplay->fore_color );
 
@@ -1507,8 +1505,8 @@
     ADisplayRec     adisplay[1];
     RenderStateRec  state[1];
     DisplayRec      display[1];
-    int             width      = 640;
-    int             height     = 480;
+    int             width      = DIM_X;
+    int             height     = DIM_Y;
     int             resolution = -1;
     double          size       = -1;
     const char*     textfile   = NULL;
@@ -1688,14 +1686,8 @@
 
       write_global_info( state );
       grRefreshSurface( adisplay->surface );
-
       grListenSurface( adisplay->surface, 0, &event );
-      if ( event.type == gr_event_resize )
-      {
-        width  = event.x;
-        height = event.y;
-      }
-      else if ( process_event( state, &event ) )
+      if ( process_event( state, &event ) )
         break;
     }
 

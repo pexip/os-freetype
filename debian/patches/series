@@ -1,7 +1,14 @@
+scale-phantom-points.patch
+no-uninitialized-bbox.patch
 enable-subpixel-rendering.patch
 enable-gxvalid-otvalid.patch
+verbose-libtool.patch
+compiler_hardening_fixes.patch
 ft2demos-no-rpath.patch
-fix-js-doc-paths.patch
-remove-gstatic-code.patch
+revert-wrong-extern.patch
 no-web-fonts.patch
 hide-donations-information.patch
+sfnt-Fix-heap-buffer-overflow-59308.patch
+CVE-2022-27404.patch
+CVE-2022-27405.patch
+CVE-2022-27406.patch

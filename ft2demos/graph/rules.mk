@@ -19,7 +19,6 @@ GRAPH := $(TOP_DIR_2)/graph
 GRAPH_H := $(GRAPH)/gblany.h    \
            $(GRAPH)/gblbgra.h   \
            $(GRAPH)/gblblit.h   \
-           $(GRAPH)/gblspans.h  \
            $(GRAPH)/gblcolor.h  \
            $(GRAPH)/gblhbgr.h   \
            $(GRAPH)/gblhrgb.h   \

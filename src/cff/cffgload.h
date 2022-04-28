@@ -1,27 +1,28 @@
-/****************************************************************************
- *
- * cffgload.h
- *
- *   OpenType Glyph Loader (specification).
- *
- * Copyright (C) 1996-2020 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  cffgload.h                                                             */
+/*                                                                         */
+/*    OpenType Glyph Loader (specification).                               */
+/*                                                                         */
+/*  Copyright 1996-2018 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
 #ifndef CFFGLOAD_H_
 #define CFFGLOAD_H_
 
 
-#include <freetype/freetype.h>
-#include <freetype/internal/cffotypes.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_INTERNAL_CFF_OBJECTS_TYPES_H
 
 
 FT_BEGIN_HEADER

@@ -1,38 +1,35 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: FreeType
+Upstream-Name: freetype
 Upstream-Contact: freetype-devel@nongnu.org
 Source: https://www.freetype.org/download.html
-Files-Excluded: docs/reference/assets/javascripts
-Comment: The files in this path have been removed because they are minified
-         JavaScript files and are incompatible with the DFSG.
 
 Files: *
-Copyright: 1996-2020 David Turner, Robert Wilhelm and Werner Lemberg
-           1996-2020 Just van Rossum
-           2002-2020 Roberto Alameda
+Copyright: 1996-2018 David Turner, Robert Wilhelm and Werner Lemberg
+           1996-2018 Just van Rossum
+           2002-2018 Roberto Alameda
            2003 Huw D M Davies for Codeweavers
-           2003-2020 Masatake Yamato, Redhat K.K.
-           2004-2020 Albert Chin-A-Young
-           2004-2020 Suzuki Toshiya
+           2003-2018 Masatake Yamato, Redhat K.K.
+           2004-2018 Albert Chin-A-Young
+           2004-2018 Suzuki Toshiya
            2007 Dmitry Timoshkov for Codeweavers
-           2007-2020 Rahul Bhalerao <rahul.bhalerao@redhat.com>
-           2007-2020 Derek Clegg, Michael Toftdal
-           2009-2020 Oran Agra, Mickey Gabel
-           2010-2020 Joel Klinghed
+           2007-2018 Rahul Bhalerao <rahul.bhalerao@redhat.com>
+           2007-2018 Derek Clegg, Michael Toftdal
+           2009-2018 Oran Agra, Mickey Gabel
+           2010-2018 Joel Klinghed
 License: GPL-2+ or FTL
 
 Files: vms_make.com
-Copyright: 1996-2020 David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 1996-2018 David Turner, Robert Wilhelm and Werner Lemberg
+           2001, 2002 Catharon Productions Inc.
            2001, 2002 Francesco Zappa Nardelli
-           2010-2020 Joel Klinghed
-License: FTL and MIT
+License: FTL and Catharon-OSL and MIT
 
-Files: builds/amiga/*
-Copyright: 2005-2020 Werner Lemberg and Detlef Würkner
+Files: builds/amiga/* builds/amiga/include/config/*
+Copyright: 2005-2018 Werner Lemberg and Detlef Würkner
 License: FTL
 
 Files: builds/amiga/src/base/*
-Copyright: 1996-2020 David Turner, Robert Wilhelm, Werner Lemberg and Detlef Würkner
+Copyright: 1996-2018 David Turner, Robert Wilhelm, Werner Lemberg and Detlef Würkner
 License: FTL
 
 Files: builds/cmake/FindHarfBuzz.cmake
@@ -42,7 +39,7 @@ License: BSD-3-Clause
 Files: builds/mac/ftmac.c
        include/freetype/ftmac.h
        src/base/ftmac.c
-Copyright: 1996-2020 Just van Rossum, David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 1996-2018 Just van Rossum, David Turner, Robert Wilhelm and Werner Lemberg
 License: FTL
 
 Files: builds/mac/README
@@ -53,21 +50,13 @@ Files: builds/unix/aclocal.m4
 Copyright: 1992-2018 Free Software Foundation, Inc.
 License: FSFULLR and GPL-2+
 
-Files: builds/unix/ax_compare_version.m4
-Copyright: 2008 Tim Toolan
-License: FSFAP
-
-Files: builds/unix/ax_prog_python_version.m4
-Copyright: 2009 Francesco Salvestrini
-License: FSFAP
-
-Files: builds/unix/config.guess builds/unix/config.sub
-Copyright: 1992-2020 Free Software Foundation, Inc.
-License: Permissive and GPL-3+
-
 Files: builds/unix/configure
 Copyright: 1992-2018 Free Software Foundation, Inc.
 License: FSFUL and GPL-2+
+
+Files: builds/unix/config.guess builds/unix/config.sub
+Copyright: 1992-2018 Free Software Foundation, Inc.
+License: Permissive and GPL-3+
 
 Files: builds/unix/install-sh
 Copyright: 1994 X Consortium
@@ -82,88 +71,13 @@ Copyright: 2004 Scott James Remnant <scott@netsplit.com>
 License: GPL-2+
 
 Files: debian/*
-Copyright: 1996-2019 Christoph Lameter <clameter@waterf.org>,
+Copyright: 1996-2018 Christoph Lameter <clameter@waterf.org>,
                      Anthony Fok <foka@debian.org>,
                      Steve Langasek <vorlon@debian.org>, et al.
-           2018-2020 Hugh McMaster <hugh.mcmaster@outlook.com>
 License: GPL-2+
 
-Files: docs/DOCGUIDE
-       src/sfnt/sfwoff2.c
-       src/sfnt/woff2tags.c src/sfnt/woff2tags.h
-Copyright: 1996-2020 Nikhil Ramakrishnan, David Turner, Robert Wilhelm and Werner Lemberg
-License: FTL
-
 Files: docs/INSTALL.CROSS
-Copyright: 2006-2020 Suzuki Toshiya, David Turner, Robert Wilhelm and Werner Lemberg
-License: FTL
-
-Files: docs/reference/*
-Copyright: The FreeType Project
-License: FTL
-
-Files: docs/reference/assets/fonts/font-awesome.css
-Copyright: 2016 Dave Gandy
-License: MIT
-
-Files: docs/reference/assets/fonts/material-icons.css
-       docs/reference/assets/fonts/specimen/MaterialIcons-Regular.ttf
-       docs/reference/assets/fonts/specimen/MaterialIcons-Regular.woff
-       docs/reference/assets/fonts/specimen/MaterialIcons-Regular.woff2
-Copyright: 2015 Google, Inc.
-License: Apache-2.0
-
-Files: docs/reference/assets/fonts/specimen/FontAwesome.ttf
-       docs/reference/assets/fonts/specimen/FontAwesome.woff
-       docs/reference/assets/fonts/specimen/FontAwesome.woff2
-Copyright: Dave Gandy
-License: OFL-1.1
-
-Files: ft2demos/graph/gblender.h
-Copyright: 2001-2020 David Turner
-License: FTL
-
-Files: ft2demos/graph/beos/grbeos.cpp
-Copyright: 2001-2020 Michael Pfeiffer
-License: FTL
-
-Files: ft2demos/graph/mac/grmac.c
-Copyright: 1999-2020 Just van Rossum, Antoine Leca,
-                     David Turner, Robert Wilhelm and Werner Lemberg
-License: FTL
-
-Files: ft2demos/graph/win32/grwin32.c ft2demos/graph/win32/grwin32.h
-       ft2demos/graph/x11/grx11.c     ft2demos/graph/x11/grx11.h
-Copyright: 1999-2020 Antoine Leca, David Turner, Robert Wilhelm and Werner Lemberg
-License: FTL
-
-Files: ft2demos/graph/graph.h
-       ft2demos/graph/grdevice.h
-       ft2demos/graph/grobjs.h
-       ft2demos/graph/grtypes.h
-Copyright: 1999-2020 The FreeType Development Team
-License: FTL
-
-Files: ft2demos/graph/grswizzle.c
-Copyright: None
-License: Public-Domain
-         "this filtering code is explicitly placed in the public domain !!"
-
-Files: ft2demos/mac/ftoldmac.c
-Copyright: 1996-2020 Suzuki Toshiya, David Turner, Robert Wilhelm and Werner Lemberg
-License: FTL
-
-Files: ft2demos/mac/getargv.c
-Copyright: 1991-2020 Stichting Mathematisch Centrum
-License: MIT
-
-Files: ft2demos/src/mlgetopt.c ft2demos/src/mlgetopt.h
-Copyright: None
-License: Public-Domain
-         "This code is hereby expressly placed in the public domain."
-
-Files: ft2demos/src/ftinspect/*
-Copyright: 2016-2020 Werner Lemberg
+Copyright: 2006-2018 Suzuki Toshiya, David Turner, Robert Wilhelm and Werner Lemberg
 License: FTL
 
 Files: ft2docs/docs/js/jquery.ba-resize.min.js
@@ -182,25 +96,84 @@ License: Public-Domain
          "Public domain."
 
 Files: ft2docs/docs/tutorial/example5.cpp
-Copyright: 2016-2018 Static Jobs LLC
+Copyright: 2016 Static Jobs LLC
 License: MIT
+
+Files: ft2demos/Jamfile
+       ft2demos/Jamrules
+       ft2demos/graph/gblender.h
+       ft2demos/graph/Jamfile
+       ft2demos/graph/beos/Jamfile
+       ft2demos/graph/os2/Jamfile
+       ft2demos/graph/win32/Jamfile
+       ft2demos/graph/x11/Jamfile
+       ft2demos/src/Jamfile
+Copyright: 2001-2007 David Turner
+License: FTL
+
+Files: ft2demos/graph/beos/grbeos.cpp
+Copyright: 2001 Michael Pfeiffer
+License: FTL
+
+Files: ft2demos/graph/mac/grmac.c
+Copyright: 1999-2018 Just van Rossum, Antoine Leca,
+                     David Turner, Robert Wilhelm and Werner Lemberg
+License: FTL
+
+Files: ft2demos/graph/win32/grwin32.c ft2demos/graph/win32/grwin32.h
+       ft2demos/graph/x11/grx11.c     ft2demos/graph/x11/grx11.h
+Copyright: 1999-2018 Antoine Leca, David Turner, Robert Wilhelm and Werner Lemberg
+License: FTL
+
+Files: ft2demos/graph/graph.h
+       ft2demos/graph/grdevice.h
+       ft2demos/graph/grobjs.h
+       ft2demos/graph/grtypes.h
+Copyright: 1999-2007, 2013 The FreeType Development Team
+License: FTL
+
+Files: ft2demos/graph/grswizzle.c
+Copyright: None
+License: Public-Domain
+         "this filtering code is explicitly placed in the public domain !!"
+
+Files: ft2demos/mac/ftoldmac.c
+Copyright: 1996-2018 Suzuki Toshiya, David Turner, Robert Wilhelm and Werner Lemberg
+License: FTL
+
+Files: ft2demos/mac/getargv.c
+Copyright: 1991-1997 Stichting Mathematisch Centrum
+License: MIT
+
+Files: ft2demos/src/mlgetopt.c ft2demos/src/mlgetopt.h
+Copyright: None
+License: Public-Domain
+         "This code is hereby expressly placed in the public domain."
+
+Files: ft2demos/src/ftinspect/*
+       ft2demos/src/ftinspect/engine/*
+       ft2demos/src/ftinspect/rendering/*
+       ft2demos/src/ftinspect/widgets/*
+Copyright: 2016-2017 Werner Lemberg
+License: FTL
+
 
 Files: include/freetype/ftbzip2.h
        src/bzip2/*
-Copyright: 2010-2020 Joel Klinghed
+Copyright: 2010-2018 Joel Klinghed
 License: FTL
 
 Files: include/freetype/ftcid.h
        include/freetype/internal/services/svcid.h
        src/base/ftcid.c
-Copyright: 2007-2020 Derek Clegg and Michael Toftdal
+Copyright: 2007-2018 Derek Clegg and Michael Toftdal
 License: FTL
 
 Files: include/freetype/ftgxval.h
        include/freetype/internal/services/svgxval.h
        include/freetype/internal/services/svttcmap.h
        src/base/ftgxval.c
-Copyright: 2003-2020 Masatake Yamato, Red Hat K.K.,
+Copyright: 2003-2018 Masatake Yamato, Red Hat K.K.,
                      David Turner, Robert Wilhelm and Werner Lemberg
 License: FTL
 
@@ -212,29 +185,38 @@ License: MIT
 
 Files: include/freetype/internal/ftrfork.h
        src/base/ftrfork.c
-Copyright: 2004-2020 Masatake Yamato, Redhat K.K.
+       src/gxvalid/gxvfgen.c
+Copyright: 2004-2018 Masatake Yamato, Redhat K.K.
 License: FTL
 
-Files: src/sfnt/ttcmapc.h
-Copyright: 2009-2020 Oran Agra and Mickey Gabel
+Files: include/freetype/internal/ftpic.h
+       src/autofit/afpic.c src/autofit/afpic.h
+       src/base/basepic.c src/base/basepic.h
+       src/base/ftpic.c
+       src/cff/cffpic.c src/cff/cffpic.h
+       src/pshinter/pshpic.c src/pshinter/pshpic.h
+       src/psnames/pspic.c src/psnames/pspic.h
+       src/raster/rastpic.c src/raster/rastpic.h
+       src/sfnt/sfntpic.c src/sfnt/sfntpic.h
+       src/sfnt/ttcmapc.h
+       src/smooth/ftspic.h
+       src/truetype/ttpic.c src/truetype/ttpic.h
+Copyright: 2009-2018 Oran Agra and Mickey Gabel
 License: FTL
 
 Files: include/freetype/internal/services/svttglyf.h
        src/base/ftpatent.c
        src/lzw/ftzopen.c src/lzw/ftzopen.h
-Copyright: 2002-2020 David Turner
+       src/tools/docmaker/*
+Copyright: 2002-2018 David Turner
 License: FTL
 
 Files: src/autofit/afindic.c src/autofit/afindic.h
-Copyright: 2007-2020 Rahul Bhalerao
+Copyright: 2007-2018 Rahul Bhalerao
 License: FTL
 
 Files: src/base/ftbase.h
-Copyright: 2008-2020 David Turner, Robert Wilhelm, Werner Lemberg and Suzuki Toshiya
-License: FTL
-
-Files: src/base/fterrors.c
-Copyright: 2018-2020 Armin Hasitzka, David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 2008-2018 David Turner, Robert Wilhelm, Werner Lemberg and Suzuki Toshiya
 License: FTL
 
 Files: src/base/md5.c src/base/md5.h
@@ -253,30 +235,30 @@ Files: src/bdf/bdf.c
        src/pcf/pcfdrivr.c src/pcf/pcfdrivr.h
        src/pcf/pcfread.c src/pcf/pcfread.h
        src/pcf/pcfutil.h
-       src/pcf/README
        src/pcf/rules.mk
+       src/pcf/README
 Copyright: 2000-2014 Francesco Zappa Nardelli
 License: MIT
 
 Files: src/bdf/bdf.h src/bdf/bdflib.c
 Copyright: 2000 Computing Research Labs, New Mexico State University
-           2001-2014 Francesco Zappa Nardelli
+           2001-2004, 2011 Francesco Zappa Nardelli
 License: MIT
 
 Files: src/gxvalid/*
-Copyright: 2004-2020 Suzuki Toshiya, Masatake Yamato, Red Hat K.K.,
+Copyright: 2004-2018 Suzuki Toshiya, Masatake Yamato, Red Hat K.K.,
                      David Turner, Robert Wilhelm and Werner Lemberg
 License: FTL
 
-Files: src/gxvalid/gxvfgen.c
-Copyright: 2004-2020 Masatake Yamato, Redhat K.K.
+Files: src/gxvalid/Jamfile
+Copyright: 2005-2018 Suzuki Toshiya, Masatake Yamato and Red Hat K.K.
 License: FTL
 
 Files: src/gzip/adler32.c
        src/gzip/infblock.c src/gzip/infblock.h
        src/gzip/infcodes.c src/gzip/infcodes.h
        src/gzip/inflate.c
-       src/gzip/inftrees.c src/gzip/inftrees.h
+       src/gzip/inftrees.c
        src/gzip/infutil.c src/gzip/infutil.h
 Copyright: 1995-2002 Mark Adler
 License: Zlib
@@ -291,7 +273,7 @@ Copyright: 1995-2002 Jean-loup Gailly and Mark Adler
 License: Zlib
 
 Files: src/lzw/ftlzw.c src/lzw/rules.mk
-Copyright: 2004-2020 Albert Chin-A-Young
+Copyright: 2004-2018 Albert Chin-A-Young
 License: FTL
 
 Files: src/pcf/pcfutil.c
@@ -300,7 +282,7 @@ License: OpenGroup-BSD-like
 
 Files: src/psaux/psarrst.c src/psaux/psarrst.h
        src/psaux/psblues.c src/psaux/psblues.h
-       src/psaux/pserror.c src/psaux/pserror.h
+       src/psaux/pserror.h src/psaux/pserror.h
        src/psaux/psfixed.h
        src/psaux/psfont.c src/psaux/psfont.h
        src/psaux/psft.c src/psaux/psft.h
@@ -314,11 +296,11 @@ Copyright: 2006-2014 Adobe Systems Incorporated
 License: FTL
 
 Files: src/sfnt/pngshim.c src/sfnt/pngshim.h
-Copyright: 2013-2020 Google, Inc.
+Copyright: 2013-2018 Google, Inc.
 License: FTL
 
 Files: src/sfnt/ttsbit.c
-Copyright: 2005-2020 David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 2005-2018 David Turner, Robert Wilhelm and Werner Lemberg
            2013 Google, Inc.
 License: FTL
 
@@ -328,7 +310,7 @@ License: Public-Domain
          "This code is explicitly placed into the public domain."
 
 Files: src/tools/update-copyright-year
-Copyright: 2015-2020 Werner Lemberg
+Copyright: 2015-2018 Werner Lemberg
 License: FTL
 
 Files: src/tools/ftrandom/ftrandom.c
@@ -336,42 +318,26 @@ Copyright: 2005, 2007, 2008, 2013 George Williams
 License: BSD-3-Clause
 
 Files: src/truetype/ttgxvar.c src/truetype/ttgxvar.h
-Copyright: 2004-2020 David Turner, Robert Wilhelm, Werner Lemberg and George Williams
+Copyright: 2004-2018 David Turner, Robert Wilhelm, Werner Lemberg and George Williams
 License: FTL
 
 Files: src/type42/t42drivr.c src/type42/t42drivr.h
        src/type42/t42objs.c src/type42/t42objs.h
        src/type42/t42parse.c src/type42/t42parse.h
        src/type42/t42types.h
-Copyright: 2002-2020 Roberto Alameda
+Copyright: 2002-2018 Roberto Alameda
 License: FTL
 
 Files: src/winfonts/winfnt.c
-Copyright: 1996-2020 David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 1996-2018 David Turner, Robert Wilhelm and Werner Lemberg
            2003 Huw D M Davies for Codeweavers
            2007 Dmitry Timoshkov for Codeweavers
 License: FTL
 
 Files: src/winfonts/winfnt.h
-Copyright: 1996-2020 David Turner, Robert Wilhelm and Werner Lemberg
+Copyright: 1996-2018 David Turner, Robert Wilhelm and Werner Lemberg
            2007 Dmitry Timoshkov for Codeweavers
 License: FTL
-
-License: Apache-2.0
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
- .
-      http://www.apache.org/licenses/LICENSE-2.0
- .
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
-  On Debian GNU/Linux systems, the complete text of the Apache License
-  Version 2.0 can be found in `/usr/share/common-licenses/Apache-2.0'.
 
 License: BSD-3-Clause
   Redistribution and use in source and binary forms, with or without
@@ -400,11 +366,128 @@ License: BSD-3-Clause
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
   THE POSSIBILITY OF SUCH DAMAGE.
 
-License: FSFAP
-  Copying and distribution of this file, with or without modification,
-  are permitted in any medium without royalty provided the copyright
-  notice and this notice are preserved. This file is offered as-is,
-  without any warranty.
+License: Catharon-OSL
+                  The Catharon Open Source LICENSE
+                    ----------------------------
+ .
+                            2000-Jul-04
+ .
+          Copyright (C) 2000 by Catharon Productions, Inc.
+ .
+ .
+ .
+ Introduction
+ ============
+ .
+  This  license  applies to  source  files  distributed by  Catharon
+  Productions,  Inc.  in  several  archive packages.   This  license
+  applies  to all files  found in  such packages  which do  not fall
+  under their own explicit license.
+ .
+  This  license   was  inspired  by  the  BSD,   Artistic,  and  IJG
+  (Independent JPEG  Group) licenses, which  all encourage inclusion
+  and  use of  free  software in  commercial  and freeware  products
+  alike.  As a consequence, its main points are that:
+ .
+    o We  don't promise that  this software works.  However,  we are
+      interested in any kind of bug reports. (`as is' distribution)
+ .
+    o You can  use this software for whatever you  want, in parts or
+      full form, without having to pay us. (`royalty-free' usage)
+ .
+    o You may not pretend that  you wrote this software.  If you use
+      it, or  only parts of it,  in a program,  you must acknowledge
+      somewhere  in  your  documentation  that  you  have  used  the
+      Catharon Code. (`credits')
+ .
+  We  specifically  permit  and  encourage  the  inclusion  of  this
+  software, with  or without modifications,  in commercial products.
+  We disclaim  all warranties  covering the packages  distributed by
+  Catharon  Productions, Inc.  and  assume no  liability related  to
+  their use.
+ .
+ .
+ Legal Terms
+ ===========
+ .
+ 0. Definitions
+ --------------
+ .
+  Throughout this license,  the terms `Catharon Package', `package',
+  and  `Catharon  Code'  refer   to  the  set  of  files  originally
+  distributed by Catharon Productions, Inc.
+ .
+  `You' refers to  the licensee, or person using  the project, where
+  `using' is a generic term including compiling the project's source
+  code as  well as linking it  to form a  `program' or `executable'.
+  This  program  is referred  to  as `a  program  using  one of  the
+  Catharon Packages'.
+ .
+  This  license applies  to all  files distributed  in  the original
+  Catharon  Package(s),  including  all  source code,  binaries  and
+  documentation,  unless  otherwise  stated   in  the  file  in  its
+  original, unmodified form as  distributed in the original archive.
+  If you are  unsure whether or not a particular  file is covered by
+  this license, you must contact us to verify this.
+ .
+  The  Catharon   Packages  are  copyright  (C)   2000  by  Catharon
+  Productions, Inc.  All rights reserved except as specified below.
+ .
+ 1. No Warranty
+ --------------
+ .
+  THE CATHARON PACKAGES ARE PROVIDED `AS IS' WITHOUT WARRANTY OF ANY
+  KIND, EITHER  EXPRESS OR IMPLIED,  INCLUDING, BUT NOT  LIMITED TO,
+  WARRANTIES  OF  MERCHANTABILITY   AND  FITNESS  FOR  A  PARTICULAR
+  PURPOSE.  IN NO EVENT WILL ANY OF THE AUTHORS OR COPYRIGHT HOLDERS
+  BE LIABLE FOR ANY DAMAGES CAUSED BY THE USE OF OR THE INABILITY TO
+  USE THE CATHARON PACKAGE.
+ .
+ 2. Redistribution
+ -----------------
+ .
+  This  license  grants  a  worldwide, royalty-free,  perpetual  and
+  irrevocable right  and license to use,  execute, perform, compile,
+  display,  copy,   create  derivative  works   of,  distribute  and
+  sublicense the  Catharon Packages (in both source  and object code
+  forms)  and  derivative works  thereof  for  any  purpose; and  to
+  authorize others  to exercise  some or all  of the  rights granted
+  herein, subject to the following conditions:
+ .
+    o Redistribution  of source code  must retain this  license file
+      (`license.txt') unaltered; any additions, deletions or changes
+      to   the  original   files  must   be  clearly   indicated  in
+      accompanying  documentation.   The  copyright notices  of  the
+      unaltered, original  files must be preserved in  all copies of
+      source files.
+ .
+    o Redistribution  in binary form must provide  a disclaimer that
+      states  that the  software is  based in  part on  the  work of
+      Catharon Productions, Inc. in the distribution documentation.
+ .
+  These conditions  apply to any  software derived from or  based on
+  the Catharon Packages, not just  the unmodified files.  If you use
+  our work, you  must acknowledge us.  However, no  fee need be paid
+  to us.
+ .
+ 3. Advertising
+ --------------
+ .
+  Neither Catharon Productions, Inc.  and contributors nor you shall
+  use  the  name  of  the  other  for  commercial,  advertising,  or
+  promotional purposes without specific prior written permission.
+ .
+  We suggest, but do not  require, that you use the following phrase
+  to refer to this software in your documentation: 'this software is
+  based in part on the Catharon Typography Project'.
+ .
+  As  you have  not signed  this license,  you are  not  required to
+  accept  it.  However,  as  the Catharon  Packages are  copyrighted
+  material, only  this license, or  another one contracted  with the
+  authors, grants you  the right to use, distribute,  and modify it.
+  Therefore,  by  using,  distributing,  or modifying  the  Catharon
+  Packages,  you indicate  that you  understand and  accept  all the
+  terms of this license.
 
 License: FSFUL
   This file is free software; the Free Software Foundation gives
@@ -642,114 +725,26 @@ License: MIT
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 
-License: OFL-1.1
-  -----------------------------------------------------------
-  SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
-  -----------------------------------------------------------
- .
-  PREAMBLE
-  The goals of the Open Font License (OFL) are to stimulate worldwide
-  development of collaborative font projects, to support the font creation
-  efforts of academic and linguistic communities, and to provide a free and
-  open framework in which fonts may be shared and improved in partnership
-  with others.
- .
-  The OFL allows the licensed fonts to be used, studied, modified and
-  redistributed freely as long as they are not sold by themselves. The
-  fonts, including any derivative works, can be bundled, embedded, 
-  redistributed and/or sold with any software provided that any reserved
-  names are not used by derivative works. The fonts and derivatives,
-  however, cannot be released under any other type of license. The
-  requirement for fonts to remain under this license does not apply
-  to any document created using the fonts or their derivatives.
- .
-  DEFINITIONS
-  "Font Software" refers to the set of files released by the Copyright
-  Holder(s) under this license and clearly marked as such. This may
-  include source files, build scripts and documentation.
- .
-  "Reserved Font Name" refers to any names specified as such after the
-  copyright statement(s).
- .
-  "Original Version" refers to the collection of Font Software components as
-  distributed by the Copyright Holder(s).
- .
-  "Modified Version" refers to any derivative made by adding to, deleting,
-  or substituting -- in part or in whole -- any of the components of the
-  Original Version, by changing formats or by porting the Font Software to a
-  new environment.
- .
-  "Author" refers to any designer, engineer, programmer, technical
-  writer or other person who contributed to the Font Software.
- .
-  PERMISSION & CONDITIONS
-  Permission is hereby granted, free of charge, to any person obtaining
-  a copy of the Font Software, to use, study, copy, merge, embed, modify,
-  redistribute, and sell modified and unmodified copies of the Font
-  Software, subject to the following conditions:
- .
-  1) Neither the Font Software nor any of its individual components,
-  in Original or Modified Versions, may be sold by itself.
- .
-  2) Original or Modified Versions of the Font Software may be bundled,
-  redistributed and/or sold with any software, provided that each copy
-  contains the above copyright notice and this license. These can be
-  included either as stand-alone text files, human-readable headers or
-  in the appropriate machine-readable metadata fields within text or
-  binary files as long as those fields can be easily viewed by the user.
- .
-  3) No Modified Version of the Font Software may use the Reserved Font
-  Name(s) unless explicit written permission is granted by the corresponding
-  Copyright Holder. This restriction only applies to the primary font name as
-  presented to the users.
- .
-  4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
-  Software shall not be used to promote, endorse or advertise any
-  Modified Version, except to acknowledge the contribution(s) of the
-  Copyright Holder(s) and the Author(s) or with their explicit written
-  permission.
- .
-  5) The Font Software, modified or unmodified, in part or in whole,
-  must be distributed entirely under this license, and must not be
-  distributed under any other license. The requirement for fonts to
-  remain under this license does not apply to any document created
-  using the Font Software.
- .
-  TERMINATION
-  This license becomes null and void if any of the above conditions are
-  not met.
- .
-  DISCLAIMER
-  THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
-  OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
-  COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-  INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
-  DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
-  OTHER DEALINGS IN THE FONT SOFTWARE.
-
 License: OpenGroup-BSD-like
-  Permission to use, copy, modify, distribute, and sell this software and its
-  documentation for any purpose is hereby granted without fee, provided that
-  the above copyright notice appear in all copies and that both that
-  copyright notice and this permission notice appear in supporting
-  documentation.
+ Permission to use, copy, modify, distribute, and sell this software and its
+ documentation for any purpose is hereby granted without fee, provided that
+ the above copyright notice appear in all copies and that both that
+ copyright notice and this permission notice appear in supporting
+ documentation.
  .
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
  .
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-  OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-  AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+ AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  .
-  Except as contained in this notice, the name of The Open Group shall not be
-  used in advertising or otherwise to promote the sale, use or other dealings
-  in this Software without prior written authorization from The Open Group.
+ Except as contained in this notice, the name of The Open Group shall not be
+ used in advertising or otherwise to promote the sale, use or other dealings
+ in this Software without prior written authorization from The Open Group.
 
 License: Permissive
   This is free software; see the source for copying conditions. There is NO

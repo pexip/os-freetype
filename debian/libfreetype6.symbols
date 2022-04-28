@@ -22,7 +22,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Atan2@Base 2.2.1
  FT_Attach_File@Base 2.2.1
  FT_Attach_Stream@Base 2.2.1
- FT_Bitmap_Blend@Base 2.10.1
  FT_Bitmap_Convert@Base 2.2.1
  FT_Bitmap_Copy@Base 2.2.1
  FT_Bitmap_Done@Base 2.2.1
@@ -40,7 +39,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Done_Library@Base 2.2.1
  FT_Done_MM_Var@Base 2.9.1
  FT_Done_Size@Base 2.2.1
- FT_Error_String@Base 2.10.1
  FT_Face_CheckTrueTypePatents@Base 2.3.5
  FT_Face_GetCharVariantIndex@Base 2.3.5
  FT_Face_GetCharVariantIsDefault@Base 2.3.5
@@ -61,7 +59,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_CMap_Language_ID@Base 2.2.1
  FT_Get_Char_Index@Base 2.2.1
  FT_Get_Charmap_Index@Base 2.2.1
- FT_Get_Color_Glyph_Layer@Base 2.10.1
  FT_Get_Font_Format@Base 2.6
  FT_Get_FSType_Flags@Base 2.3.9
  FT_Get_First_Char@Base 2.2.1
@@ -71,7 +68,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_Kerning@Base 2.2.1
  FT_Get_MM_Blend_Coordinates@Base 2.7.1
  FT_Get_MM_Var@Base 2.2.1
- FT_Get_MM_WeightVector@Base 2.10.1
  FT_Get_Module@Base 2.2.1
  FT_Get_Multi_Master@Base 2.2.1
  FT_Get_Name_Index@Base 2.2.1
@@ -110,7 +106,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Init_FreeType@Base 2.2.1
  FT_Library_SetLcdFilter@Base 2.3.5
  FT_Library_SetLcdFilterWeights@Base 2.4.0
- FT_Library_SetLcdGeometry@Base 2.10.1
  FT_Library_Version@Base 2.2.1
  FT_List_Add@Base 2.2.1
  FT_List_Finalize@Base 2.2.1
@@ -127,7 +122,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_MulDiv@Base 2.2.1
  FT_MulFix@Base 2.2.1
  FT_New_Face@Base 2.2.1
- FT_New_Glyph@Base 2.10.1
  FT_New_Library@Base 2.2.1
  FT_New_Memory_Face@Base 2.2.1
  FT_New_Size@Base 2.2.1
@@ -138,6 +132,7 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Outline_Copy@Base 2.2.1
  FT_Outline_Decompose@Base 2.2.1
  FT_Outline_Done@Base 2.2.1
+ FT_Outline_Done_Internal@Base 2.2.1
  FT_Outline_Embolden@Base 2.2.1
  FT_Outline_EmboldenXY@Base 2.4.10
  FT_Outline_GetInsideBorder@Base 2.2.1
@@ -147,13 +142,11 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Outline_Get_CBox@Base 2.2.1
  FT_Outline_Get_Orientation@Base 2.2.1
  FT_Outline_New@Base 2.2.1
+ FT_Outline_New_Internal@Base 2.2.1
  FT_Outline_Render@Base 2.2.1
  FT_Outline_Reverse@Base 2.2.1
  FT_Outline_Transform@Base 2.2.1
  FT_Outline_Translate@Base 2.2.1
- FT_Palette_Data_Get@Base 2.10.1
- FT_Palette_Select@Base 2.10.1
- FT_Palette_Set_Foreground_Color@Base 2.10.1
  FT_Property_Get@Base 2.4.11
  FT_Property_Set@Base 2.4.11
  FT_Reference_Face@Base 2.4.2
@@ -170,7 +163,6 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Set_Default_Properties@Base 2.8
  FT_Set_MM_Blend_Coordinates@Base 2.2.1
  FT_Set_MM_Design_Coordinates@Base 2.2.1
- FT_Set_MM_WeightVector@Base 2.10.1
  FT_Set_Named_Instance@Base 2.9.1
  FT_Set_Pixel_Sizes@Base 2.2.1
  FT_Set_Renderer@Base 2.2.1

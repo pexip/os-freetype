@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright (C) 2006-2020 by                                              */
+/*  Copyright 2006-2018 by                                                  */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */

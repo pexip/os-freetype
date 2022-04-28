@@ -1,6 +1,6 @@
 // glyphbitmap.cpp
 
-// Copyright (C) 2016-2020 by Werner Lemberg.
+// Copyright (C) 2016-2017 by Werner Lemberg.
 
 
 #include "glyphbitmap.hpp"

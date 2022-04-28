@@ -5,7 +5,7 @@
 //
 // Developed by Static Jobs LLC and contributed to the FreeType project.
 //
-// Copyright (c) 2016-2018 Static Jobs LLC
+// Copyright (c) 2016 Static Jobs LLC
 //   IT and software engineering jobs in the US, Canada and the UK
 //   https://www.staticjobs.com
 //
@@ -16,11 +16,11 @@
 //
 // On a Unix box like GNU/Linux or OS X, compile with
 //
-//    g++ -o example5 example5.cpp `pkg-config freetype2 --cflags --libs`
+//    g++ -o example5 example5.cpp `freetype-config --cflags --libs`
 //
 // or
 //
-//    g++ -o example5 example5.cpp `freetype-config --cflags --libs`
+//    g++ -o example5 example5.cpp `pkg-config freetype2 --cflags --libs`
 //
 // on the command line.
 //
@@ -64,20 +64,11 @@
 using namespace std;
 
 
-// A minimal wrapper for RAII (`resource acquisition is initialization').
-class FreeTypeLibrary
+struct FreeTypeLibrary
 {
-public:
   FreeTypeLibrary();
   ~FreeTypeLibrary();
 
-  operator FT_Library() const;
-
-private:
-  FreeTypeLibrary(const FreeTypeLibrary &);
-  FreeTypeLibrary &operator =(const FreeTypeLibrary &);
-
-private:
   FT_Library m_ftLibrary;
 };
 
@@ -100,28 +91,12 @@ FreeTypeLibrary::~FreeTypeLibrary()
 }
 
 
-inline
-FreeTypeLibrary::operator FT_Library() const
+struct FreeTypeFace
 {
-  return m_ftLibrary;
-}
-
-
-// Another minimal wrapper for RAII.
-class FreeTypeFace
-{
-public:
   FreeTypeFace(const FreeTypeLibrary &library,
                const char *filename);
   ~FreeTypeFace();
 
-  operator FT_Face() const;
-
-private:
-  FreeTypeFace(const FreeTypeFace &);
-  FreeTypeFace &operator =(const FreeTypeFace &);
-
-private:
   FT_Face m_ftFace;
 };
 
@@ -131,7 +106,7 @@ FreeTypeFace::FreeTypeFace(const FreeTypeLibrary &library,
                            const char *filename)
 {
   // For simplicity, always use the first face index.
-  FT_Error error = FT_New_Face(library, filename, 0, &m_ftFace);
+  FT_Error error = FT_New_Face(library.m_ftLibrary, filename, 0, &m_ftFace);
 
   if (error)
     throw runtime_error("Couldn't load the font file:"
@@ -139,17 +114,9 @@ FreeTypeFace::FreeTypeFace(const FreeTypeLibrary &library,
 }
 
 
-inline
-FreeTypeFace::~FreeTypeFace()
+inline FreeTypeFace::~FreeTypeFace()
 {
   FT_Done_Face(m_ftFace);
-}
-
-
-inline
-FreeTypeFace::operator FT_Face() const
-{
-  return m_ftFace;
 }
 
 
@@ -158,10 +125,6 @@ class OutlinePrinter
 public:
   OutlinePrinter(const char *filename);
   int Run(const char *symbol);
-
-private:
-  OutlinePrinter(const OutlinePrinter &);
-  OutlinePrinter &operator =(const OutlinePrinter &);
 
 private:
   void LoadGlyph(const char *symbol) const;
@@ -243,9 +206,9 @@ OutlinePrinter::LoadGlyph(const char *symbol) const
 
   // For simplicity, use the charmap FreeType provides by default;
   // in most cases this means Unicode.
-  FT_UInt index = FT_Get_Char_Index(m_face, code);
+  FT_UInt index = FT_Get_Char_Index(m_face.m_ftFace, code);
 
-  FT_Error error = FT_Load_Glyph(m_face,
+  FT_Error error = FT_Load_Glyph(m_face.m_ftFace,
                                  index,
                                  FT_LOAD_NO_SCALE | FT_LOAD_NO_BITMAP);
 
@@ -257,14 +220,14 @@ OutlinePrinter::LoadGlyph(const char *symbol) const
 // While working on this example, we found fonts with no outlines for
 // printable characters such as `A', i.e., `outline.n_contours' and
 // `outline.n_points' were zero.  FT_Outline_Check() returned `true'.
-// FT_Outline_Decompose() also returned `true' without walking the outline.
+// FT_Outline_Decompose() also returned `true' without walking the outline. 
 // That is, we had no way of knowing whether the outline existed and could
 // be (or was) decomposed.  Therefore, we implemented this workaround to
 // check whether the outline does exist and can be decomposed.
 bool
 OutlinePrinter::OutlineExists() const
 {
-  FT_Face face = m_face;
+  FT_Face face = m_face.m_ftFace;
   FT_GlyphSlot slot = face->glyph;
   FT_Outline &outline = slot->outline;
 
@@ -280,7 +243,6 @@ OutlinePrinter::OutlineExists() const
 }
 
 
-// This function flips outline around x-axis. We need it because
 // FreeType and SVG use opposite vertical directions.
 void
 OutlinePrinter::FlipOutline() const
@@ -294,7 +256,7 @@ OutlinePrinter::FlipOutline() const
   matrix.yx = 0L * multiplier;
   matrix.yy = -1L * multiplier;
 
-  FT_Face face = m_face;
+  FT_Face face = m_face.m_ftFace;
   FT_GlyphSlot slot = face->glyph;
   FT_Outline &outline = slot->outline;
 
@@ -317,7 +279,7 @@ OutlinePrinter::ExtractOutline()
   callbacks.shift = 0;
   callbacks.delta = 0;
 
-  FT_Face face = m_face;
+  FT_Face face = m_face.m_ftFace;
   FT_GlyphSlot slot = face->glyph;
   FT_Outline &outline = slot->outline;
 
@@ -335,7 +297,7 @@ OutlinePrinter::ExtractOutline()
 void
 OutlinePrinter::ComputeViewBox()
 {
-  FT_Face face = m_face;
+  FT_Face face = m_face.m_ftFace;
   FT_GlyphSlot slot = face->glyph;
   FT_Outline &outline = slot->outline;
 

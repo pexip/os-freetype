@@ -10,11 +10,11 @@ unix|macx {
   LIBS += ../../../freetype2/objs/.libs/libfreetype.a
 
   CONFIG += link_pkgconfig
-  PKGCONFIG += libpng harfbuzz zlib bzip2 libbrotlidec
+  PKGCONFIG += libpng harfbuzz zlib bzip2
 }
 win32 {
-  LIBS += ../../../freetyp2/objs/vc2010/freetype.lib
-  LIBS += -lpng -lharfbuzz -lz -lbz2 -lm -lbrotlidec
+  LIBS += ../../../freetyp2/objs/vc2010/freetype291.lib
+  LIBS += -lpng -lharfbuzz -lz -lbz2 -lm
 }
 
 CONFIG += qt debug

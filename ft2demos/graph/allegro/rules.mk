@@ -22,8 +22,7 @@ ifdef ALLEGRO
 
   # our compilation rule
   #
-  $(OBJ_DIR_2)/gralleg.$O : $(GR_ALLEG)/gralleg.c $(GR_ALLEG)/gralleg.h \
-                            $(GRAPH_H)
+  $(OBJ_DIR_2)/gralleg.$O : $(GR_ALLEG)/gralleg.c $(GR_ALLEG)/gralleg.h
 	  $(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) \
                 $I$(subst /,$(COMPILER_SEP),$(GR_ALLEG)) \
                 $T$(subst /,$(COMPILER_SEP),$@ $<)

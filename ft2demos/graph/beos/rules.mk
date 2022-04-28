@@ -20,8 +20,7 @@ ifeq ($(PLATFORM),beos)
 
   # the rule used to compile the graphics driver
   #
-  $(OBJ_DIR_2)/grbeos.$(O): $(GR_BEOS)/grbeos.cpp $(GR_BEOS)/grbeos.h \
-                            $(GRAPH_H)
+  $(OBJ_DIR_2)/grbeos.$(O): $(GR_BEOS)/grbeos.cpp $(GR_BEOS)/grbeos.h
   ifneq ($(LIBTOOL),)
 	  $(LIBTOOL) --mode=compile $(CC) -static $(CFLAGS) \
                      $(GRAPH_INCLUDES:%=$I%) \

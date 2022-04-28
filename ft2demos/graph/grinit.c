@@ -5,10 +5,6 @@
 #define GR_INIT_DEVICE_CHAIN   ((grDeviceChain*)0)
 #define GR_INIT_BUILD
 
-#ifdef DEVICE_BATCH
-#include "batch/grbatch.h"
-#endif
-
 #ifdef DEVICE_X11
 #ifndef VMS
 #include "x11/grx11.h"
@@ -67,34 +63,55 @@
   extern
   grDeviceChain*  grInitDevices( void )
   {
-    grDeviceChain*   chain;
-    grDeviceChain**  chptr;
+    grDeviceChain*  chain = GR_INIT_DEVICE_CHAIN;
+    grDeviceChain*  cur   = gr_device_chain;
 
-    chain = gr_device_chain = GR_INIT_DEVICE_CHAIN;
-    chptr = &gr_device_chain;
 
     while (chain)
     {
-      if ( chain->device->init() != 0 )
-        *chptr = chain->next;
+      /* initialize the device */
+      grDevice*  device;
 
-      chptr = &chain->next;
+      device = chain->device;
+      if ( device->init() == 0             &&
+           gr_num_devices < GR_MAX_DEVICES )
+
+      {
+        /* successful device initialisation - add it to our chain */
+        cur->next   = 0;
+        cur->device = device;
+        cur->name   = device->device_name;
+
+        if (cur > gr_device_chain)
+          cur[-1].next = cur;
+
+        cur++;
+        gr_num_devices++;
+      }
       chain = chain->next;
     }
 
-    return gr_device_chain;
+    return (gr_num_devices > 0 ? gr_device_chain : 0 );
   }
 
 
   extern
   void  grDoneDevices( void )
   {
+    int             i;
     grDeviceChain*  chain = gr_device_chain;
 
-    while (chain)
+
+    for ( i = 0; i < gr_num_devices; i++ )
     {
       chain->device->done();
 
-      chain = chain->next;
+      chain->next   = 0;
+      chain->device = 0;
+      chain->name   = 0;
+
+      chain++;
     }
+
+    gr_num_devices = 0;
   }

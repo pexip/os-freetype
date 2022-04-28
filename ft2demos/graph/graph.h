@@ -4,7 +4,7 @@
  *
  *    Graphics Subsystem interface
  *
- *  Copyright (C) 1999-2020 by
+ *  Copyright 1999-2007, 2013
  *     - The FreeType Development Team - www.freetype.org
  *
  ***************************************************************************/
@@ -115,13 +115,14 @@
   } grColor;
 
 
+
  /**********************************************************************
   *
   * <Function>
   *    grNewBitmap
   *
   * <Description>
-  *    creates a new bitmap or resizes an existing one
+  *    creates a new bitmap
   *
   * <Input>
   *    pixel_mode   :: the target surface's pixel_mode
@@ -138,8 +139,6 @@
   * <Note>
   *    This function really allocates a pixel buffer, zero it, then
   *    returns a descriptor for it.
-  *
-  *    An existing bitmap will be resized.
   *
   *    Call grDoneBitmap when you're done with it..
   *
@@ -161,7 +160,7 @@
   *    writes a given glyph bitmap to a target surface.
   *
   * <Input>
-  *    target  :: handle to target bitmap that belongs to surface
+  *    target  :: handle to target bitmap
   *    glyph   :: handle to source glyph bitmap
   *    x       :: position of left-most pixel of glyph image in target surface
   *    y       :: position of top-most pixel of glyph image in target surface
@@ -257,7 +256,6 @@
                            int         y,
                            const char* string,
                            grColor     color );
-
 
  /**********************************************************************
   *
@@ -456,6 +454,7 @@
                                  grPixelMode*  *pixel_modes );
 
 
+
  /**********************************************************************
   *
   * <Function>
@@ -475,6 +474,11 @@
   *               requested pixel mode, number of grays and dimensions
   *               for the surface. the bitmap's 'pitch' and 'buffer'
   *               fields are ignored on input.
+  *
+  *               On output, the bitmap describes the surface's image
+  *               completely. It is possible to write directly in it
+  *               with grBlitGlyphToBitmap, even though the use of
+  *               grBlitGlyphToSurface is recommended.
   *
   * <Return>
   *    handle to the corresponding surface object. 0 in case of error
@@ -502,7 +506,6 @@
                                    grBitmap*    bitmap );
 
   extern void  grDoneSurface( grSurface*  surface );
-
 
  /**********************************************************************
   *
@@ -545,6 +548,7 @@
   **********************************************************************/
 
   extern void  grRefreshSurface( grSurface*  surface );
+
 
 
  /**********************************************************************
@@ -629,28 +633,6 @@
                            const char* title_string );
 
 
- /**********************************************************************
-  *
-  * <Function>
-  *    grSetIcon
-  *
-  * <Description>
-  *    set the icon of a given windowed surface.
-  *
-  * <Input>
-  *    surface :: handle to target surface
-  *    icon    :: handle to icon bitmap
-  *
-  * <Return>
-  *    the next appropriate icon size in pixels.
-  *
-  * <Note>
-  *    Returns the largest appropriate icon size if icon is NULL.
-  *
-  **********************************************************************/
-
-  extern int  grSetIcon( grSurface*  surface,
-                         grBitmap*   icon );
 
 
  /**********************************************************************
@@ -681,42 +663,19 @@
  /**********************************************************************
   *
   * <Function>
-  *    grSetTargetGamma
+  *    grSetGlyphGamma
   *
   * <Description>
   *    set the gamma-correction coefficient. This is only used to
   *    blit glyphs
   *
   * <Input>
-  *    target     :: handle to target bitmap/surface
   *    gamma      :: gamma value. <= 0 to select sRGB transfer function
   *
   **********************************************************************/
 
   extern
-  void  grSetTargetGamma( grBitmap*  target, double  gamma_value );
-
-
- /**********************************************************************
-  *
-  * <Function>
-  *    grSetTargetPenBrush
-  *
-  * <Description>
-  *    set the pen position and brush color as required for direct mode.
-  *
-  * <Input>
-  *    target     :: handle to target bitmap/surface
-  *    x, y       :: pen position
-  *    color      :: color as defined by grFindColor
-  *
-  **********************************************************************/
-
-  extern
-  void  grSetTargetPenBrush( grBitmap*  target,
-                             int        x,
-                             int        y,
-                             grColor    color );
+  void  grSetGlyphGamma( double  gamma_value );
 
 /* */
 

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright 1996-2018 by                                                  */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  grblit.c: Support for blitting of bitmaps with various depth.           */
@@ -10,7 +10,7 @@
 /****************************************************************************/
 
 #include "grblit.h"
-#include "gblblit.h"
+#include "grobjs.h"
 
 #define  GRAY8
 
@@ -575,7 +575,7 @@
       int          i;
       const byte*  table;
 
-      table = (const byte*)grAlloc( (size_t)( 3 * num_grays - 1 ) *
+      table = (const byte*)grAlloc( (unsigned long)( 3 * num_grays - 1 ) *
                                     sizeof ( byte ) );
       if (!table) return 0;
 
@@ -673,7 +673,8 @@
       const byte*  table;
       int          n;
 
-      table = (const byte*)grAlloc( (size_t)source_grays * sizeof ( byte ) );
+      table = (const byte*)grAlloc( (unsigned long)source_grays *
+                                    sizeof ( byte ) );
       if (!table)
         return 0;
 
@@ -1748,6 +1749,25 @@
   }
 
 
+ /**********************************************************************
+  *
+  * <Function>
+  *    grBlitGlyphToBitmap
+  *
+  * <Description>
+  *    writes a given glyph bitmap to a target surface.
+  *
+  * <Input>
+  *    surface :: handle to target surface
+  *    x       :: position of left-most pixel of glyph image in surface
+  *    y       :: position of top-most pixel of glyph image in surface
+  *    bitmap  :: source glyph image
+  *
+  * <Return>
+  *   Error code. 0 means success
+  *
+  **********************************************************************/
+
   typedef  void (*grColorGlyphBlitter)( grBlitter*  blit,
                                         grColor     color,
                                         int         max_gray );
@@ -1786,6 +1806,16 @@
 #endif
 
 
+#include "gblblit.h"
+
+  static double    gr_glyph_gamma = 1.8;
+
+  void  grSetGlyphGamma( double  gamma )
+  {
+    gr_glyph_gamma = gamma;
+  }
+
+
   int
   grBlitGlyphToBitmap( grBitmap*  target,
                        grBitmap*  glyph,
@@ -1810,14 +1840,87 @@
       return 0;
     }
 
-    /* short cut to alpha blender for certain glyph types */
-    switch ( grBlitGlyphToSurface( (grSurface*)target, glyph, x, y, color ) )
+   /* short cut to alpha blender for certain glyph types
+    */
     {
-    case 1:
+      GBlenderSourceFormat  src_format;
+      GBlenderTargetFormat  dst_format;
+      int                   width, height;
+      GBlenderBlitRec       gblit[1];
+      GBlenderPixel         gcolor;
+      static GBlenderRec    gblender[1];
+      static double         gblender_gamma = -100.0;
+
+      if ( glyph->grays != 256 )
+        goto LegacyBlit;
+
+      switch ( glyph->mode )
+      {
+      case gr_pixel_mode_gray:  src_format = GBLENDER_SOURCE_GRAY8; break;
+      case gr_pixel_mode_lcd:   src_format = GBLENDER_SOURCE_HRGB;  break;
+      case gr_pixel_mode_lcdv:  src_format = GBLENDER_SOURCE_VRGB;  break;
+      case gr_pixel_mode_lcd2:  src_format = GBLENDER_SOURCE_HBGR;  break;
+      case gr_pixel_mode_lcdv2: src_format = GBLENDER_SOURCE_VBGR;  break;
+      case gr_pixel_mode_bgra:  src_format = GBLENDER_SOURCE_BGRA;  break;
+
+      default:
+          goto LegacyBlit;
+      }
+
+      width  = glyph->width;
+      height = glyph->rows;
+
+      if ( glyph->mode == gr_pixel_mode_lcd  ||
+           glyph->mode == gr_pixel_mode_lcd2 )
+        width /= 3;
+
+      if ( glyph->mode == gr_pixel_mode_lcdv  ||
+           glyph->mode == gr_pixel_mode_lcdv2 )
+        height /= 3;
+
+      switch ( target->mode )
+      {
+      case gr_pixel_mode_rgb32: dst_format  = GBLENDER_TARGET_RGB32; break;
+      case gr_pixel_mode_rgb24: dst_format  = GBLENDER_TARGET_RGB24; break;
+      case gr_pixel_mode_rgb565: dst_format = GBLENDER_TARGET_RGB565; break;
+      default:
+          goto LegacyBlit;
+      }
+
+     /* initialize blender when needed, i.e. when gamma changes
+      */
+      if ( gblender_gamma != gr_glyph_gamma  )
+      {
+        gblender_gamma = gr_glyph_gamma;
+        gblender_init( gblender, gblender_gamma );
+      }
+
+      if ( gblender_blit_init( gblit, gblender,
+                               x, y,
+                               src_format,
+                               glyph->buffer,
+                               glyph->pitch,
+                               width,
+                               height,
+                               dst_format,
+                               target->buffer,
+                               target->pitch,
+                               target->width,
+                               target->rows ) < 0 )
+      {
+        /* nothing to do */
+        return 0;
+      }
+
+      gcolor = ((GBlenderPixel)color.chroma[0] << 16) |
+               ((GBlenderPixel)color.chroma[1] << 8 ) |
+               ((GBlenderPixel)color.chroma[2]      ) ;
+
+      gblender_blit_run( gblit, gcolor );
       return 1;
-    case 0:
-      return 0;
     }
+
+  LegacyBlit:      /* no gamma correction, no caching */
 
     /* set up blitter and compute clipping.  Return immediately if needed */
     blit.source = *glyph;
@@ -1920,7 +2023,6 @@
         blit_lcdv_to_24( &blit, color, glyph->grays-1 );
         break;
       }
-      /* fall through */
 
     case gr_pixel_mode_lcd2:
       if ( mode == gr_pixel_mode_rgb24 )
@@ -1936,12 +2038,12 @@
       break;
 
     case gr_pixel_mode_lcdv2:
-      if ( mode == gr_pixel_mode_rgb24 )
-      {
-        if ( glyph->grays > 1 )
-          blit_lcdv2_to_24( &blit, color, glyph->grays-1 );
-      }
-      break;
+     if ( mode == gr_pixel_mode_rgb24 )
+     {
+       if ( glyph->grays > 1 )
+         blit_lcdv2_to_24( &blit, color, glyph->grays-1 );
+     }
+     break;
 
     default:
       /* we don't support the blitting of bitmaps of the following  */

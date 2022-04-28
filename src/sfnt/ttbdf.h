@@ -1,27 +1,28 @@
-/****************************************************************************
- *
- * ttbdf.h
- *
- *   TrueType and OpenType embedded BDF properties (specification).
- *
- * Copyright (C) 2005-2020 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  ttbdf.h                                                                */
+/*                                                                         */
+/*    TrueType and OpenType embedded BDF properties (specification).       */
+/*                                                                         */
+/*  Copyright 2005-2018 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
 #ifndef TTBDF_H_
 #define TTBDF_H_
 
 
+#include <ft2build.h>
 #include "ttload.h"
-#include <freetype/ftbdf.h>
+#include FT_BDF_H
 
 
 FT_BEGIN_HEADER

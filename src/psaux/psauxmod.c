@@ -1,21 +1,22 @@
-/****************************************************************************
- *
- * psauxmod.c
- *
- *   FreeType auxiliary PostScript module implementation (body).
- *
- * Copyright (C) 2000-2020 by
- * David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- * This file is part of the FreeType project, and may only be used,
- * modified, and distributed under the terms of the FreeType project
- * license, LICENSE.TXT.  By continuing to use, modify, or distribute
- * this file you indicate that you have read the license and
- * understand and accept it fully.
- *
- */
+/***************************************************************************/
+/*                                                                         */
+/*  psauxmod.c                                                             */
+/*                                                                         */
+/*    FreeType auxiliary PostScript module implementation (body).          */
+/*                                                                         */
+/*  Copyright 2000-2018 by                                                 */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
+#include <ft2build.h>
 #include "psauxmod.h"
 #include "psobjs.h"
 #include "t1decode.h"
@@ -170,9 +171,9 @@
   };
 
 
-  FT_DEFINE_MODULE(
-    psaux_module_class,
-
+  FT_CALLBACK_TABLE_DEF
+  const FT_Module_Class  psaux_module_class =
+  {
     0,
     sizeof ( FT_ModuleRec ),
     "psaux",
@@ -184,7 +185,7 @@
     (FT_Module_Constructor)NULL,  /* module_init   */
     (FT_Module_Destructor) NULL,  /* module_done   */
     (FT_Module_Requester)  NULL   /* get_interface */
-  )
+  };
 
 
 /* END */
