@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright 2003-2018 by                                                  */
+/*  Copyright (C) 2003-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftchkwd                                                                 */
@@ -14,6 +14,9 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+  /* the following header shouldn't be used in normal programs */
+#include <freetype/internal/compiler-macros.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,7 +122,6 @@
 
     int         i, file_index;
     char        filename[1024 + 4];
-    char        alt_filename[1024 + 4];
     char*       execname;
     char*       fname;
 
@@ -160,18 +162,11 @@
         i--;
       }
 
-      filename[1024] = '\0';
-      alt_filename[1024] = '\0';
-
-      strncpy( filename, fname, 1024 );
-      strncpy( alt_filename, fname, 1024 );
-
 #ifndef macintosh
-      if ( i >= 0 )
-      {
-        strncpy( filename + strlen( filename ), ".ttf", 4 );
-        strncpy( alt_filename + strlen( alt_filename ), ".ttc", 4 );
-      }
+      snprintf( filename, sizeof ( filename ), "%s%s", fname,
+                ( i >= 0 ? ".ttf" : "" ) );
+#else
+      snprintf( filename, sizeof ( filename ), "%s", fname );
 #endif
 
       /* Load face */

@@ -16,15 +16,20 @@
 #define gr_key_up    0x80
 
 
-#define gr_event_mouse  0x3C
-#define gr_event_key    0xC0
+#define gr_event_mouse    0x3C
+#define gr_event_key      0xC0
+#define gr_event_resize  0x100
 
-#define gr_event_type  ( gr_event_mouse | gr_event_key )
+#define gr_event_type  ( gr_event_mouse | gr_event_key | gr_event_resize )
 
 
   typedef enum grKey_
   {
-    grKeyNone = 0,
+    grKeyNone      = 0,
+    grKeyBackSpace = 0x08,
+    grKeyTab       = 0x09,
+    grKeyReturn    = 0x0D,
+    grKeyEsc       = 0x1B,
 
     grKeySpace = ' ',
     grKey0     = '0',
@@ -118,19 +123,9 @@
     grKey_y = 'y',
     grKey_z = 'z',
 
-    grKeyBackSpace = 0x100,
-    grKeyTab,
-    grKeyReturn,
-    grKeyEsc,
+    grKeyDel       = 0x7F,
 
-    grKeyIns,
-    grKeyDel,
-    grKeyHome,
-    grKeyEnd,
-    grKeyPageUp,
-    grKeyPageDown,
-
-    grKeyF1,
+    grKeyF1  = 0xF1,
     grKeyF2,
     grKeyF3,
     grKeyF4,
@@ -143,6 +138,11 @@
     grKeyF11,
     grKeyF12,
 
+    grKeyIns = 0x100,
+    grKeyHome,
+    grKeyEnd,
+    grKeyPageUp,
+    grKeyPageDown,
     grKeyLeft,
     grKeyRight,
     grKeyUp,
@@ -155,7 +155,7 @@
   } grKey;
 
 
-#define grKEY( c )  ( (grKey)( c ) )
+#define grKEY( c )  ( (grKey)(unsigned char)( c ) )
   /* masks - to be used as enums they would have to be included */
   /* in the grKey enum                                          */
 #define grKeyAlt    ( (grKey)0x8000 )

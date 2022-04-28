@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftlint: a simple font tester. This program tries to load all the        */
@@ -62,8 +62,7 @@
   {
     int           i, file_index;
     unsigned int  id;
-    char          filename[1024 + 4];
-    char          alt_filename[1024 + 4];
+    char          filename[1024];
     char*         execname;
     char*         fname;
 
@@ -110,19 +109,13 @@
         i--;
       }
 
-      filename[1024] = '\0';
-      alt_filename[1024] = '\0';
-
-      strncpy( filename, fname, 1024 );
-      strncpy( alt_filename, fname, 1024 );
-
 #ifndef macintosh
-      if ( i >= 0 )
-      {
-        strncpy( filename + strlen( filename ), ".ttf", 4 );
-        strncpy( alt_filename + strlen( alt_filename ), ".ttc", 4 );
-      }
+      snprintf( filename, sizeof ( filename ), "%s%s", fname,
+                ( i >= 0 ) ? ".ttf" : "" );
+#else
+      snprintf( filename, sizeof ( filename ), "%s", fname );
 #endif
+
       i     = (int)strlen( filename );
       fname = filename;
 

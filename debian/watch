@@ -3,17 +3,20 @@ version=4
 # To verify each package signature, use Werner Lemberg's public PGP key.
 
 # freetype2
-opts="pgpsigurlmangle=s/$/.sig/" \
-  https://download.savannah.gnu.org/releases/freetype/freetype-(\d\S+)\.tar\.gz debian
+opts="pgpsigurlmangle=s/$/.sig/, \
+      repacksuffix=+dfsg, \
+      repack, compression=xz, \
+      dversionmangle=s/@DEB_EXT@//" \
+  https://download.savannah.gnu.org/releases/freetype/freetype-(\d\S+)\.tar\.xz debian
 
 # freetype2 docs
 opts="pgpsigurlmangle=s/$/.sig/, \
-      filenamemangle=s/doc-(\d\S+)\.tar\.gz/$1-doc\.tar\.gz/, \
+      filenamemangle=s/doc-(\d\S+)\.tar\.xz/$1-ft2docs\.tar\.xz/, \
       component=ft2docs" \
-  https://download.savannah.gnu.org/releases/freetype/freetype-doc-(\d\S+)\.tar\.gz same
+  https://download.savannah.gnu.org/releases/freetype/freetype-doc-(\d\S+)\.tar\.xz same
 
 # freetype2 demos
 opts="pgpsigurlmangle=s/$/.sig/, \
-      filenamemangle=s/ft2demos-(\d\S+)\.tar\.gz/freetype-$1-ft2demos\.tar\.gz/, \
+      filenamemangle=s/ft2demos-(\d\S+)\.tar\.xz/freetype-$1-ft2demos\.tar\.xz/, \
       component=ft2demos" \
-  https://download.savannah.gnu.org/releases/freetype/ft2demos-(\d\S+)\.tar\.gz same uupdate
+  https://download.savannah.gnu.org/releases/freetype/ft2demos-(\d\S+)\.tar\.xz same

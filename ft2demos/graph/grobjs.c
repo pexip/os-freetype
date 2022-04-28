@@ -1,5 +1,4 @@
 #include "grobjs.h"
-#include <stdlib.h>
 #include <string.h>
 
   int  grError = 0;
@@ -25,7 +24,9 @@
         break;
 
       case gr_pixel_mode_gray:
-        color.value = (3*red + 6*green + blue)/10;
+        color.value = ( 3*(red   & 0xFF) +
+                        6*(green & 0xFF) +
+                          (blue  & 0xFF) ) / 10;
         break;
 
       case gr_pixel_mode_rgb555:
@@ -77,7 +78,7 @@
   ********************************************************************/
 
   unsigned char*
-  grAlloc( unsigned long  size )
+  grAlloc( size_t  size )
   {
     unsigned char*  p;
 
@@ -139,7 +140,7 @@
   *    grNewBitmap
   *
   * <Description>
-  *    creates a new bitmap
+  *    creates a new bitmap or resizes an existing one
   *
   * <Input>
   *    pixel_mode   :: the target surface's pixel_mode
@@ -174,11 +175,6 @@
       goto Fail;
     }
 
-    bit->width = width;
-    bit->rows  = height;
-    bit->mode  = pixel_mode;
-    bit->grays = num_grays;
-
     pitch = width;
 
     switch (pixel_mode)
@@ -187,12 +183,12 @@
       case gr_pixel_mode_pal4  : pitch = (width+3) >> 2; break;
 
       case gr_pixel_mode_pal8  :
-      case gr_pixel_mode_gray  : pitch = width; break;
+      case gr_pixel_mode_gray  : pitch = ( width + 3 ) & ~3; break;
 
       case gr_pixel_mode_rgb555:
       case gr_pixel_mode_rgb565: pitch = width*2; break;
 
-      case gr_pixel_mode_rgb24 : pitch = width*3; break;
+      case gr_pixel_mode_rgb24 : pitch = ( width*3 + 3 ) & ~3; break;
 
       case gr_pixel_mode_rgb32 : pitch = width*4; break;
 
@@ -201,9 +197,29 @@
         return 0;
     }
 
-    bit->pitch  = pitch;
-    bit->buffer = grAlloc( (unsigned long)( bit->pitch * bit->rows ) );
-    if (!bit->buffer) goto Fail;
+    if ( !bit->buffer )
+    {
+       bit->buffer = grAlloc( (size_t)pitch * (size_t)height );
+       if (!bit->buffer) goto Fail;
+    }
+    else  /* resize */
+    {
+       unsigned char*  buffer;
+
+
+       buffer = (unsigned char*)realloc( bit->buffer,
+                                         (size_t)pitch * (size_t)height );
+       if ( buffer || !pitch || !height )
+         bit->buffer = buffer;
+       else
+         goto Fail;
+    }
+
+    bit->width = width;
+    bit->rows  = height;
+    bit->pitch = pitch;
+    bit->mode  = pixel_mode;
+    bit->grays = num_grays;
 
     return 0;
 

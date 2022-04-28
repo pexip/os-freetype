@@ -3,11 +3,9 @@ Author: Anthony Fok
 Forwarded: not-needed
 Last-Update: 2018-06-30
 
-Index: freetype-2.9.1/ft2demos/graph/x11/rules.mk
-===================================================================
---- freetype-2.9.1.orig/ft2demos/graph/x11/rules.mk
-+++ freetype-2.9.1/ft2demos/graph/x11/rules.mk
-@@ -75,9 +75,11 @@ ifneq ($(X11_PATH),)
+--- a/ft2demos/graph/x11/rules.mk
++++ b/ft2demos/graph/x11/rules.mk
+@@ -89,9 +89,11 @@
    # The GRAPH_LINK variable is expanded each time an executable is linked
    # against the graphics library.
    #

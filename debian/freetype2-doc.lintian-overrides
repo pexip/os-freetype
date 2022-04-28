@@ -1,2 +1,3 @@
-duplicate-files usr/share/doc/freetype2-doc/glyphs/metrics.png usr/share/doc/freetype2-doc/tutorial/metrics.png
-duplicate-files usr/share/doc/freetype2-doc/glyphs/metrics2.png usr/share/doc/freetype2-doc/tutorial/metrics2.png
+duplicate-files usr/share/doc/libfreetype-dev/glyphs/metrics.png usr/share/doc/libfreetype-dev/tutorial/metrics.png
+duplicate-files usr/share/doc/libfreetype-dev/glyphs/metrics2.png usr/share/doc/libfreetype-dev/tutorial/metrics2.png
+duplicate-files usr/share/doc/libfreetype-dev/image/favicon_-60.ico usr/share/doc/libfreetype-dev/reference/images/favico.ico

@@ -1,0 +1,11 @@
+Bug-Database: https://savannah.nongnu.org/bugs/?group=freetype
+Bug-Submit: https://savannah.nongnu.org/bugs/?func=additem&group=freetype
+Changelog: https://git.savannah.gnu.org/cgit/freetype/freetype2.git/tree/ChangeLog
+           https://git.savannah.gnu.org/cgit/freetype/freetype2-demos.git/tree/ChangeLog
+Contact: freetype@nongnu.org
+Documentation: https://www.freetype.org/freetype2/docs/documentation.html
+Donation: https://www.freetype.org
+FAQ: https://www.freetype.org/freetype2/docs/ft2faq.html
+Name: FreeType 2
+Repository: https://download.savannah.gnu.org/releases/freetype/
+Repository-Browse: https://download.savannah.gnu.org/releases/freetype/
