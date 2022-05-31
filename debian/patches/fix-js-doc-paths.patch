@@ -1,0 +1,442 @@
+Description: Fix JavaScript source paths in the documentation
+Author: Hugh McMaster
+Forwarded: not-needed
+Last-Update: 2019-10-07
+
+--- a/ft2docs/docs/documentation.html
++++ b/ft2docs/docs/documentation.html
+@@ -22,13 +22,13 @@
+         href="css/freetype2_-60.css">
+ 
+   <script type="text/javascript"
+-          src="../../js/jquery-1.11.0.min.js">
++          src="js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/jquery.ba-resize.min.js">
++          src="js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/freetype2.js">
++          src="js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Documentation</title>
+--- a/ft2docs/docs/index.html
++++ b/ft2docs/docs/index.html
+@@ -22,13 +22,13 @@
+         href="css/freetype2_-60.css">
+ 
+   <script type="text/javascript"
+-          src="../../js/jquery-1.11.0.min.js">
++          src="js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/jquery.ba-resize.min.js">
++          src="js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/freetype2.js">
++          src="js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Overview</title>
+--- a/ft2docs/docs/subpixel-hinting.html
++++ b/ft2docs/docs/subpixel-hinting.html
+@@ -22,13 +22,13 @@
+         href="css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../js/jquery-1.11.0.min.js">
++          src="js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/jquery.ba-resize.min.js">
++          src="js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/freetype2.js">
++          src="js/freetype2.js">
+   </script>
+ 
+   <title>The new v40 TrueType interpreter mode</title>
+--- a/ft2docs/docs/text-rendering-general.html
++++ b/ft2docs/docs/text-rendering-general.html
+@@ -22,13 +22,13 @@
+         href="css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../js/jquery-1.11.0.min.js">
++          src="js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/jquery.ba-resize.min.js">
++          src="js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../js/freetype2.js">
++          src="js/freetype2.js">
+   </script>
+ 
+   <title>On slight hinting, proper text rendering, stem darkening and
+--- a/ft2docs/docs/design/design-1.html
++++ b/ft2docs/docs/design/design-1.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design</title>
+--- a/ft2docs/docs/design/design-2.html
++++ b/ft2docs/docs/design/design-2.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design / I</title>
+--- a/ft2docs/docs/design/design-3.html
++++ b/ft2docs/docs/design/design-3.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design / II</title>
+--- a/ft2docs/docs/design/design-4.html
++++ b/ft2docs/docs/design/design-4.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design / III</title>
+--- a/ft2docs/docs/design/design-5.html
++++ b/ft2docs/docs/design/design-5.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design / IV</title>
+--- a/ft2docs/docs/design/design-6.html
++++ b/ft2docs/docs/design/design-6.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design / V</title>
+--- a/ft2docs/docs/design/index.html
++++ b/ft2docs/docs/design/index.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Design</title>
+--- a/ft2docs/docs/glyphs/glyphs-1.html
++++ b/ft2docs/docs/glyphs/glyphs-1.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / I</title>
+--- a/ft2docs/docs/glyphs/glyphs-2.html
++++ b/ft2docs/docs/glyphs/glyphs-2.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / II</title>
+--- a/ft2docs/docs/glyphs/glyphs-3.html
++++ b/ft2docs/docs/glyphs/glyphs-3.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / III</title>
+--- a/ft2docs/docs/glyphs/glyphs-4.html
++++ b/ft2docs/docs/glyphs/glyphs-4.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / IV</title>
+--- a/ft2docs/docs/glyphs/glyphs-5.html
++++ b/ft2docs/docs/glyphs/glyphs-5.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / V</title>
+--- a/ft2docs/docs/glyphs/glyphs-6.html
++++ b/ft2docs/docs/glyphs/glyphs-6.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / VI</title>
+--- a/ft2docs/docs/glyphs/glyphs-7.html
++++ b/ft2docs/docs/glyphs/glyphs-7.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions / VII</title>
+--- a/ft2docs/docs/glyphs/index.html
++++ b/ft2docs/docs/glyphs/index.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Glyph Conventions</title>
+--- a/ft2docs/docs/tutorial/index.html
++++ b/ft2docs/docs/tutorial/index.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Tutorial</title>
+--- a/ft2docs/docs/tutorial/step1.html
++++ b/ft2docs/docs/tutorial/step1.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Tutorial / I</title>
+--- a/ft2docs/docs/tutorial/step2.html
++++ b/ft2docs/docs/tutorial/step2.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Tutorial / II</title>
+--- a/ft2docs/docs/tutorial/step3.html
++++ b/ft2docs/docs/tutorial/step3.html
+@@ -24,13 +24,13 @@
+         href="../css/freetype2_-90.css">
+ 
+   <script type="text/javascript"
+-          src="../../../js/jquery-1.11.0.min.js">
++          src="../js/jquery-1.11.0.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/jquery.ba-resize.min.js">
++          src="../js/jquery.ba-resize.min.js">
+   </script>
+   <script type="text/javascript"
+-          src="../../../js/freetype2.js">
++          src="../js/freetype2.js">
+   </script>
+ 
+   <title>FreeType Tutorial / III</title>

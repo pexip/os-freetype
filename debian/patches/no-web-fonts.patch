@@ -5,10 +5,8 @@ Bug-Debian: https://bugs.debian.org/873432
 Forwarded: not-needed
 Last-Update: 2018-07-02
 
-Index: freetype-2.9.1/ft2docs/docs/css/freetype2.css
-===================================================================
---- freetype-2.9.1.orig/ft2docs/docs/css/freetype2.css
-+++ freetype-2.9.1/ft2docs/docs/css/freetype2.css
+--- a/ft2docs/docs/css/freetype2.css
++++ b/ft2docs/docs/css/freetype2.css
 @@ -5,9 +5,9 @@
  
  

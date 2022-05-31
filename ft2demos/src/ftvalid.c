@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright 2005-2018 by                                                  */
+/*  Copyright (C) 2005-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftvalid: Validates layout related tables of OpenType and                */
@@ -26,10 +26,10 @@
 #include FT_GX_VALIDATE_H
 
   /* the following four header files shouldn't be used in normal programs */
-#include FT_INTERNAL_DEBUG_H
-#include FT_INTERNAL_VALIDATE_H
-#include FT_INTERNAL_MEMORY_H
-#include FT_INTERNAL_OBJECTS_H
+#include <freetype/internal/ftdebug.h>
+#include <freetype/internal/ftvalid.h>
+#include <freetype/internal/ftmemory.h>
+#include <freetype/internal/ftobjs.h>
 
 #include "common.h"
 #include "mlgetopt.h"

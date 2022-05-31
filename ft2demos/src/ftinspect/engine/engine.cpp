@@ -1,6 +1,6 @@
 // engine.cpp
 
-// Copyright (C) 2016-2017 by Werner Lemberg.
+// Copyright (C) 2016-2020 by Werner Lemberg.
 
 
 #include "engine.hpp"
@@ -13,8 +13,8 @@
 #include FT_LCD_FILTER_H
 
 // internal FreeType header files; only available in the source code bundle
-#include FT_INTERNAL_DRIVER_H
-#include FT_INTERNAL_OBJECTS_H
+#include <freetype/internal/ftdrv.h>
+#include <freetype/internal/ftobjs.h>
 
 
 /////////////////////////////////////////////////////////////////////////////

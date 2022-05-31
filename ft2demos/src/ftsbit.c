@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2020 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftsbit: a _very_ simple embedded bitmap dumper for FreeType 1.x.        */
@@ -40,7 +40,7 @@
   {
     static char  temp[32];
 
-    sprintf( temp, "0x%04lx", error );
+    snprintf( temp, sizeof ( temp ), "0x%04lx", error );
     return temp;
   }
 
@@ -195,17 +195,11 @@
       i--;
     }
 
-    filename[1024] = '\0';
-    alt_filename[1024] = '\0';
+    snprintf( filename, sizeof ( filename ), "%s%s", fname,
+              ( i >= 0 ) ? ".ttf" : "" );
 
-    strncpy( filename, fname, 1024 );
-    strncpy( alt_filename, fname, 1024 );
-
-    if ( i >= 0 )
-    {
-      strncpy( filename + strlen( filename ), ".ttf", 4 );
-      strncpy( alt_filename + strlen( alt_filename ), ".ttc", 4 );
-    }
+    snprintf( alt_filename, sizeof ( alt_filename ), "%s%s", fname,
+              ( i >= 0 ) ? ".ttc" : "" );
 
     /* Load face */
     error = FT_New_Resource( engine, filename, &resource );
