@@ -1,3 +1,21 @@
+freetype (2.9.1-3+deb10u3pexip1) pexip; urgency=medium
+
+  * Pull in new upstream version with security fixes
+
+ -- Steve McIntyre <steve.mcintyre@pexip.com>  Mon, 12 Sep 2022 12:12:12 +0100
+
+freetype (2.9.1-3+deb10u3) buster; urgency=medium
+
+  * Add upstream patches to fix multiple vulnerabilities. Closes: #1010183.
+    - CVE-2022-27404: heap buffer overflow via invalid integer decrement in
+      sfnt_init_face().
+    - CVE-2022-27405: segmentation violation via ft_open_face_internal() when
+      attempting to read the value of FT_LONG face_index.
+    - CVE-2022-27406: segmentation violation via FT_Request_Size() when
+      attempting to read the value of an unguarded face size handle.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Thu, 28 Apr 2022 21:11:36 +1000
+
 freetype (2.9.1-3+deb10u2pexip1) pexip; urgency=medium
 
   * Pull in new upstream version
