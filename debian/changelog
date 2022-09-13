@@ -1,3 +1,9 @@
+freetype (2.10.4+dfsg-1+deb11u1pexip1) pexip-bullseye; urgency=medium
+
+  * New upstream release.
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Tue, 13 Sep 2022 12:51:48 +0100
+
 freetype (2.10.4+dfsg-1+deb11u1) bullseye; urgency=medium
 
   * Add upstream patches to fix multiple vulnerabilities. Closes: #1010183.
