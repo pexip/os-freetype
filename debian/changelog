@@ -1,3 +1,15 @@
+freetype (2.10.4+dfsg-1+deb11u1) bullseye; urgency=medium
+
+  * Add upstream patches to fix multiple vulnerabilities. Closes: #1010183.
+    - CVE-2022-27404: heap buffer overflow via invalid integer decrement in
+      sfnt_init_face() and woff2_open_font().
+    - CVE-2022-27405: segmentation violation via ft_open_face_internal() when
+      attempting to read the value of FT_LONG face_index.
+    - CVE-2022-27406: segmentation violation via FT_Request_Size() when
+      attempting to read the value of an unguarded face size handle.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Thu, 28 Apr 2022 19:54:23 +1000
+
 freetype (2.10.4+dfsg-1pexip3) pexip-bullseye; urgency=medium
 
   * Bullseye rebuild for ARM64 inclusion

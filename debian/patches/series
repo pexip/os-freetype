@@ -5,3 +5,6 @@ fix-js-doc-paths.patch
 remove-gstatic-code.patch
 no-web-fonts.patch
 hide-donations-information.patch
+CVE-2022-27404.patch
+CVE-2022-27405.patch
+CVE-2022-27406.patch
