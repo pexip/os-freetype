@@ -1,6 +1,6 @@
 // engine.cpp
 
-// Copyright (C) 2016-2020 by Werner Lemberg.
+// Copyright (C) 2016-2022 by Werner Lemberg.
 
 
 #include "engine.hpp"
@@ -9,12 +9,9 @@
 #include <stdexcept>
 #include <stdint.h>
 
-#include FT_DRIVER_H
-#include FT_LCD_FILTER_H
-
-// internal FreeType header files; only available in the source code bundle
-#include <freetype/internal/ftdrv.h>
-#include <freetype/internal/ftobjs.h>
+#include <freetype/ftmodapi.h>
+#include <freetype/ftdriver.h>
+#include <freetype/ftlcdfil.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -245,28 +242,6 @@ Engine::Engine(MainGUI* g)
                     "interpreter-version",
                     &ttInterpreterVersionDefault);
   }
-
-  // auto-hinter
-  error = FT_Property_Get(library,
-                          "autofitter",
-                          "warping",
-                          &doWarping);
-  if (error)
-  {
-    // no warping
-    haveWarping = 0;
-    doWarping = 0;
-  }
-  else
-  {
-    haveWarping = 1;
-    doWarping = 0; // we don't do warping by default
-
-    FT_Property_Set(library,
-                    "autofitter",
-                    "warping",
-                    &doWarping);
-  }
 }
 
 
@@ -407,8 +382,7 @@ Engine::loadFont(int fontIndex,
     curFamilyName = QString(ftSize->face->family_name);
     curStyleName = QString(ftSize->face->style_name);
 
-    FT_Module module = &ftSize->face->driver->root;
-    const char* moduleName = module->clazz->module_name;
+    const char* moduleName = FT_FACE_DRIVER_NAME( ftSize->face );
 
     // XXX cover all available modules
     if (!strcmp(moduleName, "cff"))
@@ -574,7 +548,6 @@ Engine::update()
   doVerticalHinting = gui->verticalHintingCheckBox->isChecked();
   doBlueZoneHinting = gui->blueZoneHintingCheckBox->isChecked();
   showSegments = gui->segmentDrawingCheckBox->isChecked();
-  doWarping = gui->warpingCheckBox->isChecked();
 
   gamma = gui->gammaSlider->value();
 

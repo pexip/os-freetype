@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Script-Type"
         content="text/javascript">
   <meta name="description"
-        content="FreeType Documentation">
+        content="FreeType Glyph Conventions - FreeType Outlines">
   <meta name="Author"
         content="David Turner">
 
@@ -24,16 +24,10 @@
         href="../css/freetype2_-90.css">
 
   <script type="text/javascript"
-          src="../../../js/jquery-1.11.0.min.js">
-  </script>
-  <script type="text/javascript"
-          src="../../../js/jquery.ba-resize.min.js">
-  </script>
-  <script type="text/javascript"
           src="../../../js/freetype2.js">
   </script>
 
-  <title>FreeType Glyph Conventions / VI</title>
+  <title>FreeType Glyph Conventions | FreeType Outlines</title>
 </head>
 
 
@@ -57,7 +51,7 @@
         <!-- ************************************************** -->
 
         <div id="freetype-outlines">
-          <h2>VI. FreeType outlines</h2>
+          <h2>VI. FreeType Outlines</h2>
 
           <p>The purpose of this section is to present the way
             FreeType manages vectorial outlines, as well as the most
@@ -211,7 +205,7 @@
 
 
           <h4>b. The <code>FT_Outline</code> descriptor</h4>
-        
+
           <p>A FreeType outline is described through a simple
             structure
             called <a href="../reference/ft2-outline_processing.html#ft_outline"><code>FT_Outline</code></a>.
@@ -264,7 +258,7 @@
               </tr>
             </tbody>
           </table>
-        
+
           <p>Here, <code>points</code> is a pointer to an array of
             <a href="../reference/ft2-basic_types.html#ft_vector"><code>FT_Vector</code></a>
             records, used to store the vectorial coordinates of each
@@ -361,7 +355,7 @@
           <p>An outline point's vectorial coordinates are expressed in
             the 26.6&nbsp;format, i.e., in 1/64th of a pixel, hence the
             coordinates &lsquo;(1.0,-2.5)&rsquo; is stored as the
-            integer pair &lsquo;(64,-192)&rsquo;, to name an
+            integer pair &lsquo;(64,-160)&rsquo;, to name an
             example.</p>
 
           <p>After a glyph outline is scaled from the EM grid (in font
@@ -440,7 +434,7 @@ height = (ymax - ymin)/64</pre>
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 13-Feb-2018</p>
+          <p>Last update: 15-Jan-2021</p>
         </div>
       </div>
     </div>
@@ -472,11 +466,6 @@ height = (ymax - ymin)/64</pre>
                src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
                name="submit"
                alt="PayPal - The safer, easier way to pay online!">
-        <img alt=""
-             border="0"
-             src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif"
-             width="1"
-             height="1">
       </form>
     </li>
     <li class="primary">

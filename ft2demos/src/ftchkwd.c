@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright (C) 2003-2020 by                                              */
+/*  Copyright (C) 2003-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftchkwd                                                                 */
@@ -13,10 +13,7 @@
 /****************************************************************************/
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/compiler-macros.h>
+#include <freetype/freetype.h>
 
 #include <stdio.h>
 #include <stdlib.h>

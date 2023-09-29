@@ -1,5 +1,5 @@
 # 'ot' stands for OpenType.
-typo-in-manual-page usr/share/man/man1/ftvalid.1.gz ot to
+typo-in-manual-page ot to [usr/share/man/man1/ftvalid.1.gz:*]
 
 # 'Nam' is part of the 'Lorem ipsum' default text.
-spelling-error-in-binary usr/bin/ftdiff Nam Name
+spelling-error-in-binary Nam Name [usr/bin/ftdiff]

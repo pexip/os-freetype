@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  compos: this is a very simple program used to test the flag             */
@@ -16,8 +16,8 @@
 #define FT2_BUILD_LIBRARY
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include <freetype/internal/internal/ftgloadr.h>
+#include <freetype/freetype.h>
+#include <freetype/internal/ftgloadr.h>
 
 #include <stdio.h>
 #include <stdlib.h>

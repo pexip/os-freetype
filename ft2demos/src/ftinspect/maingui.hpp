@@ -1,6 +1,6 @@
 // maingui.hpp
 
-// Copyright (C) 2016-2020 by Werner Lemberg.
+// Copyright (C) 2016-2022 by Werner Lemberg.
 
 
 #pragma once
@@ -43,7 +43,7 @@
 #include <QVBoxLayout>
 
 #include <ft2build.h>
-#include FT_LCD_FILTER_H
+#include <freetype/ftlcdfil.h>
 
 
 class MainGUI
@@ -133,7 +133,6 @@ private:
   QCheckBox *showPointNumbersCheckBox;
   QCheckBox *showPointsCheckBox;
   QCheckBox *verticalHintingCheckBox;
-  QCheckBox *warpingCheckBox;
 
   QComboBoxx *antiAliasingComboBoxx;
   QComboBoxx *hintingModeComboBoxx;
@@ -167,7 +166,6 @@ private:
   QHBoxLayout *segmentDrawingLayout;
   QHBoxLayout *sizeLayout;
   QHBoxLayout *verticalHintingLayout;
-  QHBoxLayout *warpingLayout;
 
   QLabel *antiAliasingLabel;
   QLabel *dpiLabel;

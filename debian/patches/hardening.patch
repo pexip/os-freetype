@@ -1,0 +1,16 @@
+Description: Pass Debian's hardening CFLAGS, CPPFLAGS and LDFLAGS to the demo programs
+Author: Hugh McMaster <hugh.mcmaster@outlook.com>
+Forwarded: https://gitlab.freedesktop.org/freetype/freetype-demos/-/merge_requests/22
+Last-Update: 2022-06-19
+
+--- a/ft2demos/graph/rules.mk
++++ b/ft2demos/graph/rules.mk
+@@ -37,7 +37,7 @@
+               $(OBJ_DIR_2)/grobjs.$(O)    \
+               $(OBJ_DIR_2)/grswizzle.$(O)
+ 
+-
++CFLAGS += $(CPPFLAGS)
+ 
+ # Default value for COMPILE_GRAPH_LIB;
+ # this value can be modified by the system-specific graphics drivers.

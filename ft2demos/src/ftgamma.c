@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2004-2020 by                                              */
+/*  Copyright (C) 2004-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -227,7 +227,7 @@
 
     memset( display->bitmap->buffer,
             100,
-            (unsigned int)( pitch * display->bitmap->rows ) );
+            (size_t)pitch * (size_t)display->bitmap->rows );
 
     grWriteCellString( display->bitmap, 0, 0, "Gamma grid",
                        display->fore_color );
@@ -372,7 +372,7 @@
     char  buf[4];
     int   i;
 
-    display = FTDemo_Display_New( NULL, DIM );
+    display = FTDemo_Display_New( NULL, DIM "x24" );
     if ( !display )
     {
       PanicZ( "could not allocate display surface" );

@@ -1,10 +1,9 @@
-enable-subpixel-rendering.patch
 enable-gxvalid-otvalid.patch
-ft2demos-no-rpath.patch
-fix-js-doc-paths.patch
-remove-gstatic-code.patch
+enable-subpixel-rendering.patch
 no-web-fonts.patch
 hide-donations-information.patch
-CVE-2022-27404.patch
-CVE-2022-27405.patch
-CVE-2022-27406.patch
+CVE-2022-31782.patch
+fix-wild-free-svg.patch
+hardening.patch
+CVE-2023-2004.patch
+#disable_COLRv1.patch

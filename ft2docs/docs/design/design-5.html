@@ -11,7 +11,7 @@
   <meta http-equiv="Content-Script-Type"
         content="text/javascript">
   <meta name="description"
-        content="FreeType Documentation">
+        content="FreeType Documentation - Design - Module Classes">
   <meta name="Author"
         content="David Turner">
 
@@ -24,16 +24,10 @@
         href="../css/freetype2_-90.css">
 
   <script type="text/javascript"
-          src="../../../js/jquery-1.11.0.min.js">
-  </script>
-  <script type="text/javascript"
-          src="../../../js/jquery.ba-resize.min.js">
-  </script>
-  <script type="text/javascript"
           src="../../../js/freetype2.js">
   </script>
 
-  <title>FreeType Design / IV</title>
+  <title>FreeType Design | Module Classes</title>
 </head>
 
 
@@ -75,7 +69,7 @@
               <p>Note that FreeType&nbsp;2 is capable of dealing
                 with <em>any</em> kind of glyph images, as long as a
                 renderer module is provided for it.  The library comes
-                by default with two renderers.</p>
+                by default with four renderers.</p>
 
               <table>
                 <tr valign=top>
@@ -83,21 +77,20 @@
                     <p><tt>raster</tt></p>
                   </td>
                   <td>
-                    <p>Supports the conversion of vectorial outlines
-                    (described by
-                    an <a href="../reference/ft2-outline_processing.html#ft_outline"><code>FT_Outline</code></a>
-                    object) to <em>monochrome</em> bitmaps.</p>
+                    <p>Convert vectorial outlines
+                    to <em>monochrome</em> bitmaps.</p>
                   </td>
                 </tr>
+
                 <tr valign=top>
                   <td>
                     <p><tt>smooth</tt></p>
                   </td>
                   <td>
-                    <p>Supports the conversion of the same outlines to
+                    <p>Convert vectorial outlines to
                     <em>anti-aliased</em> pixmaps (using 256 levels of
                     gray).  Note that this renderer also supports
-                    direct span generation, this is, it provides a
+                    direct span generation, that is, it provides a
                     hook into the engine so that the application can
                     manipulate the rendering results itself, instead
                     of letting the rasterizer fill a pixmap.
@@ -105,8 +98,38 @@
                     tutorial demo file</a> for an example.</p>
                   </td>
                 </tr>
+
+                <tr valign=top>
+                  <td>
+                    <p><tt>sdf</tt></p>
+                  </td>
+                  <td>
+                    <p>Convert vectorial outlines to
+                    8-bit <em>Signed Distance Field</em> (SDF)
+                    bitmaps.</p>
+                  </td>
+                </tr>
+
+                <tr valign=top>
+                  <td>
+                    <p><tt>bsdf</tt></p>
+                  </td>
+                  <td>
+                    <p>Convert bitmap glyphs to 8-bit <em>Signed
+                    Distance Field</em> (SDF) bitmaps.</p>
+                  </td>
+                </tr>
               </table>
+
+              <p>The <a href="https://gitlab.freedesktop.org/freetype/freetype-demos/-/blob/master/src/ftsdf.c"><code>ftsdf</code></a>
+                FreeType demo program supports both
+                the <code>sdf</code> and <code>bsdf</code> renderers;
+                all other (graphical) demo
+                programs <code>raster</code>
+                and <code>smooth</code>.</p>
+
             </li>
+
             <li>
               <p><em>Font driver</em> modules support one or more
                 specific font formats.  Here is a list with the most
@@ -166,7 +189,14 @@
                 through <tt>FT_Outline</tt> can also provide its own
                 hinter, or rely on FreeType's <tt>autofit</tt>
                 module for auto-hinting.</p>
+
+              <p>Note further that font drivers need some
+                <em>services</em> to be present: a typical example is
+                <code>FONT_FORMAT</code> to return the name of a font
+                format.  This is discussed in
+                the <a href="design-6.html">next section</a>.
             </li>
+
             <li>
               <p><em>Helper</em> modules are used to hold shared code
                 that is often used by several font drivers, or even
@@ -452,7 +482,7 @@ typedef struct  FT_Module_Class_
          <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 13-Feb-2018</p>
+          <p>Last update: 27-Jan-2022</p>
         </div>
       </div>
     </div>
@@ -484,11 +514,6 @@ typedef struct  FT_Module_Class_
                src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
                name="submit"
                alt="PayPal - The safer, easier way to pay online!">
-        <img alt=""
-             border="0"
-             src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif"
-             width="1"
-             height="1">
       </form>
     </li>
     <li class="primary">

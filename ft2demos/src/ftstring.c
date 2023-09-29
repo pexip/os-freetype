@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -21,8 +21,8 @@
 #include <stdarg.h>
 #include <math.h>
 
-#include FT_LCD_FILTER_H
-#include FT_TRIGONOMETRY_H
+#include <freetype/ftlcdfil.h>
+#include <freetype/fttrigon.h>
 
 #define CELLSTRING_HEIGHT  8
 #define MAXPTSIZE          500   /* dtp */
@@ -30,6 +30,9 @@
 
   static const char*  Sample[] =
   {
+    /* Custom string if any */
+    NULL,
+
     "The quick brown fox jumps over the lazy dog",
 
     /* Luís argüia à Júlia que «brações, fé, chá, óxido, pôr, zângão» */
@@ -214,7 +217,7 @@
 
     outline = &((FT_OutlineGlyph)*glyph)->outline;
 
-    FT_Outline_New( handle->library, points, contours, outline );
+    FT_Outline_New( handle->library, points, (FT_Int)contours, outline );
     outline->n_points = outline->n_contours = 0;
 
     FT_Stroker_Export( handle->stroker, outline );
@@ -265,6 +268,7 @@
     grWriteln( "  b         : toggle embedded bitmaps (and disable rotation)" );
     grWriteln( "  f         : toggle forced auto-hinting" );
     grWriteln( "  h         : toggle outline hinting" );
+    grWriteln( "  H         : change hinting engine" );
     grLn();
     grWriteln( "  1-4       : select rendering mode" );
     grWriteln( "  l         : cycle through anti-aliasing modes" );
@@ -274,8 +278,7 @@
     grWriteln( "  Tab       : cycle through sample strings" );
     grWriteln( "  V         : toggle vertical rendering" );
     grLn();
-    grWriteln( "  g         : increase gamma by 0.1" );
-    grWriteln( "  v         : decrease gamma by 0.1" );
+    grWriteln( "  g, v      : adjust gamma by 0.1" );
     grLn();
     grWriteln( "  n         : next font" );
     grWriteln( "  p         : previous font" );
@@ -428,15 +431,14 @@
   static void
   event_text_change( void )
   {
-    static int  i = 0;
+    static int  i = INT_MAX - 1;
+
+
+    if ( ++i >= (int)( sizeof ( Sample ) / sizeof ( Sample[0] ) ) )
+      i = Sample[0] == NULL ? 1 : 0;
 
     status.text = Sample[i];
-
-    i++;
-    if ( i >= (int)( sizeof( Sample ) / sizeof( Sample[0] ) ) )
-      i = 0;
   }
-
 
   static void
   event_size_change( int  delta )
@@ -545,6 +547,10 @@
                         : "glyph hinting is now ignored";
       goto Flags;
 
+    case grKEY( 'H' ):
+      FTDemo_Hinting_Engine_Change( handle );
+      goto Flags;
+
     case grKEY( 'l' ):
       event_lcdmode_change();
       goto Flags;
@@ -642,7 +648,7 @@
                         -1, error_code );
 
     if ( status.header )
-      grWriteCellString( display->bitmap, 0, 2 * HEADER_HEIGHT,
+      grWriteCellString( display->bitmap, 0, 3 * HEADER_HEIGHT,
                          status.header, display->fore_color );
 
     grRefreshSurface( display->surface );
@@ -728,7 +734,7 @@
       case 'm':
         if ( *argc < 3 )
           usage( execname );
-        status.text = optarg;
+        Sample[0] = optarg;
         break;
 
       case 'r':
@@ -976,8 +982,7 @@
 
     status.header = NULL;
 
-    if ( !status.text )
-      event_text_change();
+    event_text_change();
 
     event_color_change();
 

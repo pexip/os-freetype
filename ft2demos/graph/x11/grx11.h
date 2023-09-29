@@ -5,7 +5,7 @@
  *  This is the driver for displaying inside a window under X11,
  *  used by the graphics utility of the FreeType test suite.
  *
- *  Copyright (C) 1999-2020 by
+ *  Copyright (C) 1999-2022 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  This file is part of the FreeType project, and may only be used
@@ -19,11 +19,19 @@
 #ifndef GRX11_H_
 #define GRX11_H_
 
-#ifdef __cplusplus
-#define class  c_class
+#define visualClass(x)  ( x->Class == StaticGray  ? "StaticGray"  : \
+                          x->Class == GrayScale   ? "GrayScale"   : \
+                          x->Class == StaticColor ? "StaticColor" : \
+                          x->Class == PseudoColor ? "PseudoColor" : \
+                          x->Class == TrueColor   ? "TrueColor"   : \
+                          x->Class == DirectColor ? "DirectColor" : "unknown" )
+
+#if defined( __cplusplus ) || defined( c_plusplus )
+#define Class  c_class
+#else
+#define Class  class
 #endif
 
-#include "grobjs.h"
 #include "grdevice.h"
 
   extern

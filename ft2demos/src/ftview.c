@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -21,21 +21,12 @@
 #include "mlgetopt.h"
 #include <stdio.h>
 
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/ftdebug.h>
-
-  /* showing driver name */
-#include FT_MODULE_H
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdrv.h>
-
-#include FT_STROKER_H
-#include FT_SYNTHESIS_H
-#include FT_LCD_FILTER_H
-#include FT_DRIVER_H
-
-#include FT_COLOR_H
-#include FT_BITMAP_H
+#include <freetype/ftbitmap.h>
+#include <freetype/ftcolor.h>
+#include <freetype/ftdriver.h>
+#include <freetype/ftlcdfil.h>
+#include <freetype/ftstroke.h>
+#include <freetype/ftsynth.h>
 
 
 #define MAXPTSIZE  500                 /* dtp */
@@ -45,7 +36,7 @@
 #endif
 #define CEIL( x )  ( ( (x) + 63 ) >> 6 )
 
-#define START_X  18 * 8
+#define START_X  16 * 8
 #define START_Y  3 * HEADER_HEIGHT
 
 #define INIT_SIZE( size, start_x, start_y, step_y, x, y )        \
@@ -111,14 +102,6 @@
     double         radius;
     double         slant;
 
-    unsigned int   cff_hinting_engine;
-    unsigned int   type1_hinting_engine;
-    unsigned int   t1cid_hinting_engine;
-    unsigned int   tt_interpreter_versions[3];
-    int            num_tt_interpreter_versions;
-    int            tt_interpreter_version_idx;
-    FT_Bool        warping;
-
     int            font_idx;
     int            offset;            /* as selected by the user */
     int            topleft;           /* as displayed by ftview  */
@@ -132,7 +115,6 @@
   } status = { 1,
                "", DIM, NULL, RENDER_MODE_ALL,
                72, 48, 1, 0.04, 0.04, 0.02, 0.22,
-               0, 0, 0, { 0 }, 0, 0, 0, /* default values are set at runtime */
                0, 0, 0, 0, 0,
                FT_LCD_FILTER_DEFAULT, { 0x08, 0x4D, 0x56, 0x4D, 0x08 }, 2 };
 
@@ -174,7 +156,7 @@
   }
 
 
-  static FT_Error
+  static int
   Render_Stroke( int  num_indices,
                  int  offset )
   {
@@ -191,7 +173,7 @@
     if ( error )
     {
       /* probably a non-existent bitmap font size */
-      return error;
+      return -1;
     }
 
     INIT_SIZE( size, start_x, start_y, step_y, x, y );
@@ -275,11 +257,11 @@
       status.num_fails++;
     }
 
-    return error;
+    return i - 1;
   }
 
 
-  static FT_Error
+  static int
   Render_Fancy( int  num_indices,
                 int  offset )
   {
@@ -297,7 +279,7 @@
     if ( error )
     {
       /* probably a non-existent bitmap font size */
-      return error;
+      return -1;
     }
 
     INIT_SIZE( size, start_x, start_y, step_y, x, y );
@@ -419,38 +401,42 @@
       status.num_fails++;
     }
 
-    return error;
+    return i - 1;
   }
 
 
-  static FT_Error
+  static int
   Render_All( int  num_indices,
               int  offset )
   {
-    int           start_x, start_y, step_y, x, y, width;
-    int           i, have_topleft;
+    int  start_x, start_y, step_y, x, y, width;
+    int  i, have_topleft;
+
     FT_Size       size;
     FT_Face       face;
     FT_GlyphSlot  slot;
-    FT_Color*     palette;
+
+    FT_Color*        palette;
+    FT_Palette_Data  palette_data;
+    FT_UShort        palette_index;
 
 
     error = FTDemo_Get_Size( handle, &size );
     if ( error )
     {
       /* probably a non-existent bitmap font size */
-      return error;
+      return -1;
     }
 
     INIT_SIZE( size, start_x, start_y, step_y, x, y );
     face = size->face;
     slot = face->glyph;
 
-    error = FT_Palette_Select( face,
-                               handle->current_font->palette_index,
-                               &palette );
-    if ( error )
+    palette_index = (FT_UShort)handle->current_font->palette_index;
+    if ( FT_Palette_Select( face, palette_index, &palette ) )
       palette = NULL;
+    if ( FT_Palette_Data_Get( face, &palette_data ) )
+      return -1;
 
     have_topleft = 0;
 
@@ -497,6 +483,7 @@
         do
         {
           FT_Vector  slot_offset;
+          FT_Color   color;
 
 
           error = FT_Load_Glyph( face, layer_glyph_idx, load_flags );
@@ -506,12 +493,39 @@
           slot_offset.x = slot->bitmap_left * 64;
           slot_offset.y = slot->bitmap_top * 64;
 
+          if ( layer_color_idx == 0xFFFF )
+          {
+            // TODO: FT_Palette_Get_Foreground_Color
+            if ( palette_data.palette_flags                  &&
+               ( palette_data.palette_flags[palette_index] &
+                   FT_PALETTE_FOR_DARK_BACKGROUND          ) )
+            {
+              /* white opaque */
+              color.blue  = 0xFF;
+              color.green = 0xFF;
+              color.red   = 0xFF;
+              color.alpha = 0xFF;
+            }
+            else
+            {
+              /* black opaque */
+              color.blue  = 0x00;
+              color.green = 0x00;
+              color.red   = 0x00;
+              color.alpha = 0xFF;
+            }
+          }
+          else if ( layer_color_idx < palette_data.num_palette_entries )
+            color = palette[layer_color_idx];
+          else
+            continue;
+
           error = FT_Bitmap_Blend( handle->library,
                                    &slot->bitmap,
                                    slot_offset,
                                    &bitmap,
                                    &bitmap_offset,
-                                   palette[layer_color_idx] );
+                                   color );
 
         } while ( FT_Get_Color_Glyph_Layer( face,
                                             glyph_idx,
@@ -578,11 +592,11 @@
       status.num_fails++;
     }
 
-    return FT_Err_Ok;
+    return i - 1;
   }
 
 
-  static FT_Error
+  static int
   Render_Text( int  num_indices,
                int  offset )
   {
@@ -599,7 +613,7 @@
     if ( error )
     {
       /* probably a non-existent bitmap font size */
-      return error;
+      return -1;
     }
 
     INIT_SIZE( size, start_x, start_y, step_y, x, y );
@@ -663,11 +677,11 @@
       status.num_fails++;
     }
 
-    return FT_Err_Ok;
+    return -1;
   }
 
 
-  static FT_Error
+  static int
   Render_Waterfall( int  mid_size,
                     int  offset )
   {
@@ -777,7 +791,7 @@
     FTDemo_Set_Current_Charsize( handle, mid_size, status.res );
     FTDemo_Get_Size( handle, &size );
 
-    return FT_Err_Ok;
+    return -1;
   }
 
 
@@ -850,8 +864,8 @@
     grWriteln( "             engines (if available)                                         " );
     grWriteln( "f           toggle forced auto-         Tab         cycle through charmaps  " );
     grWriteln( "             hinting (if hinting)                                           " );
-    grWriteln( "w           toggle warping              P           print PNG file          " );
-    grWriteln( "             (if available)             q, ESC      quit ftview             " );
+    grWriteln( "                                        P           print PNG file          " );
+    grWriteln( "                                        q, ESC      quit ftview             " );
     /*          |----------------------------------|    |----------------------------------| */
     grLn();
     grLn();
@@ -859,53 +873,6 @@
 
     grRefreshSurface( display->surface );
     grListenSurface( display->surface, gr_event_key, &dummy_event );
-  }
-
-
-  static int
-  event_tt_interpreter_version_change( void )
-  {
-    status.tt_interpreter_version_idx += 1;
-    status.tt_interpreter_version_idx %= status.num_tt_interpreter_versions;
-
-    error = FT_Property_Set( handle->library,
-                             "truetype",
-                             "interpreter-version",
-                             &status.tt_interpreter_versions[
-                               status.tt_interpreter_version_idx] );
-
-    if ( !error )
-      return 1;
-
-    return 0;
-  }
-
-
-  static int
-  event_warping_change( void )
-  {
-    if ( handle->lcd_mode == LCD_MODE_AA && handle->autohint )
-    {
-      FT_Bool  new_warping_state = !status.warping;
-
-
-      error = FT_Property_Set( handle->library,
-                               "autofitter",
-                               "warping",
-                               &new_warping_state );
-
-      if ( !error )
-      {
-        /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-        /* lazy to walk over all loaded fonts to check whether they */
-        /* are auto-hinted, then unloading them explicitly.         */
-        FTC_Manager_Reset( handle->cache_manager );
-        status.warping = new_warping_state;
-        return 1;
-      }
-    }
-
-    return 0;
   }
 
 
@@ -1020,7 +987,7 @@
 
     if ( status.offset < 0 )
       status.offset = 0;
-    else if ( status.offset >= num_indices )
+    if ( status.offset >= num_indices )
       status.offset = num_indices - 1;
 
     return old_offset == status.offset ? 0 : 1;
@@ -1050,7 +1017,12 @@
 
     FTDemo_Set_Current_Font( handle, font );
 
-    status.offset = handle->encoding == FT_ENCODING_ORDER ? 0 : 0x20;
+    if ( handle->encoding == FT_ENCODING_ORDER )
+      status.offset = 0;
+    else if ( font->num_indices <= 0x20 )  /* including UVS */
+      status.offset = font->num_indices - 1;
+    else
+      status.offset = 0x20;
 
     return 1;
   }
@@ -1238,46 +1210,7 @@
       break;
 
     case grKEY( 'H' ):
-      if ( !handle->autohint                  &&
-           handle->lcd_mode != LCD_MODE_LIGHT )
-      {
-        FT_Face    face;
-        FT_Module  module;
-
-
-        error = FTC_Manager_LookupFace( handle->cache_manager,
-                                        handle->scaler.face_id, &face );
-        if ( !error )
-        {
-          module = &face->driver->root;
-
-          if ( !strcmp( module->clazz->module_name, "cff" ) )
-            status.update = FTDemo_Event_Cff_Hinting_Engine_Change(
-                              handle->library,
-                              &status.cff_hinting_engine,
-                              1 );
-          else if ( !strcmp( module->clazz->module_name, "type1" ) )
-            status.update = FTDemo_Event_Type1_Hinting_Engine_Change(
-                              handle->library,
-                              &status.type1_hinting_engine,
-                              1 );
-          else if ( !strcmp( module->clazz->module_name, "t1cid" ) )
-            status.update = FTDemo_Event_T1cid_Hinting_Engine_Change(
-                              handle->library,
-                              &status.t1cid_hinting_engine,
-                              1 );
-          else if ( !strcmp( module->clazz->module_name, "truetype" ) )
-            status.update = event_tt_interpreter_version_change();
-
-          if ( status.update )
-          {
-            /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-            /* lazy to walk over all loaded fonts to check whether they */
-            /* are of type TTF, then unloading them explicitly.         */
-            FTC_Manager_Reset( handle->cache_manager );
-          }
-        }
-      }
+      status.update = FTDemo_Hinting_Engine_Change( handle );
       break;
 
     case grKEY( 'l' ):
@@ -1290,10 +1223,6 @@
       handle->lcd_mode = lcd_modes[status.lcd_idx];
       FTDemo_Update_Current_Flags( handle );
       status.update = 1;
-      break;
-
-    case grKEY( 'w' ):
-      status.update = event_warping_change();
       break;
 
     case grKeySpace:
@@ -1486,7 +1415,7 @@
 
 
   static void
-  write_header( FT_Error  error_code )
+  write_header( int  last )
   {
     char  buf[256];
     int   line = 4;
@@ -1500,7 +1429,7 @@
     FTDemo_Draw_Header( handle, display, status.ptsize, status.res,
                         status.render_mode != RENDER_MODE_TEXT      &&
                         status.render_mode != RENDER_MODE_WATERFALL ?
-                        status.topleft : -1, error_code );
+                        status.topleft : -1, error );
 
     /* render mode */
     {
@@ -1578,16 +1507,16 @@
         lcd_mode = "light AA";
         break;
       case LCD_MODE_RGB:
-        lcd_mode = "LCD (horiz. RGB)";
+        lcd_mode = "LCD (h-RGB)";
         break;
       case LCD_MODE_BGR:
-        lcd_mode = "LCD (horiz. BGR)";
+        lcd_mode = "LCD (h-BGR)";
         break;
       case LCD_MODE_VRGB:
-        lcd_mode = "LCD (vert. RGB)";
+        lcd_mode = "LCD (v-RGB)";
         break;
       case LCD_MODE_VBGR:
-        lcd_mode = "LCD (vert. BGR)";
+        lcd_mode = "LCD (v-BGR)";
         break;
       default:
         handle->lcd_mode = 0;
@@ -1599,102 +1528,11 @@
 
     /* hinting */
     snprintf( buf, sizeof ( buf ), "hinting: %s",
-              handle->hinted ? "on" : "off" );
+              !handle->hinted ? "off"
+                              : ( handle->autohint ||
+                handle->lcd_mode == LCD_MODE_LIGHT ) ? "auto" : "on" );
     grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                        buf, display->fore_color );
-
-    if ( handle->hinted )
-    {
-      /* auto-hinting */
-      snprintf( buf, sizeof( buf ), " forced auto: %s",
-                ( handle->autohint                   ||
-                  handle->lcd_mode == LCD_MODE_LIGHT ) ? "on" : "off" );
-      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
-                         buf, display->fore_color );
-    }
-
-    if ( !handle->autohint                  &&
-         handle->lcd_mode != LCD_MODE_LIGHT )
-    {
-      /* hinting engine */
-      FT_Module    module;
-      const char*  hinting_engine = NULL;
-
-
-      module = &face->driver->root;
-
-      if ( !strcmp( module->clazz->module_name, "cff" ) )
-      {
-        switch ( status.cff_hinting_engine )
-        {
-        case FT_HINTING_FREETYPE:
-          hinting_engine = "FreeType";
-          break;
-        case FT_HINTING_ADOBE:
-          hinting_engine = "Adobe";
-          break;
-        }
-      }
-
-      else if ( !strcmp( module->clazz->module_name, "type1" ) )
-      {
-        switch ( status.type1_hinting_engine )
-        {
-        case FT_HINTING_FREETYPE:
-          hinting_engine = "FreeType";
-          break;
-        case FT_HINTING_ADOBE:
-          hinting_engine = "Adobe";
-          break;
-        }
-      }
-
-      else if ( !strcmp( module->clazz->module_name, "t1cid" ) )
-      {
-        switch ( status.t1cid_hinting_engine )
-        {
-        case FT_HINTING_FREETYPE:
-          hinting_engine = "FreeType";
-          break;
-        case FT_HINTING_ADOBE:
-          hinting_engine = "Adobe";
-          break;
-        }
-      }
-
-      else if ( !strcmp( module->clazz->module_name, "truetype" ) )
-      {
-        switch ( status.tt_interpreter_versions[
-                   status.tt_interpreter_version_idx] )
-        {
-        case TT_INTERPRETER_VERSION_35:
-          hinting_engine = "v35";
-          break;
-        case TT_INTERPRETER_VERSION_38:
-          hinting_engine = "v38";
-          break;
-        case TT_INTERPRETER_VERSION_40:
-          hinting_engine = "v40";
-          break;
-        }
-      }
-
-      if ( hinting_engine )
-      {
-        snprintf( buf, sizeof ( buf ), "engine: %s",
-                  hinting_engine );
-        grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
-                           buf, display->fore_color );
-      }
-    }
-
-    if ( handle->lcd_mode == LCD_MODE_AA && handle->autohint )
-    {
-      snprintf( buf, sizeof ( buf ), "warping: %s",
-                status.warping ? "on" : "off" );
-      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
-                         buf, display->fore_color );
-    }
 
     line++;
 
@@ -1723,7 +1561,7 @@
                          buf, display->fore_color );
 
       /* color palette */
-      snprintf( buf, sizeof ( buf ), "  palette idx: %d",
+      snprintf( buf, sizeof ( buf ), "  palette: %d",
                 handle->current_font->palette_index );
       grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
                          buf, display->fore_color );
@@ -1769,6 +1607,29 @@
                              buf, display->fore_color );
         }
       }
+    }
+
+    /* last and limit indices or charcodes */
+    if ( last >= 0 )
+    {
+      snprintf( buf, sizeof ( buf ),
+                handle->encoding == FT_ENCODING_ORDER   ? "last:  %d" :
+                handle->encoding == FT_ENCODING_UNICODE ? "last:  U+%04X" :
+                                                          "last:  0x%X",
+                last );
+      grWriteCellString( display->bitmap,
+                         0, display->bitmap->rows - GR_FONT_SIZE
+                                                  - HEADER_HEIGHT,
+                         buf, display->fore_color );
+
+      snprintf( buf, sizeof ( buf ),
+                handle->encoding == FT_ENCODING_ORDER   ? "limit: %d" :
+                handle->encoding == FT_ENCODING_UNICODE ? "limit: U+%04X" :
+                                                          "limit: 0x%X",
+                handle->current_font->num_indices - 1 );
+      grWriteCellString( display->bitmap,
+                         0, display->bitmap->rows - GR_FONT_SIZE,
+                         buf, display->fore_color );
     }
 
     grRefreshSurface( display->surface );
@@ -1960,11 +1821,7 @@
   main( int    argc,
         char*  argv[] )
   {
-    unsigned int  dflt_tt_interpreter_version;
-    int           i;
-    unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
-                                  TT_INTERPRETER_VERSION_38,
-                                  TT_INTERPRETER_VERSION_40 };
+    int  last = -1;
 
 
     /* Initialize engine */
@@ -1975,40 +1832,6 @@
     if ( status.lcd_filter != -1 )
       FT_Library_SetLcdFilter( handle->library,
                                (FT_LcdFilter)status.lcd_filter );
-
-    /* get the default values as compiled into FreeType */
-    FT_Property_Get( handle->library,
-                     "cff",
-                     "hinting-engine", &status.cff_hinting_engine );
-    FT_Property_Get( handle->library,
-                     "type1",
-                     "hinting-engine", &status.type1_hinting_engine );
-    FT_Property_Get( handle->library,
-                     "t1cid",
-                     "hinting-engine", &status.t1cid_hinting_engine );
-
-    /* collect all available versions, then set again the default */
-    FT_Property_Get( handle->library,
-                     "truetype",
-                     "interpreter-version", &dflt_tt_interpreter_version );
-    for ( i = 0; i < 3; i++ )
-    {
-      error = FT_Property_Set( handle->library,
-                               "truetype",
-                               "interpreter-version", &versions[i] );
-      if ( !error )
-        status.tt_interpreter_versions[
-          status.num_tt_interpreter_versions++] = versions[i];
-      if ( versions[i] == dflt_tt_interpreter_version )
-        status.tt_interpreter_version_idx = i;
-    }
-    FT_Property_Set( handle->library,
-                     "truetype",
-                     "interpreter-version", &dflt_tt_interpreter_version );
-
-    FT_Property_Get( handle->library,
-                     "autofitter",
-                     "warping", &status.warping );
 
     if ( status.preload )
       FTDemo_Set_Preload( handle, 1 );
@@ -2041,30 +1864,30 @@
       switch ( status.render_mode )
       {
       case RENDER_MODE_ALL:
-        error = Render_All( handle->current_font->num_indices,
-                            status.offset );
+        last = Render_All( handle->current_font->num_indices,
+                           status.offset );
         break;
 
       case RENDER_MODE_FANCY:
-        error = Render_Fancy( handle->current_font->num_indices,
-                              status.offset );
+        last = Render_Fancy( handle->current_font->num_indices,
+                             status.offset );
         break;
 
       case RENDER_MODE_STROKE:
-        error = Render_Stroke( handle->current_font->num_indices,
-                               status.offset );
+        last = Render_Stroke( handle->current_font->num_indices,
+                              status.offset );
         break;
 
       case RENDER_MODE_TEXT:
-        error = Render_Text( -1, status.offset );
+        last = Render_Text( -1, status.offset );
         break;
 
       case RENDER_MODE_WATERFALL:
-        error = Render_Waterfall( status.ptsize, status.offset );
+        last = Render_Waterfall( status.ptsize, status.offset );
         break;
       }
 
-      write_header( error );
+      write_header( last );
 
     } while ( Process_Event() == 0 );
 

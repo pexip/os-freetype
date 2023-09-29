@@ -61,10 +61,13 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_CMap_Language_ID@Base 2.2.1
  FT_Get_Char_Index@Base 2.2.1
  FT_Get_Charmap_Index@Base 2.2.1
+ FT_Get_Color_Glyph_ClipBox@Base 2.11.1
  FT_Get_Color_Glyph_Layer@Base 2.10.1
- FT_Get_Font_Format@Base 2.6
+ FT_Get_Color_Glyph_Paint@Base 2.11.0
+ FT_Get_Colorline_Stops@Base 2.11.0
  FT_Get_FSType_Flags@Base 2.3.9
  FT_Get_First_Char@Base 2.2.1
+ FT_Get_Font_Format@Base 2.6
  FT_Get_Gasp@Base 2.3.5
  FT_Get_Glyph@Base 2.2.1
  FT_Get_Glyph_Name@Base 2.2.1
@@ -82,6 +85,8 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_PS_Font_Info@Base 2.2.1
  FT_Get_PS_Font_Private@Base 2.2.1
  FT_Get_PS_Font_Value@Base 2.4.8
+ FT_Get_Paint@Base 2.11.0
+ FT_Get_Paint_Layers@Base 2.11.0
  FT_Get_Postscript_Name@Base 2.2.1
  FT_Get_Renderer@Base 2.2.1
  FT_Get_Sfnt_LangTag@Base 2.8
@@ -90,6 +95,7 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_Sfnt_Table@Base 2.2.1
  FT_Get_SubGlyph_Info@Base 2.2.1
  FT_Get_Track_Kerning@Base 2.2.1
+ FT_Get_Transform@Base 2.11.0
  FT_Get_TrueType_Engine_Type@Base 2.2.1
  FT_Get_Var_Axis_Flags@Base 2.8.1
  FT_Get_Var_Blend_Coordinates@Base 2.7.1
@@ -167,7 +173,9 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Set_Char_Size@Base 2.2.1
  FT_Set_Charmap@Base 2.2.1
  FT_Set_Debug_Hook@Base 2.2.1
+ FT_Set_Default_Log_Handler@Base 2.11.0
  FT_Set_Default_Properties@Base 2.8
+ FT_Set_Log_Handler@Base 2.11.0
  FT_Set_MM_Blend_Coordinates@Base 2.2.1
  FT_Set_MM_Design_Coordinates@Base 2.2.1
  FT_Set_MM_WeightVector@Base 2.10.1
@@ -197,6 +205,8 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Stroker_Rewind@Base 2.2.1
  FT_Stroker_Set@Base 2.2.1
  FT_Tan@Base 2.2.1
+ FT_Trace_Set_Default_Level@Base 2.11.0
+ FT_Trace_Set_Level@Base 2.11.0
  FT_TrueTypeGX_Free@Base 2.2.1
  FT_TrueTypeGX_Validate@Base 2.2.1
  FT_Vector_From_Polar@Base 2.2.1

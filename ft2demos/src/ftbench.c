@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2002-2020 by                                              */
+/*  Copyright (C) 2002-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftbench: bench some common FreeType call paths                          */
@@ -16,27 +16,23 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 #include <time.h>
+
 #include <ft2build.h>
+#include <freetype/freetype.h>
 
-#include FT_FREETYPE_H
-#include FT_GLYPH_H
-#include FT_CACHE_H
-#include FT_CACHE_CHARMAP_H
-#include FT_CACHE_IMAGE_H
-#include FT_CACHE_SMALL_BITMAPS_H
-#include FT_SYNTHESIS_H
-#include FT_ADVANCES_H
-#include FT_OUTLINE_H
-#include FT_STROKER_H
-#include FT_BBOX_H
-#include FT_MODULE_H
-#include FT_DRIVER_H
-#include FT_LCD_FILTER_H
-
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/compiler-macros.h>
+#include <freetype/ftadvanc.h>
+#include <freetype/ftbbox.h>
+#include <freetype/ftcache.h>
+#include <freetype/ftdriver.h>
+#include <freetype/ftglyph.h>
+#include <freetype/ftlcdfil.h>
+#include <freetype/ftmodapi.h>
+#include <freetype/ftoutln.h>
+#include <freetype/ftstroke.h>
+#include <freetype/ftsynth.h>
 
 #ifdef UNIX
 #include <unistd.h>
@@ -45,6 +41,20 @@
 #endif
 
 #include "common.h"
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+/* Specify the timer: QPC for accurate wall time, GPT for user-mode time. */
+/* Otherwise, QPCT cycles are measured accurately but with huge overhead. */
+#define QPC
+
+#ifdef QPC
+  double  interval;
+#endif
+
+#endif
 
 
   typedef struct  btimer_t_ {
@@ -137,9 +147,9 @@
   static int    preload;
   static char*  filename;
 
-  static unsigned int  first_index = 0U;
-  static unsigned int  last_index  = ~0U;
-  static int           incr_index  = 1;
+  static int  first_index = 0;
+  static int  last_index  = INT_MAX;
+  static int  incr_index  = 1;
 
 #define FOREACH( i )  for ( i = first_index ;                          \
                             ( first_index <= i && i <= last_index ) || \
@@ -187,7 +197,39 @@
   static double
   get_time( void )
   {
-#if defined _POSIX_TIMERS && _POSIX_TIMERS > 0
+    /* NOTE: When building with the Mingw64 toolchain, `_POSIX_TIMERS` is
+     * defined, but function `clock_gettime` is not.  Ensure that the
+     * `_WIN32` specific timer code appears first here.
+     */
+#if defined  _WIN32
+
+#ifdef QPC
+    LARGE_INTEGER  ticks;
+
+
+    QueryPerformanceCounter( &ticks );
+
+    return  interval * ticks.QuadPart;
+
+#elif defined GPT
+    FILETIME  start, end, kern, user;
+
+
+    GetProcessTimes( GetCurrentProcess(), &start, &end, &kern, &user );
+
+    return  0.1 * user.dwLowDateTime + 429496729.6 * user.dwHighDateTime;
+
+#else
+    ULONG64  cycles;
+
+
+    QueryProcessCycleTime( GetCurrentProcess(), &cycles );
+
+    return  1e-3 * cycles; /* at 1GHz */
+
+#endif
+
+#elif defined _POSIX_TIMERS && _POSIX_TIMERS > 0
     struct timespec  tv;
 
 
@@ -198,6 +240,7 @@
 #endif /* _POSIX_CPUTIME */
 
     return 1E6 * (double)tv.tv_sec + 1E-3 * (double)tv.tv_nsec;
+
 #else
     /* clock() accuracy has improved since glibc 2.18 */
     return 1E6 * (double)clock() / (double)CLOCKS_PER_SEC;
@@ -272,8 +315,7 @@
              FT_Face    face,
              void*      user_data )
   {
-    unsigned int  i;
-    int           done = 0;
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
@@ -282,7 +324,7 @@
 
     FOREACH( i )
     {
-      if ( !FT_Load_Glyph( face, i, load_flags ) )
+      if ( !FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         done++;
     }
 
@@ -300,7 +342,7 @@
     int        done = 0;
     FT_Fixed*  advances;
     FT_ULong   flags = *((FT_ULong*)user_data);
-    FT_UInt    start, count;
+    FT_Int     start, count;
 
 
     if ( incr_index > 0 )
@@ -318,7 +360,9 @@
 
     TIMER_START( timer );
 
-    FT_Get_Advances( face, start, count, (FT_Int32)flags, advances );
+    FT_Get_Advances( face,
+                     (FT_UInt)start, (FT_UInt)count,
+                     (FT_Int32)flags, advances );
     done += (int)count;
 
     TIMER_STOP( timer );
@@ -334,15 +378,14 @@
                FT_Face    face,
                void*      user_data )
   {
-    unsigned int  i;
-    int           done = 0;
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       TIMER_START( timer );
@@ -360,15 +403,14 @@
                  FT_Face    face,
                  void*      user_data )
   {
-    unsigned int  i;
-    int           done = 0;
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       TIMER_START( timer );
@@ -386,10 +428,10 @@
                FT_Face    face,
                void*      user_data )
   {
-    FT_Glyph      glyph;
-    FT_Stroker    stroker;
-    unsigned int  i;
-    int           done = 0;
+    FT_Glyph    glyph;
+    FT_Stroker  stroker;
+
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
@@ -402,7 +444,7 @@
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       if ( FT_Get_Glyph( face->glyph, &glyph ) )
@@ -416,6 +458,8 @@
       done++;
     }
 
+    FT_Stroker_Done( stroker );
+
     return done;
   }
 
@@ -425,16 +469,16 @@
                   FT_Face    face,
                   void*      user_data )
   {
-    FT_Glyph      glyph;
-    unsigned int  i;
-    int           done = 0;
+    FT_Glyph  glyph;
+
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       TIMER_START( timer );
@@ -455,17 +499,17 @@
                  FT_Face    face,
                  void*      user_data )
   {
-    FT_Glyph      glyph;
-    FT_BBox       bbox;
-    unsigned int  i;
-    int           done = 0;
+    FT_Glyph  glyph;
+    FT_BBox   bbox;
+
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       if ( FT_Get_Glyph( face->glyph, &glyph ) )
@@ -488,10 +532,10 @@
                  FT_Face    face,
                  void*      user_data )
   {
-    FT_BBox       bbox;
-    unsigned int  i;
-    int           done  = 0;
-    FT_Matrix     rot30 = { 0xDDB4, -0x8000, 0x8000, 0xDDB4 };
+    FT_BBox    bbox;
+    FT_Matrix  rot30 = { 0xDDB4, -0x8000, 0x8000, 0xDDB4 };
+
+    int  i, done = 0;
 
     FT_UNUSED( user_data );
 
@@ -501,7 +545,7 @@
       FT_Outline*  outline;
 
 
-      if ( FT_Load_Glyph( face, i, load_flags ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
       outline = &face->glyph->outline;
@@ -582,9 +626,9 @@
                     FT_Face    face,
                     void*      user_data )
   {
-    FT_Glyph      glyph;
-    unsigned int  i;
-    int           done = 0;
+    FT_Glyph  glyph;
+
+    int  i, done = 0;
 
     FT_UNUSED( face );
     FT_UNUSED( user_data );
@@ -602,7 +646,7 @@
     {
       if ( !FTC_ImageCache_Lookup( image_cache,
                                    &font_type,
-                                   i,
+                                   (FT_UInt)i,
                                    &glyph,
                                    NULL ) )
         done++;
@@ -619,9 +663,9 @@
                    FT_Face    face,
                    void*      user_data )
   {
-    FTC_SBit      glyph;
-    unsigned int  i;
-    int           done = 0;
+    FTC_SBit  glyph;
+
+    int  i, done = 0;
 
     FT_UNUSED( face );
     FT_UNUSED( user_data );
@@ -639,7 +683,7 @@
     {
       if ( !FTC_SBitCache_Lookup( sbit_cache,
                                   &font_type,
-                                  i,
+                                  (FT_UInt)i,
                                   &glyph,
                                   NULL ) )
         done++;
@@ -703,8 +747,7 @@
   {
     FT_Face  bench_face;
 
-    unsigned int  i;
-    int           done = 0;
+    int  i, done = 0;
 
     FT_UNUSED( face );
     FT_UNUSED( user_data );
@@ -716,7 +759,7 @@
     {
       FOREACH( i )
       {
-        if ( !FT_Load_Glyph( bench_face, i, load_flags ) )
+        if ( !FT_Load_Glyph( bench_face, (FT_UInt)i, load_flags ) )
           done++;
       }
 
@@ -738,7 +781,6 @@
                bcharset_t*  charset )
   {
     FT_ULong  charcode;
-    FT_UInt   gindex;
     int       i = 0;
 
 
@@ -749,27 +791,33 @@
 
     if ( face->charmap )
     {
-      charcode = FT_Get_First_Char( face, &gindex );
+      FT_UInt  idx;
+
+
+      charcode = FT_Get_First_Char( face, &idx );
 
       /* certain fonts contain a broken charmap that will map character */
       /* codes to out-of-bounds glyph indices.  Take care of that here. */
       /*                                                                */
-      while ( gindex && i < face->num_glyphs )
+      while ( idx && i < face->num_glyphs )
       {
+        FT_Int  gindex = (FT_Int)idx;
+
+
         if ( ( first_index <= gindex && gindex <= last_index ) ||
              ( first_index >= gindex && gindex >= last_index ) )
           charset->code[i++] = charcode;
-        charcode = FT_Get_Next_Char( face, charcode, &gindex );
+        charcode = FT_Get_Next_Char( face, charcode, &idx );
       }
     }
     else
     {
-      unsigned int  j;
+      int  j;
 
 
       /* no charmap, do an identity mapping */
       FOREACH( j )
-        charset->code[i++] = j;
+        charset->code[i++] = (FT_ULong)j;
     }
 
     charset->size = i;
@@ -957,6 +1005,13 @@
     int           version;
     char         *engine;
 
+#if defined _WIN32 && defined QPC
+    LARGE_INTEGER  freq;
+
+    QueryPerformanceFrequency( &freq );
+    interval = 1e6 / freq.QuadPart;
+#endif
+
 
     if ( FT_Init_FreeType( &lib ) )
     {
@@ -1083,12 +1138,12 @@
 
       case 'i':
         {
-          unsigned int  fi, li;
+          int  fi, li;
 
-          if ( sscanf( optarg, "%u%*[,:-]%u", &fi, &li ) == 2 )
+          if ( sscanf( optarg, "%d%*[,:-]%d", &fi, &li ) == 2 )
           {
-            first_index = fi;
-            last_index  = li;
+            first_index = fi < 0 ? 0 : fi;
+            last_index  = li < 0 ? 0 : li;
           }
         }
         break;
@@ -1187,11 +1242,11 @@
     if ( get_face( &face ) )
       goto Exit;
 
-    if ( first_index >= (unsigned int)face->num_glyphs )
-      first_index = (unsigned int)face->num_glyphs - 1;
-    if ( last_index  >= (unsigned int)face->num_glyphs )
-      last_index  = (unsigned int)face->num_glyphs - 1;
-    incr_index  = last_index > first_index ? 1 : -1;
+    if ( first_index >= face->num_glyphs )
+      first_index = face->num_glyphs - 1;
+    if ( last_index >= face->num_glyphs )
+      last_index = face->num_glyphs - 1;
+    incr_index = last_index > first_index ? 1 : -1;
 
     if ( size )
     {
@@ -1249,7 +1304,7 @@
              max_time );
 
     printf( "\n"
-            "glyph indices: from %u to %u\n"
+            "glyph indices: from %d to %d\n"
             "face size: %uppem\n"
             "font preloading into memory: %s\n",
             first_index,

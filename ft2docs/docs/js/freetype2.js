@@ -3,76 +3,74 @@
  *
  * auxiliary JavaScript functions for freetype.org
  *
- * written 2012 by Werner Lemberg
+ * written 2012 by Werner Lemberg, updated 2021 by Anurag Thakur
  */
 
-// This code snippet needs `jquery'
-// (http://code.jquery.com/jquery-1.8.3.js) and `jquery-resize'
-// (http://github.com/cowboy/jquery-resize/raw/master/jquery.ba-resize.js)
-
-
-// Add a bottom bar if the document length exceeds the window height. 
+// Add a bottom bar if the document length exceeds the window height.
 // Additionally ensure that the TOC background reaches the bottom of the
 // window.
 
 function addBottomBar() {
-  var columnHeight = $('.colright').height();
-  var topBarHeight = $('#top').height();
-  var winHeight = $(window).height();
+  const columnHeight = document.querySelector(".colright").clientHeight;
+  const topBarHeight = document.querySelector("#top").clientHeight;
+  const winHeight = window.innerHeight;
 
   if (columnHeight + topBarHeight > winHeight) {
-    $('#TOC-bottom').css('height', columnHeight);
+    document.getElementById("TOC-bottom").style.height = columnHeight + "px";
+
     /* add bottom bar if it doesn't exist already */
-    if ($('#bottom').length == 0) {
-      $('body').append('<div class="bar" id="bottom"></div>');
+    if (!document.querySelector("#bottom")) {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        '<div class="bar" id="bottom"></div>'
+      );
     }
-  }
-  else {
-    $('#TOC-bottom').css('height', winHeight - topBarHeight);
-    $('#bottom').remove();
+  } else {
+    let tocBHeight = winHeight - topBarHeight;
+    document.getElementById("TOC-bottom").style.height = tocBHeight + "px";
+    document.getElementById("bottom").remove();
   }
 }
-
 
 // `Slightly' scroll the TOC so that its top moves up to the top of the
 // screen if we scroll down.  The function also assures that the bottom of
 // the TOC doesn't cover the bottom bar (e.g., if the window height is very
 // small).
-
 function adjustTOCPosition() {
-  var docHeight = $(document).height();
-  var TOCHeight = $('#TOC').height();
-  var bottomBarHeight = $('#bottom').height();
-  var topBarHeight = $('#top').height();
+  const docHeight = document.body.scrollHeight;
+  const TOCHeight = document.querySelector("#TOC").clientHeight;
+  const bottomBarHeight = document.querySelector("#bottom").clientHeight;
+  const topBarHeight = document.querySelector("#top").clientHeight;
 
-  var scrollTopPos = $(window).scrollTop();
-  var topBarBottomPos = 0 + topBarHeight;
-  var bottomBarTopPos = docHeight - bottomBarHeight;
+  const scrollTopPos = window.scrollY;
+  const topBarBottomPos = 0 + topBarHeight;
+  const bottomBarTopPos = docHeight - bottomBarHeight;
 
   if (scrollTopPos >= topBarBottomPos) {
-    $('#TOC').css('top', 0);
+    document.getElementById("TOC").style.top = "0px";
   }
   if (scrollTopPos < topBarBottomPos) {
-    $('#TOC').css('top', topBarBottomPos - scrollTopPos);
+    let topPos = topBarBottomPos - scrollTopPos;
+    document.getElementById("TOC").style.top = topPos + "px";
   }
-  if (bottomBarTopPos - scrollTopPos < TOCHeight)
-    $('#TOC').css('top', bottomBarTopPos - scrollTopPos - TOCHeight);
+  if (bottomBarTopPos - scrollTopPos < TOCHeight) {
+    let topPos = bottomBarTopPos - scrollTopPos - TOCHeight;
+    document.getElementById("TOC").style.top = topPos + "px";
+  }
 }
 
-
 // Hook functions into loading, resizing, and scrolling events.
-
-$(window).load(function() {
+window.onload = function () {
   addBottomBar();
   adjustTOCPosition();
 
-  $(window).scroll(function() {
+  window.onscroll = function () {
     adjustTOCPosition();
-  });
+  };
 
-  $('#TOC-bottom').add(window).resize(function() {
+  window.onresize = function () {
     addBottomBar();
-  });
-});
+  };
+};
 
 /* end of freetype2.js */
