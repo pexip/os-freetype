@@ -7,10 +7,10 @@ doc bundle in the same place, e.g.
 
   mkdir src
   cd src
-  tar xzvf freetype-2.10.4.tar.gz
-  tar xzvf freetype-doc-2.10.4.tar.gz
+  tar xzvf freetype-2.12.1.tar.gz
+  tar xzvf freetype-doc-2.12.1.tar.gz
 
-Now you can move the `docs' subdirectory of `freetype-2.10.4' to any place
+Now you can move the `docs' subdirectory of `freetype-2.12.1' to any place
 you want.
 
 The entry point for the documentation is

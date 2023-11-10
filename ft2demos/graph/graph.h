@@ -4,7 +4,7 @@
  *
  *    Graphics Subsystem interface
  *
- *  Copyright (C) 1999-2020 by
+ *  Copyright (C) 1999-2022 by
  *     - The FreeType Development Team - www.freetype.org
  *
  ***************************************************************************/
@@ -12,6 +12,7 @@
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
+#include "grtypes.h"
 #include "grevents.h"
 
  /*************************************************************************/
@@ -33,7 +34,7 @@
   /* pixel mode constants */
   typedef enum grPixelMode
   {
-    gr_pixel_mode_none = 0,
+    gr_pixel_mode_none = 0,    /* driver inquiry mode              */
     gr_pixel_mode_mono,        /* monochrome bitmaps               */
     gr_pixel_mode_pal4,        /* 4-bit paletted - 16 colors       */
     gr_pixel_mode_pal8,        /* 8-bit paletted - 256 colors      */
@@ -95,7 +96,6 @@
   } grBitmap;
 
 
-
   typedef long   grPos;
   typedef char   grBool;
 
@@ -107,9 +107,26 @@
   } grVector;
 
 
+ /*********************************************************************
+  *
+  * <Union>
+  *   grColor
+  *
+  * <Description>
+  *   a generic color pixel with arbitrary depth up to 32 bits.
+  *
+  * <Fields>
+  *   value  :: for colors represented using bitfields
+  *   chroma :: for colors in a particular byte order
+  *
+  * <Note>
+  *   Use grFindColor to set grColor corresponding to grBitmap.
+  *
+  ********************************************************************/
+
   typedef union grColor_
   {
-    long           value;
+    uint32_t       value;
     unsigned char  chroma[4];
 
   } grColor;
@@ -118,10 +135,35 @@
  /**********************************************************************
   *
   * <Function>
+  *    grFindColor
+  *
+  * <Description>
+  *    return grColor pixel appropriate for a target mode.
+  *
+  * <Input>
+  *    target  :: used to match the pixel mode
+  *    red     :: red value in 0..255 range
+  *    green   :: green value in 0..255 range
+  *    blue    :: blue value in 0..255 range
+  *    alpha   :: alpha value in 0..255 range
+  *
+  ********************************************************************/
+  extern grColor
+  grFindColor( grBitmap*  target,
+               int        red,
+               int        green,
+               int        blue,
+               int        alpha );
+
+
+ /**********************************************************************
+  *
+  * <Function>
   *    grNewBitmap
   *
   * <Description>
-  *    creates a new bitmap or resizes an existing one
+  *    Creates a new bitmap or resizes an existing one.  The allocated
+  *    pixel buffer is not initialized.
   *
   * <Input>
   *    pixel_mode   :: the target surface's pixel_mode
@@ -136,8 +178,8 @@
   *    Error code. 0 means success.
   *
   * <Note>
-  *    This function really allocates a pixel buffer, zero it, then
-  *    returns a descriptor for it.
+  *    This function really allocates a pixel buffer, then returns
+  *    a descriptor for it.
   *
   *    An existing bitmap will be resized.
   *
@@ -155,69 +197,19 @@
  /**********************************************************************
   *
   * <Function>
-  *    grBlitGlyphToBitmap
-  *
-  * <Description>
-  *    writes a given glyph bitmap to a target surface.
-  *
-  * <Input>
-  *    target  :: handle to target bitmap that belongs to surface
-  *    glyph   :: handle to source glyph bitmap
-  *    x       :: position of left-most pixel of glyph image in target surface
-  *    y       :: position of top-most pixel of glyph image in target surface
-  *    color   :: color to be used to draw a monochrome glyph
-  *
-  * <Return>
-  *   Error code. 0 means success
-  *
-  * <Note>
-  *   There are only two supported source pixel modes : monochrome
-  *   and gray. The 8-bit images can have any number of grays between
-  *   2 and 128, and conversions to the target surface is handled
-  *   _automatically_.
-  *
-  *   Note however that you should avoid blitting a gray glyph to a gray
-  *   bitmap with fewer levels of grays, as this would much probably
-  *   give unpleasant results..
-  *
-  *   This function performs clipping
-  *
-  **********************************************************************/
-
-  extern int
-  grBlitGlyphToBitmap( grBitmap*  target,
-                       grBitmap*  glyph,
-                       grPos      x,
-                       grPos      y,
-                       grColor    color );
-
-
-  /* values must be in 0..255 range */
-  extern grColor
-  grFindColor( grBitmap*  target,
-               int        red,
-               int        green,
-               int        blue,
-               int        alpha );
-
-
- /**********************************************************************
-  *
-  * <Function>
   *    grWriteCellChar
   *
   * <Description>
-  *    The graphics sub-system contains an internal CP437 8x8 font
-  *    which can be used to display simple strings of text without
-  *    using FreeType.
+  *    The graphics sub-system contains an internal CP437 font which can
+  *    be used to display simple strings of text without using FreeType.
   *
-  *    This function writes a single 8x8 character on the target bitmap.
+  *    This function writes a single character on the target bitmap.
   *
   * <Input>
   *    target   :: handle to target surface
   *    x        :: x pixel position of character cell's top left corner
   *    y        :: y pixel position of character cell's top left corner
-  *    charcode :: Latin-1 character code
+  *    charcode :: CP437 character code
   *    color    :: color to be used to draw the character
   *
   **********************************************************************/
@@ -236,17 +228,16 @@
   *    grWriteCellString
   *
   * <Description>
-  *    The graphics sub-system contains an internal CP437 8x8 font
-  *    which can be used to display simple strings of text without
-  *    using FreeType.
+  *    The graphics sub-system contains an internal CP437 font which can
+  *    be used to display simple strings of text without using FreeType.
   *
-  *    This function writes a string with the internal font
+  *    This function writes a string with the internal font.
   *
   * <Input>
   *    target       :: handle to target bitmap
   *    x            :: x pixel position of string's top left corner
   *    y            :: y pixel position of string's top left corner
-  *    string       :: Latin-1 text string
+  *    string       :: CP437 text string
   *    color        :: color to be used to draw the character
   *
   **********************************************************************/
@@ -348,7 +339,7 @@
   *    "device chain"
   *
   * <Fields>
-  *    name   :: ASCII name of the device, e.g. "x11", "os2pm", etc..
+  *    name   :: ASCII name of the device, e.g. "x11", "win32", etc..
   *    device :: handle to the device descriptor.
   *    next   :: next element in chain
   *
@@ -437,17 +428,9 @@
   *    error code. 0 means success. invalid device name otherwise
   *
   * <Note>
-  *    All drivers are _required_ to support at least the following
-  *    pixel formats :
-  *
-  *    - gr_pixel_mode_mono : i.e. monochrome bitmaps
-  *    - gr_pixel_mode_gray : with any number of gray levels between
-  *                           2 and 256.
-  *
-  *    the pixel modes do not provide the number of grays in the case
-  *    of "gray" devices. You should try to create a surface with the
-  *    maximal number (256, that is) and see the value returned in
-  *    the bitmap descriptor.
+  *    This feature is not implemented in the common drivers.  Use
+  *    grNewSurface with gr_pixel_mode.none instead to let the driver
+  *    set the mode.
   *
   **********************************************************************/
 
@@ -480,12 +463,11 @@
   *    handle to the corresponding surface object. 0 in case of error
   *
   * <Note>
-  *    All drivers are _required_ to support at least the following
-  *    pixel formats :
+  *    If the requsted mode is gr_pixel_mode_none, the driver chooses
+  *    a mode that is convenient for the device.
   *
-  *    - gr_pixel_mode_mono : i.e. monochrome bitmaps
-  *    - gr_pixel_mode_gray : with any number of gray levels between
-  *                           2 and 256.
+  *    All drivers are _required_ to support at least the following
+  *    pixel formats: gray, rgb555, rgb565, rgb24, or rgb32.
   *
   *    This function might change the bitmap descriptor's fields. For
   *    example, when displaying a full-screen surface, the bitmap's
@@ -550,23 +532,59 @@
  /**********************************************************************
   *
   * <Function>
+  *    grBlitGlyphToSurface
+  *
+  * <Description>
+  *    writes a given glyph bitmap to a target surface.
+  *
+  * <Input>
+  *    surface :: handle to surface
+  *    glyph   :: handle to source glyph bitmap
+  *    x       :: position of left-most pixel of glyph image in target surface
+  *    y       :: position of top-most pixel of glyph image in target surface
+  *    color   :: color to be used to draw a monochrome glyph
+  *
+  * <Return>
+  *   Error code. 0 means success
+  *
+  * <Note>
+  *   The function performs gamma-corrected alpha blending using the source
+  *   bitmap as an alpha channel(s), which can be specified for each pixel
+  *   as 8-bit (gray) bitmaps, or for individual color channels in various
+  *   LCD arrangements.
+  *
+  *   This function performs clipping.  It also handles mono and BGRA
+  *   bitmaps without gamma correction.
+  *
+  **********************************************************************/
+
+  extern int
+  grBlitGlyphToSurface( grSurface*  surface,
+                        grBitmap*   glyph,
+                        grPos       x,
+                        grPos       y,
+                        grColor     color );
+
+
+ /**********************************************************************
+  *
+  * <Function>
   *    grWriteSurfaceChar
   *
   * <Description>
   *    This function is equivalent to calling grWriteCellChar on the
   *    surface's bitmap, then invoking grRefreshRectangle.
   *
-  *    The graphics sub-system contains an internal CP437 8x8 font
-  *    which can be used to display simple strings of text without
-  *    using FreeType.
+  *    The graphics sub-system contains an internal CP437 font which can
+  *    be used to display simple strings of text without using FreeType.
   *
-  *    This function writes a single 8x8 character on the target bitmap.
+  *    This function writes a single character on the target bitmap.
   *
   * <Input>
   *    target   :: handle to target surface
   *    x        :: x pixel position of character cell's top left corner
   *    y        :: y pixel position of character cell's top left corner
-  *    charcode :: Latin-1 character code
+  *    charcode :: CP437 character code
   *    color    :: color to be used to draw the character
   *
   **********************************************************************/
@@ -588,17 +606,16 @@
   *    This function is equivalent to calling grWriteCellString on the
   *    surface's bitmap, then invoking grRefreshRectangle.
   *
-  *    The graphics sub-system contains an internal CP437 8x8 font
-  *    which can be used to display simple strings of text without
-  *    using FreeType.
+  *    The graphics sub-system contains an internal CP437 font which can
+  *    be used to display simple strings of text without using FreeType.
   *
-  *    This function writes a string with the internal font
+  *    This function writes a string with the internal font.
   *
   * <Input>
   *    target       :: handle to target bitmap
   *    x            :: x pixel position of string's top left corner
   *    y            :: y pixel position of string's top left corner
-  *    string       :: Latin-1 text string
+  *    string       :: CP437 text string
   *    color        :: color to be used to draw the character
   *
   **********************************************************************/
@@ -669,7 +686,7 @@
   *    event  :: the returned event
   *
   * <Note>
-  *    XXX : For now, only keypresses are supported.
+  *    Only keypresses and resizing events are supported.
   *
   **********************************************************************/
 
@@ -688,13 +705,14 @@
   *    blit glyphs
   *
   * <Input>
-  *    target     :: handle to target bitmap/surface
+  *    surface    :: handle to target surface
   *    gamma      :: gamma value. <= 0 to select sRGB transfer function
   *
   **********************************************************************/
 
   extern
-  void  grSetTargetGamma( grBitmap*  target, double  gamma_value );
+  void  grSetTargetGamma( grSurface*  surface,
+                          double      gamma_value );
 
 
  /**********************************************************************
@@ -706,17 +724,17 @@
   *    set the pen position and brush color as required for direct mode.
   *
   * <Input>
-  *    target     :: handle to target bitmap/surface
+  *    surface    :: handle to target surface
   *    x, y       :: pen position
   *    color      :: color as defined by grFindColor
   *
   **********************************************************************/
 
   extern
-  void  grSetTargetPenBrush( grBitmap*  target,
-                             int        x,
-                             int        y,
-                             grColor    color );
+  void  grSetTargetPenBrush( grSurface*  surface,
+                             int         x,
+                             int         y,
+                             grColor     color );
 
 /* */
 

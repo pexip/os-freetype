@@ -12,22 +12,13 @@
 
 
 GRAPH_INCLUDES := $(subst /,$(COMPILER_SEP),$(TOP_DIR_2)/graph)
-GRAPH_LIB      := $(OBJ_DIR_2)/graph.$(SA)
 
 GRAPH := $(TOP_DIR_2)/graph
 
 GRAPH_H := $(GRAPH)/gblany.h    \
-           $(GRAPH)/gblbgra.h   \
            $(GRAPH)/gblblit.h   \
-           $(GRAPH)/gblspans.h  \
-           $(GRAPH)/gblcolor.h  \
-           $(GRAPH)/gblhbgr.h   \
-           $(GRAPH)/gblhrgb.h   \
-           $(GRAPH)/gblvbgr.h   \
-           $(GRAPH)/gblvrgb.h   \
            $(GRAPH)/gblender.h  \
            $(GRAPH)/graph.h     \
-           $(GRAPH)/grblit.h    \
            $(GRAPH)/grconfig.h  \
            $(GRAPH)/grdevice.h  \
            $(GRAPH)/grevents.h  \
@@ -39,7 +30,6 @@ GRAPH_H := $(GRAPH)/gblany.h    \
 
 GRAPH_OBJS := $(OBJ_DIR_2)/gblblit.$(O)   \
               $(OBJ_DIR_2)/gblender.$(O)  \
-              $(OBJ_DIR_2)/grblit.$(O)    \
               $(OBJ_DIR_2)/grdevice.$(O)  \
               $(OBJ_DIR_2)/grfill.$(O)    \
               $(OBJ_DIR_2)/grfont.$(O)    \
@@ -53,9 +43,11 @@ GRAPH_OBJS := $(OBJ_DIR_2)/gblblit.$(O)   \
 # this value can be modified by the system-specific graphics drivers.
 #
 ifneq ($(LIBTOOL),)
-  COMPILE_GRAPH_LIB = $(LIBTOOL) --mode=link $(CCraw) -static \
+  GRAPH_LIB        := $(OBJ_DIR_2)/graph.$(A)
+  COMPILE_GRAPH_LIB = $(LIBTOOL) --mode=link $(CCraw) -module -static \
                                  -o $(subst /,$(COMPILER_SEP),$@ $(GRAPH_OBJS))
 else
+  GRAPH_LIB        := $(OBJ_DIR_2)/graph.$(SA)
   COMPILE_GRAPH_LIB = ar -r $(subst /,$(COMPILER_SEP),$@ $(GRAPH_OBJS))
 endif
 
@@ -65,6 +57,11 @@ endif
 #
 include $(wildcard $(TOP_DIR_2)/graph/*/rules.mk)
 
+ifeq ($(DEVICES),BATCH)
+  $(info )
+  $(info Batch driver only, no graphics driver identified.)
+  $(info )
+endif
 
 #########################################################################
 #

@@ -1,14 +1,11 @@
 /* ftmemchk.c */
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_MODULE_H
+#include <freetype/freetype.h>
+#include <freetype/ftmodapi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/compiler-macros.h>
 
 
   FT_Error      error;
@@ -69,7 +66,7 @@ void  record_my_block( void*  base, long  size )
     {
       if ( block->base == base && block->size != 0 )
       {
-        fprintf( stderr, "duplicate memory block at %08lx\n", (long)block->base );
+        fprintf( stderr, "duplicate memory block at %p\n", block->base );
         exit(1);
       }
     }
@@ -115,9 +112,9 @@ void  forget_my_block( void*  base )
   exit(1);
 }
 
-
-FT_CALLBACK_DEF( void* )  my_alloc( FT_Memory  memory,
-                                    long       size )
+static
+void*  my_alloc( FT_Memory  memory,
+                 long       size )
 {
   void*  p = malloc(size);
   if (p)
@@ -127,20 +124,20 @@ FT_CALLBACK_DEF( void* )  my_alloc( FT_Memory  memory,
   return p;
 }
 
-
-FT_CALLBACK_DEF( void )  my_free( FT_Memory  memory,
-                                  void*      block )
+static
+void  my_free( FT_Memory  memory,
+               void*      block )
 {
   memory=memory;
   forget_my_block(block);
   /* free(block);  WE DO NOT REALLY FREE THE BLOCK */
 }
 
-
-FT_CALLBACK_DEF( void* )  my_realloc( FT_Memory  memory,
-                                      long       cur_size,
-                                      long       new_size,
-                                      void*      block )
+static
+void*  my_realloc( FT_Memory  memory,
+                   long       cur_size,
+                   long       new_size,
+                   void*      block )
 {
   void*  p;
 
@@ -166,8 +163,8 @@ static FT_Memory  my_memory( void )
 {
   FT_Memory  memory;
 
-  memory = (FT_Memory)my_alloc( 0, sizeof(*memory) );
-  if (!memory)
+  memory = (FT_Memory)my_alloc( 0, sizeof ( *memory ) );
+  if ( !memory )
   {
     fprintf( stderr, "Unable to allocate debug memory manager !?!\n" );
     exit(2);

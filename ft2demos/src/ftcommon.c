@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2005-2020 by                                              */
+/*  Copyright (C) 2005-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -16,17 +16,14 @@
 #endif
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_MODULE_H
+#include <freetype/freetype.h>
 
-#include FT_CACHE_H
-#include FT_CACHE_MANAGER_H
+#include <freetype/ftbitmap.h>
+#include <freetype/ftcache.h>
+#include <freetype/ftdriver.h>  /* access driver name and properties */
+#include <freetype/ftfntfmt.h>
+#include <freetype/ftmodapi.h>
 
-#include FT_BITMAP_H
-#include FT_FONT_FORMATS_H
-
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/compiler-macros.h>
 
   /* error messages */
 #undef FTERRORS_H_
@@ -37,15 +34,12 @@
 #include "common.h"
 #include "strbuf.h"
 #include "ftcommon.h"
+#include "rsvg-port.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
-#ifdef FT_CONFIG_OPTION_USE_PNG
-#include <png.h>
-#endif
 
 
 #ifdef _WIN32
@@ -86,7 +80,7 @@
 
 
     switch( error )
-    #include FT_ERRORS_H
+    #include <freetype/fterrors.h>
 
     fprintf( stderr, "%s\n  error = 0x%04x, %s\n", message, error, str );
     exit( 1 );
@@ -110,7 +104,7 @@
     grPixelMode      mode;
     grSurface*       surface;
     grBitmap         bit;
-    int              width, height, depth = 24;
+    int              width, height, depth = 0;
 
 
     if ( sscanf( dims, "%dx%dx%d", &width, &height, &depth ) < 2 )
@@ -127,11 +121,14 @@
     case 16:
       mode = gr_pixel_mode_rgb565;
       break;
+    case 24:
+      mode = gr_pixel_mode_rgb24;
+      break;
     case 32:
       mode = gr_pixel_mode_rgb32;
       break;
     default:
-      mode = gr_pixel_mode_rgb24;
+      mode = gr_pixel_mode_none;
       break;
     }
 
@@ -166,7 +163,7 @@
 
     display->gamma = GAMMA;
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetTargetGamma( display->surface, display->gamma );
 
     return display;
   }
@@ -201,7 +198,7 @@
         display->gamma  = 2.2;
     }
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetTargetGamma( display->surface, display->gamma );
   }
 
 
@@ -211,7 +208,7 @@
     if ( !display )
       return;
 
-    grDoneBitmap( display->bitmap );
+    display->bitmap = NULL;
     grDoneSurface( display->surface );
 
     grDoneDevices();
@@ -227,129 +224,6 @@
 
 
     grFillRect( bit, 0, 0, bit->width, bit->rows, display->back_color );
-  }
-
-
-  int
-  FTDemo_Display_Print( FTDemo_Display*  display,
-                        const char*      filename,
-                        FT_String*       ver_str )
-  {
-
-#ifdef FT_CONFIG_OPTION_USE_PNG
-
-    grBitmap*  bit    = display->bitmap;
-    int        width  = bit->width;
-    int        height = bit->rows;
-    int        color_type;
-
-    int   code = 1;
-    FILE *fp   = NULL;
-
-    png_structp  png_ptr  = NULL;
-    png_infop    info_ptr = NULL;
-    png_bytep    row      = NULL;
-
-
-    /* Set color_type */
-    switch ( bit-> mode )
-    {
-    case gr_pixel_mode_gray:
-      color_type = PNG_COLOR_TYPE_GRAY;
-      break;
-    case gr_pixel_mode_rgb24:
-      color_type = PNG_COLOR_TYPE_RGB;
-      break;
-    case gr_pixel_mode_rgb32:
-      color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-      break;
-    default:
-      fprintf( stderr, "Unsupported color type\n" );
-      goto Exit0;
-    }
-
-    /* Open file for writing (binary mode) */
-    fp = fopen( filename, "wb" );
-    if ( fp == NULL )
-    {
-      fprintf( stderr, "Could not open file %s for writing\n", filename );
-      goto Exit0;
-    }
-
-    /* Initialize write structure */
-    png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-    if ( png_ptr == NULL )
-    {
-       fprintf( stderr, "Could not allocate write struct\n" );
-       goto Exit1;
-    }
-
-    /* Initialize info structure */
-    info_ptr = png_create_info_struct( png_ptr );
-    if ( info_ptr == NULL )
-    {
-      fprintf( stderr, "Could not allocate info struct\n" );
-      goto Exit2;
-    }
-
-    /* Set up exception handling */
-    if ( setjmp( png_jmpbuf( png_ptr ) ) )
-    {
-      fprintf( stderr, "Error during png creation\n" );
-      goto Exit2;
-    }
-
-    png_init_io( png_ptr, fp );
-
-    /* Write header (8 bit colour depth) */
-    png_set_IHDR( png_ptr, info_ptr, width, height,
-                  8, color_type, PNG_INTERLACE_NONE,
-                  PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE );
-
-    /* Record version string  */
-    if ( ver_str != NULL )
-    {
-      png_text  text;
-
-
-      text.compression = PNG_TEXT_COMPRESSION_NONE;
-      text.key         = (char *)"Software";
-      text.text        = ver_str;
-
-      png_set_text( png_ptr, info_ptr, &text, 1 );
-    }
-
-    /* Set gamma */
-    png_set_gAMA( png_ptr, info_ptr, 1.0 / display->gamma );
-
-    png_write_info( png_ptr, info_ptr );
-
-    /* Write image rows */
-    row = bit->buffer;
-    if ( bit->pitch < 0 )
-      row -= ( bit->rows - 1 ) * bit->pitch;
-    while ( height-- )
-    {
-      png_write_row( png_ptr, row );
-      row += bit->pitch;
-    }
-
-    /* End write */
-    png_write_end( png_ptr, NULL );
-    code = 0;
-
-  Exit2:
-    png_destroy_write_struct( &png_ptr, &info_ptr );
-  Exit1:
-    fclose( fp );
-  Exit0:
-    return code;
-
-#else
-
-    return 0;
-
-#endif /* !FT_CONFIG_OPTION_USE_PNG */
   }
 
 
@@ -472,6 +346,10 @@
     if ( error )
       PanicZ( "could not initialize FreeType" );
 
+    /* The use of an external SVG rendering library is optional. */
+    (void)FT_Property_Set( handle->library,
+                           "ot-svg", "svg-hooks", &rsvg_hooks );
+
     error = FTC_Manager_New( handle->library, 0, 0, 0,
                              my_face_requester, 0, &handle->cache_manager );
     if ( error )
@@ -548,6 +426,8 @@
     FT_Done_FreeType( handle->library );
 
     free( handle );
+
+    fflush( stdout );  /* clean mintty pipes */
   }
 
 
@@ -590,7 +470,7 @@
 
     for ( ; count--; spans++ )
       for ( dst = dst_line + spans->x, w = spans->len; w--; dst++ )
-        *dst = ( spans->coverage << 24 ) | color;
+        *dst = ( (FT_UInt32)spans->coverage << 24 ) | color;
   }
 
 
@@ -607,8 +487,8 @@
     char        t[] = { 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1,
                         1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1 };
     short       c[] = {29};
-    FT_Outline  FT  = { sizeof( c ) / sizeof( c[0] ),
-                        sizeof( p ) / sizeof( p[0] ),
+    FT_Outline  FT  = { sizeof ( c ) / sizeof ( c[0] ),
+                        sizeof ( p ) / sizeof ( p[0] ),
                         p, t, c, FT_OUTLINE_NONE };
     grBitmap    icon = { 0 };
     grBitmap*   picon = NULL;
@@ -626,12 +506,18 @@
       memset( icon.buffer, 0, (size_t)icon.rows * (size_t)icon.pitch );
 
       for ( i = 0; i < FT.n_points; i++ )
-        FT.points[i].x *= size, FT.points[i].y *= size;
+      {
+        FT.points[i].x *= size;
+        FT.points[i].y *= size;
+      }
 
       FT_Outline_Render( handle->library, &FT, &params );
 
       for ( i = 0; i < FT.n_points; i++ )
-        FT.points[i].x /= size, FT.points[i].y /= size;
+      {
+        FT.points[i].x /= size;
+        FT.points[i].y /= size;
+      }
 
       picon = &icon;
     }
@@ -789,11 +675,53 @@
   }
 
 
+  /* binary search for the last charcode */
+  static int
+  get_last_char( FT_Face     face,
+                 FT_Int      idx,
+                 FT_ULong    max )
+  {
+    FT_ULong  res, mid, min = 0;
+    FT_UInt   gidx;
+
+
+    if ( FT_Set_Charmap ( face, face->charmaps[idx] ) )
+      return -1;
+
+    do
+    {
+      mid = ( min + max ) >> 1;
+      res = FT_Get_Next_Char( face, mid, &gidx );
+
+      if ( gidx )
+        min = res;
+      else
+      {
+        max = mid;
+
+        /* once moved, it helps to advance min through sparse regions */
+        if ( min )
+        {
+          res = FT_Get_Next_Char( face, min, &gidx );
+
+          if ( gidx )
+            min = res;
+          else
+            max = min;  /* found it */
+        }
+      }
+    } while ( max > min );
+
+    return (int)max;
+  }
+
+
   void
   FTDemo_Set_Current_Font( FTDemo_Handle*  handle,
                            PFont           font )
   {
     FT_Face  face;
+    int      index = font->cmap_index;
 
 
     handle->current_font   = font;
@@ -802,8 +730,8 @@
     error = FTC_Manager_LookupFace( handle->cache_manager,
                                     handle->scaler.face_id, &face );
 
-    if ( font->cmap_index < face->num_charmaps )
-      handle->encoding = face->charmaps[font->cmap_index]->encoding;
+    if ( index < face->num_charmaps )
+      handle->encoding = face->charmaps[index]->encoding;
     else
       handle->encoding = FT_ENCODING_ORDER;
 
@@ -814,7 +742,7 @@
       break;
 
     case FT_ENCODING_UNICODE:
-      font->num_indices = 0x110000L;
+      font->num_indices = get_last_char( face, index, 0x110000 ) + 1;
       break;
 
     case FT_ENCODING_ADOBE_LATIN_1:
@@ -822,16 +750,16 @@
     case FT_ENCODING_ADOBE_EXPERT:
     case FT_ENCODING_ADOBE_CUSTOM:
     case FT_ENCODING_APPLE_ROMAN:
-      font->num_indices = 0x100L;
+      font->num_indices = 0x100;
       break;
 
     /* some fonts use range 0x00-0x100, others have 0xF000-0xF0FF */
     case FT_ENCODING_MS_SYMBOL:
-      font->num_indices = 0x10000L;
+      font->num_indices = get_last_char( face, index, 0x10000 ) + 1;
       break;
 
     default:
-      font->num_indices = 0x10000L;
+      font->num_indices = get_last_char( face, index, 0x10000 ) + 1;
     }
   }
 
@@ -1025,6 +953,182 @@
   }
 
 
+  /* switch to a different engine if possible */
+  int
+  FTDemo_Hinting_Engine_Change( FTDemo_Handle*  handle )
+  {
+    FT_Library        library = handle->library;
+    FT_Face           face;
+    const FT_String*  module_name;
+    FT_UInt           prop = 0;
+
+
+    error = FTC_Manager_LookupFace( handle->cache_manager,
+                                    handle->scaler.face_id, &face );
+
+    if ( error                                       ||
+         !FT_IS_SCALABLE( face )                     ||
+         !handle->hinted                             ||
+         handle->lcd_mode == LCD_MODE_LIGHT          ||
+         handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL )
+      return 0;  /* do nothing */
+
+    module_name = FT_FACE_DRIVER_NAME( face );
+
+    if ( !handle->autohint                                         &&
+         !FT_Property_Get( library, module_name,
+                                    "interpreter-version", &prop ) )
+    {
+      switch ( prop )
+      {
+      S1:
+      case TT_INTERPRETER_VERSION_35:
+        prop = TT_INTERPRETER_VERSION_38;
+        if ( !FT_Property_Set( library, module_name,
+                                        "interpreter-version", &prop ) )
+          break;
+        /* fall through */
+      case TT_INTERPRETER_VERSION_38:
+        prop = TT_INTERPRETER_VERSION_40;
+        if ( !FT_Property_Set( library, module_name,
+                                        "interpreter-version", &prop ) )
+          break;
+        /* fall through */
+      case TT_INTERPRETER_VERSION_40:
+        prop = TT_INTERPRETER_VERSION_35;
+        if ( !FT_Property_Set( library, module_name,
+                                        "interpreter-version", &prop ) )
+          break;
+        goto S1;
+      }
+    }
+
+    else if ( !FT_Property_Get( library, module_name,
+                                         "hinting-engine", &prop ) )
+    {
+      switch ( prop )
+      {
+      S2:
+      case FT_HINTING_FREETYPE:
+        prop = FT_HINTING_ADOBE;
+        if ( !FT_Property_Set( library, module_name,
+                                        "hinting-engine", &prop ) )
+          break;
+        /* fall through */
+      case FT_HINTING_ADOBE:
+        prop = FT_HINTING_FREETYPE;
+        if ( !FT_Property_Set( library, module_name,
+                                        "hinting-engine", &prop ) )
+          break;
+        goto S2;
+      }
+    }
+
+    /* Resetting the cache is perhaps a bit harsh, but I'm too  */
+    /* lazy to walk over all loaded fonts to check whether they */
+    /* are of appropriate type, then unloading them explicitly. */
+    FTC_Manager_Reset( handle->cache_manager );
+
+    return 1;
+  }
+
+
+  static FT_Error
+  FTDemo_Get_Info( FTDemo_Handle*  handle,
+                   StrBuf*         buf )
+  {
+    FT_Library        library = handle->library;
+    FT_Face           face;
+    const FT_String*  module_name;
+    FT_UInt           prop = 0;
+    const char*       hinting_engine = "";
+    const char*       lcd_mode;
+
+
+    error = FTC_Manager_LookupFace( handle->cache_manager,
+                                    handle->scaler.face_id, &face );
+
+    module_name = FT_FACE_DRIVER_NAME( face );
+
+    if ( !FT_IS_SCALABLE( face ) )
+      hinting_engine = " bitmap";
+
+    else if ( !handle->hinted )
+      hinting_engine = " unhinted";
+
+    else if ( handle->lcd_mode == LCD_MODE_LIGHT          ||
+              handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL )
+      hinting_engine = " auto";
+
+    else if ( handle->autohint )
+      hinting_engine = " auto";
+
+    else if ( !FT_Property_Get( library, module_name,
+                                         "interpreter-version", &prop ) )
+    {
+      switch ( prop )
+      {
+      case TT_INTERPRETER_VERSION_35:
+        hinting_engine = "\372v35";
+        break;
+      case TT_INTERPRETER_VERSION_38:
+        hinting_engine = "\372v38";
+        break;
+      case TT_INTERPRETER_VERSION_40:
+        hinting_engine = "\372v40";
+        break;
+      }
+    }
+
+    else if ( !FT_Property_Get( library, module_name,
+                                         "hinting-engine", &prop ) )
+    {
+      switch ( prop )
+      {
+      case FT_HINTING_FREETYPE:
+        hinting_engine = "\372FT";
+        break;
+      case FT_HINTING_ADOBE:
+        hinting_engine = "\372Adobe";
+        break;
+      }
+    }
+
+    switch ( handle->lcd_mode )
+    {
+    case LCD_MODE_AA:
+      lcd_mode = "normal";
+      break;
+    case LCD_MODE_LIGHT:
+    case LCD_MODE_LIGHT_SUBPIXEL:
+      lcd_mode = " light";
+      break;
+    case LCD_MODE_RGB:
+      lcd_mode = " h-RGB";
+      break;
+    case LCD_MODE_BGR:
+      lcd_mode = " h-BGR";
+      break;
+    case LCD_MODE_VRGB:
+      lcd_mode = " v-RGB";
+      break;
+    case LCD_MODE_VBGR:
+      lcd_mode = " v-BGR";
+      break;
+    default:
+      handle->lcd_mode = 0;
+      lcd_mode = "  mono";
+    }
+
+    strbuf_add( buf, module_name );
+    strbuf_add( buf, hinting_engine );
+    strbuf_add( buf, " \032 " );
+    strbuf_add( buf, lcd_mode );
+
+    return error;
+  }
+
+
   void
   FTDemo_Draw_Header( FTDemo_Handle*   handle,
                       FTDemo_Display*  display,
@@ -1038,6 +1142,7 @@
     StrBuf       buf[1];
     const char*  basename;
     int          ppem;
+    const char*  encoding;
 
     int          line = 0;
     int          x;
@@ -1109,6 +1214,16 @@
                          strbuf_value( buf ), display->warn_color );
     }
 
+    /* target and hinting details */
+    strbuf_reset( buf );
+    FTDemo_Get_Info( handle, buf );
+    grWriteCellString( display->bitmap,
+                       display->bitmap->width - 8 * (int)strbuf_len( buf ),
+                       line * HEADER_HEIGHT,
+                       strbuf_value( buf ), display->fore_color );
+
+    line++;
+
     /* gamma */
     strbuf_reset( buf );
     if ( display->gamma == 0.0 )
@@ -1119,77 +1234,74 @@
                        display->bitmap->width - 8 * 11, line * HEADER_HEIGHT,
                        strbuf_value( buf ), display->fore_color );
 
-    line++;
+    /* encoding, charcode or glyph index, glyph name */
+    strbuf_reset( buf );
+    switch ( handle->encoding )
+    {
+    case FT_ENCODING_ORDER:
+      encoding = "glyph order";
+      break;
+    case FT_ENCODING_MS_SYMBOL:
+      encoding = "MS Symbol";
+      break;
+    case FT_ENCODING_UNICODE:
+      encoding = "Unicode";
+      break;
+    case FT_ENCODING_SJIS:
+      encoding = "SJIS";
+      break;
+    case FT_ENCODING_PRC:
+      encoding = "PRC";
+      break;
+    case FT_ENCODING_BIG5:
+      encoding = "Big5";
+      break;
+    case FT_ENCODING_WANSUNG:
+      encoding = "Wansung";
+      break;
+    case FT_ENCODING_JOHAB:
+      encoding = "Johab";
+      break;
+    case FT_ENCODING_ADOBE_STANDARD:
+      encoding = "Adobe Standard";
+      break;
+    case FT_ENCODING_ADOBE_EXPERT:
+      encoding = "Adobe Expert";
+      break;
+    case FT_ENCODING_ADOBE_CUSTOM:
+      encoding = "Adobe Custom";
+      break;
+    case FT_ENCODING_ADOBE_LATIN_1:
+      encoding = "Latin 1";
+      break;
+    case FT_ENCODING_OLD_LATIN_2:
+      encoding = "Latin 2";
+      break;
+    case FT_ENCODING_APPLE_ROMAN:
+      encoding = "Apple Roman";
+      break;
+    default:
+      encoding = "Other";
+    }
+    strbuf_add( buf, encoding );
 
-    /* encoding charcode or glyph index, glyph name */
     if ( idx >= 0 )
     {
-      const char*  encoding = NULL;
       FT_UInt      glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)idx );
 
 
-      switch ( handle->encoding )
-      {
-      case FT_ENCODING_ORDER:
-        encoding = "glyph order";
-        break;
-      case FT_ENCODING_MS_SYMBOL:
-        encoding = "MS Symbol";
-        break;
-      case FT_ENCODING_UNICODE:
-        encoding = "Unicode";
-        break;
-      case FT_ENCODING_SJIS:
-        encoding = "SJIS";
-        break;
-      case FT_ENCODING_PRC:
-        encoding = "PRC";
-        break;
-      case FT_ENCODING_BIG5:
-        encoding = "Big5";
-        break;
-      case FT_ENCODING_WANSUNG:
-        encoding = "Wansung";
-        break;
-      case FT_ENCODING_JOHAB:
-        encoding = "Johab";
-        break;
-      case FT_ENCODING_ADOBE_STANDARD:
-        encoding = "Adobe Standard";
-        break;
-      case FT_ENCODING_ADOBE_EXPERT:
-        encoding = "Adobe Expert";
-        break;
-      case FT_ENCODING_ADOBE_CUSTOM:
-        encoding = "Adobe Custom";
-        break;
-      case FT_ENCODING_ADOBE_LATIN_1:
-        encoding = "Latin 1";
-        break;
-      case FT_ENCODING_OLD_LATIN_2:
-        encoding = "Latin 2";
-        break;
-      case FT_ENCODING_APPLE_ROMAN:
-        encoding = "Apple Roman";
-        break;
-      default:
-        encoding = "Other";
-      }
-
-      strbuf_reset( buf );
       if ( handle->encoding == FT_ENCODING_ORDER )
-        x = strbuf_format( buf, "%s idx: %d",
-                           encoding, idx );
+        strbuf_format( buf, " idx: %d", idx );
       else if ( handle->encoding == FT_ENCODING_UNICODE )
-        x = strbuf_format( buf, "%s charcode: U+%04X (glyph idx %d)",
-                           encoding, idx, glyph_idx );
+        strbuf_format( buf, " charcode: U+%04X (glyph idx %d)",
+                            idx, glyph_idx );
       else
-        x = strbuf_format( buf, "%s charcode: 0x%X (glyph idx %d)",
-                           encoding, idx, glyph_idx );
+        strbuf_format( buf, " charcode: 0x%X (glyph idx %d)",
+                            idx, glyph_idx );
 
       if ( FT_HAS_GLYPH_NAMES( face ) )
       {
-        x += strbuf_add( buf, ", name: " );
+        strbuf_add( buf, ", name: " );
 
         /* NOTE: This relies on the fact that `FT_Get_Glyph_Name' */
         /* always appends a terminating zero to the input.        */
@@ -1198,11 +1310,10 @@
                            (FT_UInt)( strbuf_available( buf ) + 1 ) );
         strbuf_skip_over( buf, strlen( strbuf_end( buf ) ) );
       }
-
-      grWriteCellString( display->bitmap, 0, (line++) * HEADER_HEIGHT,
-                         strbuf_value( buf ), display->fore_color );
     }
 
+    grWriteCellString( display->bitmap, 0, line * HEADER_HEIGHT,
+                       strbuf_value( buf ), display->fore_color );
   }
 
 
@@ -1224,7 +1335,8 @@
 
     error = FT_Err_Ok;
 
-    if ( glyf->format == FT_GLYPH_FORMAT_OUTLINE )
+    if ( glyf->format == FT_GLYPH_FORMAT_OUTLINE ||
+         glyf->format == FT_GLYPH_FORMAT_SVG     )
     {
       FT_Render_Mode  render_mode;
 
@@ -1271,7 +1383,7 @@
     target->rows   = (int)source->rows;
     target->width  = (int)source->width;
     target->pitch  = source->pitch;
-    target->buffer = source->buffer;
+    target->buffer = source->buffer;  /* source glyf still owns it */
     target->grays  = source->num_grays;
 
     switch ( source->pixel_mode )
@@ -1483,8 +1595,8 @@
       return error;
 
     /* now render the bitmap into the display surface */
-    grBlitGlyphToBitmap( display->bitmap, &bit3, *pen_x + left,
-                         *pen_y - top, display->fore_color );
+    grBlitGlyphToSurface( display->surface, &bit3, *pen_x + left,
+                          *pen_y - top, display->fore_color );
 
     if ( glyf )
       FT_Done_Glyph( glyf );
@@ -1518,8 +1630,8 @@
     }
 
     /* now render the bitmap into the display surface */
-    grBlitGlyphToBitmap( display->bitmap, &bit3, *pen_x + left,
-                         *pen_y - top, color );
+    grBlitGlyphToSurface( display->surface, &bit3, *pen_x + left,
+                          *pen_y - top, color );
 
     if ( glyf )
       FT_Done_Glyph( glyf );
@@ -1756,13 +1868,14 @@
         pen.y += handle->string[n].hadvance.y;
       }
 
-    pen.x = FT_MulFix( pen.x, sc->center );
-    pen.y = FT_MulFix( pen.y, sc->center );
+    /* round to control initial pen position and preserve hinting... */
+    pen.x = FT_MulFix( pen.x, sc->center ) & ~63;
+    pen.y = FT_MulFix( pen.y, sc->center ) & ~63;
 
-    /* XXX sbits */
-    /* get pen position */
+    /* ... unless rotating; XXX sbits */
     FT_Vector_Transform( &pen, sc->matrix );
 
+    /* get pen position */
     pen.x = ( x << 6 ) - pen.x;
     pen.y = ( y << 6 ) - pen.y;
 
@@ -1850,8 +1963,8 @@
           top = display->bitmap->rows - top;
 
           /* now render the bitmap into the display surface */
-          grBlitGlyphToBitmap( display->bitmap, &bit3, left, top,
-                               display->fore_color );
+          grBlitGlyphToSurface( display->surface, &bit3, left, top,
+                                display->fore_color );
 
           if ( glyf )
             FT_Done_Glyph( glyf );
@@ -1873,7 +1986,7 @@
                              FT_Pos             y,
                              grColor            color )
   {
-    grSurface*        surface = (grSurface*)display->surface;
+    grSurface*        surface = display->surface;
     grBitmap*         target = display->bitmap;
     FT_Outline*       outline;
     FT_Raster_Params  params;
@@ -1882,7 +1995,7 @@
     if ( glyph->format != FT_GLYPH_FORMAT_OUTLINE )
       return FT_Err_Ok;
 
-    grSetTargetPenBrush( target, x, y, color );
+    grSetTargetPenBrush( surface, x, y, color );
 
     outline = &((FT_OutlineGlyph)glyph)->outline;
 

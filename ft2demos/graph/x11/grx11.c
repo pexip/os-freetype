@@ -5,7 +5,7 @@
  *  This is the driver for displaying inside a window under X11,
  *  used by the graphics utility of the FreeType test suite.
  *
- *  Copyright (C) 1999-2020 by
+ *  Copyright (C) 1999-2022 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  This file is part of the FreeType project, and may only be used
@@ -20,29 +20,9 @@
 #include <vms_x_fix.h>
 #endif
 
-#include <grobjs.h>
-#include <grdevice.h>
-
-#define xxTEST
-
-#ifdef TEST
-#include <ctype.h>
-#define LOG(x)  printf x
-#define visualClass(x)  ( x == StaticGray  ? "StaticGray"  : \
-                          x == GrayScale   ? "GrayScale"   : \
-                          x == StaticColor ? "StaticColor" : \
-                          x == PseudoColor ? "PseudoColor" : \
-                          x == TrueColor   ? "TrueColor"   : \
-                          x == DirectColor ? "DirectColor" : "unknown" )
-#define grAlloc  malloc
-#else
-#define LOG(x)  /* nothing */
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -50,46 +30,17 @@
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 
+#include "grtypes.h"
+#include "grobjs.h"
 #include "grx11.h"
 
+#define xxTEST
 
-#if defined( __cplusplus ) || defined( c_plusplus )
-#define Class  c_class
+#ifdef TEST
+#include <ctype.h>
+#define LOG(x)  printf x
 #else
-#define Class  class
-#endif
-
-  /* old trick to determine 32-bit integer type */
-#include <limits.h>
-
-  /* The number of bytes in an `int' type.  */
-#if   UINT_MAX == 0xFFFFFFFFUL
-#define GR_SIZEOF_INT  4
-#elif UINT_MAX == 0xFFFFU
-#define GR_SIZEOF_INT  2
-#elif UINT_MAX > 0xFFFFFFFFU && UINT_MAX == 0xFFFFFFFFFFFFFFFFU
-#define GR_SIZEOF_INT  8
-#else
-#error "Unsupported number of bytes in `int' type!"
-#endif
-
-  /* The number of bytes in a `long' type.  */
-#if   ULONG_MAX == 0xFFFFFFFFUL
-#define GR_SIZEOF_LONG  4
-#elif ULONG_MAX > 0xFFFFFFFFU && ULONG_MAX == 0xFFFFFFFFFFFFFFFFU
-#define GR_SIZEOF_LONG  8
-#else
-#error "Unsupported number of bytes in `long' type!"
-#endif
-
-#if GR_SIZEOF_INT == 4
-typedef  int             int32;
-typedef  unsigned int    uint32;
-#elif GR_SIZEOF_LONG == 4
-typedef  long            int32;
-typedef  unsigned long   uint32;
-#else
-#error  "could not find a 32-bit integer type"
+#define LOG(x)  /* nothing */
 #endif
 
 
@@ -305,9 +256,8 @@ typedef  unsigned long   uint32;
         unsigned int  p = lread[0];
 
 
-        lwrite[0] = (unsigned short)( ( ( p << 8 ) & 0xF800U ) |
-                                      ( ( p << 3 ) & 0x07E0  ) |
-                                      ( ( p >> 3 ) & 0x001F  ) );
+        lwrite[0] = (unsigned short)( ( ( p >> 3 ) * 0x0801U ) |
+                                      ( ( p >> 2 ) * 0x0020U ) );
       }
 
       line_read  += blit->src_pitch;
@@ -430,14 +380,7 @@ typedef  unsigned long   uint32;
 
 
       for ( ; x > 0; x--, lread++, lwrite++ )
-      {
-        unsigned int  p = lread[0];
-
-
-        lwrite[0] = (unsigned short)( ( ( p << 7 ) & 0x7C00 ) |
-                                      ( ( p << 2 ) & 0x03E0 ) |
-                                      ( ( p >> 3 ) & 0x001F ) );
-      }
+        *lwrite = (unsigned short)( ( *lread >> 3 ) * 0x0421U );
 
       line_read  += blit->src_pitch;
       line_write += blit->dst_pitch;
@@ -520,7 +463,7 @@ typedef  unsigned long   uint32;
 
     for ( ; h > 0; h-- )
     {
-      memcpy( line_write, line_read, (unsigned int)( blit->width * 3 ) );
+      memcpy( line_write, line_read, (size_t)blit->width * 3 );
       line_read  += blit->src_pitch;
       line_write += blit->dst_pitch;
     }
@@ -629,15 +572,15 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*   lread  = line_read;
-      uint32*          lwrite = (uint32*)line_write;
+      uint32_t*        lwrite = (uint32_t*)line_write;
       int              x      = blit->width;
 
 
       for ( ; x > 0; x--, lread += 3, lwrite++ )
       {
-        uint32  r = lread[0];
-        uint32  g = lread[1];
-        uint32  b = lread[2];
+        uint32_t  r = lread[0];
+        uint32_t  g = lread[1];
+        uint32_t  b = lread[2];
 
 
         *lwrite = ( r << 24 ) |
@@ -662,19 +605,12 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      uint32_t*       lwrite = (uint32_t*)line_write;
       int             x      = blit->width;
 
 
       for ( ; x > 0; x--, lread++, lwrite++ )
-      {
-        uint32  p = lread[0];
-
-
-        *lwrite = ( p << 24 ) |
-                  ( p << 16 ) |
-                  ( p <<  8 );
-      }
+        *lwrite = *lread * 0x01010100U;
 
       line_read  += blit->src_pitch;
       line_write += blit->dst_pitch;
@@ -709,15 +645,15 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      uint32_t*       lwrite = (uint32_t*)line_write;
       int             x      = blit->width;
 
 
       for ( ; x > 0; x--, lread += 3, lwrite++ )
       {
-        uint32  r = lread[0];
-        uint32  g = lread[1];
-        uint32  b = lread[2];
+        uint32_t  r = lread[0];
+        uint32_t  g = lread[1];
+        uint32_t  b = lread[2];
 
 
         *lwrite = ( r << 16 ) |
@@ -742,19 +678,12 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      uint32_t*       lwrite = (uint32_t*)line_write;
       int             x      = blit->width;
 
 
       for ( ; x > 0; x--, lread++, lwrite++ )
-      {
-        uint32  p = lread[0];
-
-
-        *lwrite = ( p << 16 ) |
-                  ( p <<  8 ) |
-                  ( p <<  0 );
-      }
+        *lwrite = *lread * 0x010101U;
 
       line_read  += blit->src_pitch;
       line_write += blit->dst_pitch;
@@ -789,15 +718,15 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      uint32_t*       lwrite = (uint32_t*)line_write;
       int             x      = blit->width;
 
 
       for ( ; x > 0; x--, lread += 3, lwrite++ )
       {
-        uint32  r = lread[0];
-        uint32  g = lread[1];
-        uint32  b = lread[2];
+        uint32_t  r = lread[0];
+        uint32_t  g = lread[1];
+        uint32_t  b = lread[2];
 
 
         *lwrite = ( r <<  8 ) |
@@ -838,15 +767,15 @@ typedef  unsigned long   uint32;
     for ( ; h > 0; h-- )
     {
       unsigned char*  lread  = line_read;
-      uint32*         lwrite = (uint32*)line_write;
+      uint32_t*       lwrite = (uint32_t*)line_write;
       int             x      = blit->width;
 
 
       for ( ; x > 0; x--, lread += 3, lwrite++ )
       {
-        uint32  r = lread[0];
-        uint32  g = lread[1];
-        uint32  b = lread[2];
+        uint32_t  r = lread[0];
+        uint32_t  g = lread[1];
+        uint32_t  b = lread[2];
 
 
         *lwrite = ( r <<  0 ) |
@@ -988,7 +917,7 @@ typedef  unsigned long   uint32;
             LOG(( ", colors %3d, bits %2d, %s\n",
                                visual->colormap_size,
                                visual->bits_per_rgb,
-                  visualClass( visual->Class ) ));
+                               visualClass( visual ) ));
 
             x11dev.format       = *pformat;
             x11dev.visual       = visual->visual;
@@ -1050,8 +979,10 @@ typedef  unsigned long   uint32;
 
       if ( surface->ximage )
       {
+        if ( !surface->convert )
+          surface->ximage->data = NULL;
         XDestroyImage( surface->ximage );
-        surface->ximage = 0;
+        surface->ximage = NULL;
       }
 
       if ( surface->win )
@@ -1060,6 +991,8 @@ typedef  unsigned long   uint32;
         surface->win = 0;
       }
     }
+
+    grDoneBitmap( &surface->root.bitmap );
   }
 
 
@@ -1073,14 +1006,16 @@ typedef  unsigned long   uint32;
     grX11Blitter  blit;
 
 
-    if ( !gr_x11_blitter_reset( &blit, &surface->root.bitmap, surface->ximage,
+    if ( surface->convert                    &&
+         !gr_x11_blitter_reset( &blit, &surface->root.bitmap, surface->ximage,
                                 x, y, w, h ) )
-    {
       surface->convert( &blit );
 
-      /* without background defined, this only generates Expose event */
-      XClearArea( surface->display, surface->win, x, y, w, h, True );
-    }
+    /* without background defined, this only generates Expose event */
+    XClearArea( surface->display, surface->win,
+                x, y,
+                (unsigned)w, (unsigned)h,
+                True );
   }
 
 
@@ -1099,7 +1034,7 @@ typedef  unsigned long   uint32;
     const unsigned char*  s = (const unsigned char*)"\x80\x40\x20\x10";
     unsigned long*        buffer;
     unsigned long*        dst;
-    uint32*               src;
+    uint32_t*             src;
     int                   sz, i, j;
 
 
@@ -1111,16 +1046,16 @@ typedef  unsigned long   uint32;
 
     sz = icon->rows * icon->width;
 
-    buffer = (unsigned long*)malloc( ( 2 + sz ) * sizeof( long) );
+    buffer = (unsigned long*)malloc( (size_t)( 2 + sz ) * sizeof ( long ) );
     if ( !buffer )
       return 0;
 
-    buffer[0] = icon->width;
-    buffer[1] = icon->rows;
+    buffer[0] = (unsigned long)icon->width;
+    buffer[1] = (unsigned long)icon->rows;
 
     /* must convert to long array */
     dst = buffer + 2;
-    src = (uint32*)icon->buffer;
+    src = (uint32_t*)icon->buffer;
     if ( icon->pitch < 0 )
        src -= ( icon->rows - 1 ) * icon->pitch / 4;
 
@@ -1201,11 +1136,17 @@ typedef  unsigned long   uint32;
         pitch += ( ximage->bitmap_pad - over ) >> 3;
     }
 
-    buffer = (char*)realloc( ximage->data, (size_t)height * (size_t)pitch );
-    if ( !buffer && height && pitch )
-      return 0;
+    if ( surface->convert )
+    {
+      buffer = (char*)realloc( ximage->data, (size_t)height * (size_t)pitch );
+      if ( !buffer && height && pitch )
+        return 0;
 
-    ximage->data           = buffer;
+      ximage->data = buffer;
+    }
+    else
+      ximage->data = (char*)bitmap->buffer;
+
     ximage->bytes_per_line = pitch;
     ximage->width          = width;
     ximage->height         = height;
@@ -1364,8 +1305,46 @@ typedef  unsigned long   uint32;
     surface->display    = display = x11dev.display;
     surface->visual     = x11dev.visual;
 
+    /* Select default mode */
+    if ( bitmap->mode == gr_pixel_mode_none )
+    {
+      if (      x11dev.format->x_bits_per_pixel == 32 &&
+                x11dev.format->x_depth          == 24 )
+        bitmap->mode = gr_pixel_mode_rgb32;
+      else if ( x11dev.format->x_bits_per_pixel == 16 &&
+                x11dev.format->x_depth          == 16 )
+        bitmap->mode = gr_pixel_mode_rgb565;
+      else if ( x11dev.format->x_bits_per_pixel == 16 &&
+                x11dev.format->x_depth          == 15 )
+        bitmap->mode = gr_pixel_mode_rgb555;
+      else
+        bitmap->mode = gr_pixel_mode_rgb24;
+    }
+
+    /* Set up conversion routines or opportunistic zero-copy */
     switch ( bitmap->mode )
     {
+    case gr_pixel_mode_rgb32:
+      if ( x11dev.format->x_bits_per_pixel != 32 ||
+           x11dev.format->x_depth          != 24 )
+        return 0;
+      x11dev.format = &gr_x11_format_rgb0888;
+      break;
+
+    case gr_pixel_mode_rgb565:
+      if ( x11dev.format->x_bits_per_pixel != 16 ||
+           x11dev.format->x_depth          != 16 )
+        return 0;
+      x11dev.format = &gr_x11_format_rgb565;
+      break;
+
+    case gr_pixel_mode_rgb555:
+      if ( x11dev.format->x_bits_per_pixel != 16 ||
+           x11dev.format->x_depth          != 15 )
+        return 0;
+      x11dev.format = &gr_x11_format_rgb555;
+      break;
+
     case gr_pixel_mode_rgb24:
       surface->convert = x11dev.format->rgb_convert;
       break;
@@ -1384,7 +1363,7 @@ typedef  unsigned long   uint32;
       return 0;
     }
 
-    /* create the bitmap */
+    /* Create the bitmap */
     if ( grNewBitmap( bitmap->mode,
                       bitmap->grays,
                       bitmap->width,
@@ -1408,11 +1387,25 @@ typedef  unsigned long   uint32;
     if ( !surface->ximage )
       return 0;
 
-    /* allocate surface image data */
-    surface->ximage->data = (char*)grAlloc( (size_t)bitmap->rows *
-                         (size_t)surface->ximage->bytes_per_line );
-    if ( !surface->ximage->data )
-      return 0;
+    /* Allocate or link surface image data */
+    if ( surface->convert )
+    {
+      surface->ximage->data = (char*)malloc( (size_t)bitmap->rows *
+                              (size_t)surface->ximage->bytes_per_line );
+      if ( !surface->ximage->data )
+        return 0;
+    }
+    else
+    {
+      const int x = 1;
+
+      surface->ximage->byte_order = *(char*)&x ? LSBFirst : MSBFirst;
+      surface->ximage->bitmap_pad = 32;
+      surface->ximage->red_mask   = x11dev.format->x_red_mask;
+      surface->ximage->green_mask = x11dev.format->x_green_mask;
+      surface->ximage->blue_mask  = x11dev.format->x_blue_mask;
+      surface->ximage->data       = (char*)bitmap->buffer;
+    }
 
     {
       int                   screen = DefaultScreen( display );

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -20,22 +20,14 @@
 #include <stdlib.h>
 #include <math.h>
 
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/ftdebug.h>
-
-  /* showing driver name */
-#include FT_MODULE_H
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdrv.h>
-
-#include FT_STROKER_H
-#include FT_SYNTHESIS_H
-#include FT_LCD_FILTER_H
-#include FT_DRIVER_H
-#include FT_MULTIPLE_MASTERS_H
-#include FT_SFNT_NAMES_H
-#include FT_TRUETYPE_IDS_H
-#include FT_TRIGONOMETRY_H
+#include <freetype/ftdriver.h>
+#include <freetype/ftlcdfil.h>
+#include <freetype/ftmm.h>
+#include <freetype/ftsnames.h>
+#include <freetype/ftstroke.h>
+#include <freetype/ftsynth.h>
+#include <freetype/fttrigon.h>
+#include <freetype/ttnameid.h>
 
 #define MAXPTSIZE    500                 /* dtp */
 #define MAX_MM_AXES   32
@@ -90,7 +82,7 @@
 #define BUFSIZE  256
 
 #define DO_BITMAP       1
-#define DO_GRAY_BITMAP  2
+#define DO_GRAY_BITMAP  2  /* needs DO_BITMAP */
 #define DO_OUTLINE      4
 #define DO_DOTS         8
 #define DO_DOTNUMBERS  16
@@ -105,7 +97,7 @@
 
     int          ptsize;
     int          res;
-    int          Num;  /* glyph index */
+    int          Num;  /* glyph index or character code */
     int          font_index;
 
     float        scale;
@@ -141,14 +133,6 @@
     char         header_buffer[BUFSIZE];
 
     FT_Stroker   stroker;
-
-    unsigned int cff_hinting_engine;
-    unsigned int type1_hinting_engine;
-    unsigned int t1cid_hinting_engine;
-    unsigned int tt_interpreter_versions[3];
-    int          num_tt_interpreter_versions;
-    int          tt_interpreter_version_idx;
-    FT_Bool      warping;
 
     FT_MM_Var*   mm;
     char*        axis_name[MAX_MM_AXES];
@@ -213,7 +197,7 @@
                       FTDemo_Display*  display )
   {
     st->axis_color    = grFindColor( display->bitmap,   0,   0,   0, 255 ); /* black       */
-    st->grid_color    = grFindColor( display->bitmap, 192, 192, 192, 255 ); /* gray        */
+    st->grid_color    = grFindColor( display->bitmap, 216, 216, 216, 255 ); /* gray        */
     st->outline_color = grFindColor( display->bitmap, 255,   0,   0, 255 ); /* red         */
     st->on_color      = grFindColor( display->bitmap, 255,   0,   0, 255 ); /* red         */
     st->off_color     = grFindColor( display->bitmap,   0, 128,   0, 255 ); /* dark green  */
@@ -229,7 +213,7 @@
     /* colours are adjusted for color-blind people, */
     /* cf. http://jfly.iam.u-tokyo.ac.jp/color      */
     st->axis_color    = grFindColor( display->bitmap,   0,   0,   0, 255 ); /* black          */
-    st->grid_color    = grFindColor( display->bitmap, 192, 192, 192, 255 ); /* gray           */
+    st->grid_color    = grFindColor( display->bitmap, 216, 216, 216, 255 ); /* gray           */
     st->outline_color = grFindColor( display->bitmap, 230, 159,   0, 255 ); /* orange         */
     st->on_color      = grFindColor( display->bitmap, 230, 159,   0, 255 ); /* orange         */
     st->off_color     = grFindColor( display->bitmap,  86, 180, 233, 255 ); /* sky blue       */
@@ -415,7 +399,6 @@
                 int         scale )
   {
     unsigned char*  s = bit->buffer;
-    unsigned char*  t;
     unsigned char*  line;
     int             pitch;
     int             width;
@@ -425,12 +408,13 @@
                            : -bit->pitch;
     width = bit->width;
 
-    t = (unsigned char*)malloc( (size_t)( pitch * bit->rows *
-                                          scale * scale ) );
-    if ( !t )
-      return;
+    line = (unsigned char*)malloc( (size_t)( pitch * bit->rows *
+                                             scale * scale ) );
 
-    line = t;
+    bit->buffer = line;  /* the bitmap now owns this buffer */
+
+    if ( !line )
+      return;
 
     switch( bit->mode )
     {
@@ -511,11 +495,26 @@
         }
         break;
 
+      case gr_pixel_mode_bgra:
+        for ( i = 0; i < bit->rows; i++ )
+        {
+          FT_UInt32*  l4 = (FT_UInt32*)line;
+          FT_UInt32*  s4 = (FT_UInt32*)( s + i * pitch );
+
+          for ( j = 0; j < width; j++, s4++ )
+            for ( k = 0; k < scale; k++, l4++ )
+              *l4 = *s4;
+
+          for ( k = 1; k < scale; k++, line += pitch * scale )
+            memcpy( line + pitch * scale, line, (size_t)( pitch * scale ) );
+          line += pitch * scale;
+        }
+        break;
+
       default:
         return;
     }
 
-    bit->buffer = t;
     bit->rows  *= scale;
     bit->width *= scale;
     bit->pitch *= scale;
@@ -548,8 +547,7 @@
     _af_debug_disable_blue_hints = !st->do_blue_hints;
 #endif
 
-    if ( FT_Load_Glyph( size->face, glyph_idx,
-                        handle->load_flags | FT_LOAD_NO_BITMAP ) )
+    if ( FT_Load_Glyph( size->face, glyph_idx, handle->load_flags ) )
       return;
 
     slot = size->face->glyph;
@@ -582,9 +580,9 @@
     /* render scaled bitmap */
     if ( st->work & DO_BITMAP && scale == st->scale )
     {
-      FT_Glyph        glyph, glyf;
-      int             left, top, x_advance, y_advance;
-      grBitmap        bitg;
+      FT_Glyph  glyph, glyf;
+      int       left, top, x_advance, y_advance;
+      grBitmap  bitg;
 
 
       FT_Get_Glyph( slot, &glyph );
@@ -595,11 +593,11 @@
       {
         bitmap_scale( st, &bitg, scale );
 
-        grBlitGlyphToBitmap( display->bitmap, &bitg,
-                             ox + left * scale, oy - top * scale,
-                             st->axis_color );
+        grBlitGlyphToSurface( display->surface, &bitg,
+                              ox + left * scale, oy - top * scale,
+                              st->axis_color );
 
-        free( bitg.buffer );
+        grDoneBitmap( &bitg );
 
         if ( glyf )
           FT_Done_Glyph( glyf );
@@ -775,7 +773,7 @@
                                                 : 2 ),
                                st->y_origin -
                                  ( ( ( points[n].y - middle.y ) >> 6 ) +
-                                   8 / 2 ),
+                                   GR_FONT_SIZE / 2 ),
                                number_string,
                                ( tags[n] & FT_CURVE_TAG_ON )
                                  ? st->on_color
@@ -851,7 +849,7 @@
     grWriteln( "F1, ?       display this help screen    if autohinting:                     " );
     grWriteln( "                                          H         toggle horiz. hinting   " );
     grWriteln( "i, k        move grid up/down             V         toggle vert. hinting    " );
-    grWriteln( "j, l        move grid left/right          B         toggle blue zone hinting" );
+    grWriteln( "j, l        move grid left/right          Z         toggle blue zone hinting" );
     grWriteln( "PgUp, PgDn  zoom in/out grid              s         toggle segment drawing  " );
     grWriteln( "SPC         reset zoom and position                  (unfitted, with blues) " );
     grWriteln( "                                          1         dump edge hints         " );
@@ -866,22 +864,22 @@
     grWriteln( "Up, Down    adjust size by 0.5pt        if not auto-hinting:                " );
     grWriteln( "                                          H         cycle through hinting   " );
     grWriteln( "Left, Right adjust index by 1                        engines (if available) " );
-    grWriteln( "F7, F8      adjust index by 16          if normal auto-hinting:             " );
-    grWriteln( "F9, F10     adjust index by 256           w         toggle warping          " );
-    grWriteln( "F11, F12    adjust index by 4096                      (if available)        " );
-    grWriteln( "                                                                            " );
-    grWriteln( "h           toggle hinting              b           toggle bitmap           " );
-    grWriteln( "f           toggle forced auto-         d           toggle dot display      " );
-    grWriteln( "             hinting (if hinting)       o           toggle outline display  " );
-    grWriteln( "G           toggle grid display         D           toggle dotnumber display" );
-    grWriteln( "C           change color palette                                            " );
-    grWriteln( "                                        if Multiple Master or GX font:      " );
-    grWriteln( "F5, F6      cycle through                 F2        cycle through axes      " );
-    grWriteln( "             anti-aliasing modes          F3, F4    adjust current axis by  " );
-    grWriteln( "L           cycle through LCD                        1/50th of its range    " );
-    grWriteln( "             filters                                                        " );
-    grWriteln( "                                        P           print PNG file          " );
-    grWriteln( "g, v        adjust gamma value          q, ESC      quit ftgrid             " );
+    grWriteln( "F7, F8      adjust index by 16                                              " );
+    grWriteln( "F9, F10     adjust index by 256         b           toggle embedded bitmap  " );
+    grWriteln( "F11, F12    adjust index by 4096        B           toggle bitmap display   " );
+    grWriteln( "                                        o           toggle outline display  " );
+    grWriteln( "h           toggle hinting              d           toggle dot display      " );
+    grWriteln( "f           toggle forced auto-         D           toggle dotnumber display" );
+    grWriteln( "             hinting (if hinting)                                           " );
+    grWriteln( "G           toggle grid display         if Multiple Master or GX font:      " );
+    grWriteln( "C           change color palette          F2        cycle through axes      " );
+    grWriteln( "                                          F3, F4    adjust current axis by  " );
+    grWriteln( "F5, F6      cycle through                            1/50th of its range    " );
+    grWriteln( "             anti-aliasing modes                                            " );
+    grWriteln( "L           cycle through LCD           P           print PNG file          " );
+    grWriteln( "             filters                    q, ESC      quit ftgrid             " );
+    grLn();
+    grWriteln( "g, v        adjust gamma value" );
     /*          |----------------------------------|    |----------------------------------| */
     grLn();
     grLn();
@@ -1045,67 +1043,6 @@
 
 
   static void
-  event_tt_interpreter_version_change( void )
-  {
-    status.tt_interpreter_version_idx += 1;
-    status.tt_interpreter_version_idx %= status.num_tt_interpreter_versions;
-
-    error = FT_Property_Set( handle->library,
-                             "truetype",
-                             "interpreter-version",
-                             &status.tt_interpreter_versions[
-                               status.tt_interpreter_version_idx] );
-
-    if ( !error )
-    {
-      /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-      /* lazy to walk over all loaded fonts to check whether they */
-      /* are of type TTF, then unloading them explicitly.         */
-      FTC_Manager_Reset( handle->cache_manager );
-      event_font_change( 0 );
-    }
-
-    snprintf( status.header_buffer, sizeof ( status.header_buffer ),
-              "TrueType engine changed to version %u",
-              status.tt_interpreter_versions[
-                status.tt_interpreter_version_idx] );
-
-    status.header = (const char *)status.header_buffer;
-  }
-
-
-  static void
-  event_warping_change( void )
-  {
-    if ( handle->lcd_mode == LCD_MODE_AA && handle->autohint )
-    {
-      FT_Bool  new_warping_state = !status.warping;
-
-
-      error = FT_Property_Set( handle->library,
-                               "autofitter",
-                               "warping",
-                               &new_warping_state );
-
-      if ( !error )
-      {
-        /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-        /* lazy to walk over all loaded fonts to check whether they */
-        /* are auto-hinted, then unloading them explicitly.         */
-        FTC_Manager_Reset( handle->cache_manager );
-        status.warping = new_warping_state;
-        event_font_change( 0 );
-      }
-
-      status.header = status.warping ? "warping enabled"
-                                     : "warping disabled";
-    }
-    else
-      status.header = "need normal anti-aliasing mode to toggle warping";
-  }
-
-
-  static void
   event_grid_reset( GridStatus  st )
   {
     st->x_origin = st->x_origin_0;
@@ -1130,7 +1067,7 @@
 
     /* The floating scale is reversibly adjusted after decomposing it into */
     /* fraction and exponent. Direct bit manipulation is less portable.    */
-    frc = 8 * frexpf( status.scale, &exp );
+    frc = (int)( 8 * frexpf( status.scale, &exp ) );
 
     frc  = ( frc & 3 ) | ( exp << 2 );
     frc += step;
@@ -1445,6 +1382,14 @@
       FTDemo_Update_Current_Flags( handle );
       break;
 
+    case grKEY( 'b' ):
+      handle->use_sbits = !handle->use_sbits;
+      status.header    = handle->use_sbits ? "embedded bitmaps are now on"
+                                           : "embedded bitmaps are now off";
+
+      FTDemo_Update_Current_Flags( handle );
+      break;
+
 #ifdef FT_DEBUG_AUTOFIT
     case grKEY( '1' ):
       if ( handle->hinted                                  &&
@@ -1537,7 +1482,7 @@
       status.work ^= DO_OUTLINE;
       break;
 
-    case grKEY( 'b' ):
+    case grKEY( 'B' ):
       status.work ^= DO_BITMAP;
       if ( status.work & DO_BITMAP )
         status.work ^= DO_GRAY_BITMAP;
@@ -1552,82 +1497,8 @@
               handle->lcd_mode == LCD_MODE_LIGHT          ||
               handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL ) )
       {
-        FT_Face    face;
-        FT_Module  module;
-
-
-        error = FTC_Manager_LookupFace( handle->cache_manager,
-                                        handle->scaler.face_id, &face );
-        if ( !error )
-        {
-          module = &face->driver->root;
-
-          if ( !strcmp( module->clazz->module_name, "cff" ) )
-          {
-            if ( FTDemo_Event_Cff_Hinting_Engine_Change(
-                   handle->library,
-                   &status.cff_hinting_engine,
-                   1 ) )
-            {
-              /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-              /* lazy to walk over all loaded fonts to check whether they */
-              /* are of type CFF, then unloading them explicitly.         */
-              FTC_Manager_Reset( handle->cache_manager );
-              event_font_change( 0 );
-            }
-
-            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
-                      "CFF engine changed to %s",
-                      status.cff_hinting_engine == FT_HINTING_FREETYPE
-                        ? "FreeType" : "Adobe" );
-
-            status.header = (const char *)status.header_buffer;
-          }
-          else if ( !strcmp( module->clazz->module_name, "type1" ) )
-          {
-            if ( FTDemo_Event_Type1_Hinting_Engine_Change(
-                   handle->library,
-                   &status.type1_hinting_engine,
-                   1 ) )
-            {
-              /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-              /* lazy to walk over all loaded fonts to check whether they */
-              /* are of type Type1, then unloading them explicitly.       */
-              FTC_Manager_Reset( handle->cache_manager );
-              event_font_change( 0 );
-            }
-
-            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
-                      "Type 1 engine changed to %s",
-                      status.type1_hinting_engine == FT_HINTING_FREETYPE
-                        ? "FreeType" : "Adobe" );
-
-            status.header = (const char *)status.header_buffer;
-          }
-          else if ( !strcmp( module->clazz->module_name, "t1cid" ) )
-          {
-            if ( FTDemo_Event_T1cid_Hinting_Engine_Change(
-                   handle->library,
-                   &status.t1cid_hinting_engine,
-                   1 ) )
-            {
-              /* Resetting the cache is perhaps a bit harsh, but I'm too  */
-              /* lazy to walk over all loaded fonts to check whether they */
-              /* are of type CID, then unloading them explicitly.         */
-              FTC_Manager_Reset( handle->cache_manager );
-              event_font_change( 0 );
-            }
-
-            snprintf( status.header_buffer, sizeof ( status.header_buffer ),
-                      "CID engine changed to %s",
-                      status.t1cid_hinting_engine == FT_HINTING_FREETYPE
-                        ? "FreeType" : "Adobe" );
-
-            status.header = (const char *)status.header_buffer;
-          }
-          else if ( !strcmp( module->clazz->module_name, "truetype" ) )
-            event_tt_interpreter_version_change();
-        }
+        FTDemo_Hinting_Engine_Change( handle );
+        event_font_change( 0 );
       }
 #ifdef FT_DEBUG_AUTOFIT
       else
@@ -1640,7 +1511,13 @@
       break;
 
     case grKEY( 'w' ):
-      event_warping_change();
+      if ( handle->autohint                            &&
+           handle->lcd_mode != LCD_MODE_LIGHT          &&
+           handle->lcd_mode != LCD_MODE_LIGHT_SUBPIXEL )
+      {
+        FTDemo_Hinting_Engine_Change( handle );
+        event_font_change( 0 );
+      }
       break;
 
 #ifdef FT_DEBUG_AUTOFIT
@@ -1657,7 +1534,7 @@
         status.header = "need autofit mode to toggle vertical hinting";
       break;
 
-    case grKEY( 'B' ):
+    case grKEY( 'Z' ):
       if ( handle->autohint                            ||
            handle->lcd_mode == LCD_MODE_LIGHT          ||
            handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL )
@@ -1736,6 +1613,23 @@
       grWriteCellString( display->bitmap, 0, 3 * HEADER_HEIGHT,
                          status.header, display->fore_color );
 
+    if ( handle->current_font->num_indices )
+    {
+      int  x;
+
+
+      x = snprintf( status.header_buffer, BUFSIZE,
+                    handle->encoding == FT_ENCODING_ORDER   ? "%d/%d" :
+                    handle->encoding == FT_ENCODING_UNICODE ? "U+%04X/U+%04X" :
+                                                              "0x%X/0x%X",
+                    status.Num, handle->current_font->num_indices - 1 );
+
+      grWriteCellString( display->bitmap,
+                         display->bitmap->width - 8 * x,
+                         display->bitmap->rows - GR_FONT_SIZE,
+                         status.header_buffer, display->fore_color );
+    }
+
     if ( status.mm )
     {
       const char*  format = "%s axis: %.02f";
@@ -1807,6 +1701,8 @@
   {
     char*  execname;
     int    option;
+    int    have_encoding = 0;
+    int    have_index    = 0;
 
 
     execname = ft_basename( (*argv)[0] );
@@ -1846,11 +1742,12 @@
 
       case 'e':
         handle->encoding = FTDemo_Make_Encoding_Tag( optarg );
-        status.Num       = 0x20;
+        have_encoding    = 1;
         break;
 
       case 'f':
         status.Num = atoi( optarg );
+        have_index = 1;
         break;
 
       case 'k':
@@ -1894,6 +1791,9 @@
     if ( *argc <= 1 )
       usage( execname );
 
+    if ( have_encoding && !have_index )
+      status.Num = 0x20;
+
     status.ptsize = (int)( atof( *argv[0] ) * 64.0 );
     if ( status.ptsize == 0 )
       status.ptsize = 64 * 10;
@@ -1907,54 +1807,16 @@
   main( int    argc,
         char*  argv[] )
   {
-    int           n;
-    unsigned int  dflt_tt_interpreter_version;
-    unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
-                                  TT_INTERPRETER_VERSION_38,
-                                  TT_INTERPRETER_VERSION_40 };
+    int  n;
 
 
     /* initialize engine */
     handle = FTDemo_New();
+    handle->use_sbits = 0;
 
     grid_status_init( &status );
     circle_init( handle, 128 );
     parse_cmdline( &argc, &argv );
-
-    /* get the default value as compiled into FreeType */
-    FT_Property_Get( handle->library,
-                     "cff",
-                     "hinting-engine", &status.cff_hinting_engine );
-    FT_Property_Get( handle->library,
-                     "type1",
-                     "hinting-engine", &status.type1_hinting_engine );
-    FT_Property_Get( handle->library,
-                     "t1cid",
-                     "hinting-engine", &status.t1cid_hinting_engine );
-
-
-    /* collect all available versions, then set again the default */
-    FT_Property_Get( handle->library,
-                     "truetype",
-                     "interpreter-version", &dflt_tt_interpreter_version );
-    for ( n = 0; n < 3; n++ )
-    {
-      error = FT_Property_Set( handle->library,
-                               "truetype",
-                               "interpreter-version", &versions[n] );
-      if ( !error )
-        status.tt_interpreter_versions[
-          status.num_tt_interpreter_versions++] = versions[n];
-      if ( versions[n] == dflt_tt_interpreter_version )
-        status.tt_interpreter_version_idx = n;
-    }
-    FT_Property_Set( handle->library,
-                     "truetype",
-                     "interpreter-version", &dflt_tt_interpreter_version );
-
-    FT_Property_Get( handle->library,
-                     "autofitter",
-                     "warping", &status.warping );
 
     FT_Library_SetLcdFilter( handle->library, status.lcd_filter );
 
