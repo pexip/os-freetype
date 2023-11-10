@@ -1,6 +1,6 @@
 // maingui.cpp
 
-// Copyright (C) 2016-2020 by Werner Lemberg.
+// Copyright (C) 2016-2022 by Werner Lemberg.
 
 
 #include "maingui.hpp"
@@ -12,7 +12,7 @@
 #include <QMessageBox>
 #include <QSettings>
 
-#include FT_DRIVER_H
+#include <freetype/ftdriver.h>
 
 
 MainGUI::MainGUI()
@@ -67,7 +67,7 @@ MainGUI::about()
     this,
     tr("About ftinspect"),
     tr("<p>This is <b>ftinspect</b> version %1<br>"
-       " Copyright %2 2016-2020<br>"
+       " Copyright %2 2016-2022<br>"
        " by Werner Lemberg <tt>&lt;wl@gnu.org&gt;</tt></p>"
        ""
        "<p><b>ftinspect</b> shows how a font gets rendered"
@@ -75,9 +75,9 @@ MainGUI::about()
        " all rendering parameters.</p>"
        ""
        "<p>License:"
-       " <a href='http://git.savannah.gnu.org/cgit/freetype/freetype2.git/tree/docs/FTL.TXT'>FreeType"
+       " <a href='https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/docs/FTL.TXT'>FreeType"
        " License (FTL)</a> or"
-       " <a href='http://git.savannah.gnu.org/cgit/freetype/freetype2.git/tree/docs/GPLv2.TXT'>GNU"
+       " <a href='https://gitlab.freedesktop.org/freetype/freetype/-/blob/master/docs/GPLv2.TXT'>GNU"
        " GPLv2</a></p>")
        .arg(QApplication::applicationVersion())
        .arg(QChar(0xA9)));
@@ -270,7 +270,6 @@ MainGUI::checkHinting()
     verticalHintingCheckBox->setEnabled(false);
     blueZoneHintingCheckBox->setEnabled(false);
     segmentDrawingCheckBox->setEnabled(false);
-    warpingCheckBox->setEnabled(false);
 
     antiAliasingComboBoxx->setItemEnabled(AntiAliasing_Light, false);
   }
@@ -312,8 +311,6 @@ MainGUI::checkAutoHinting()
     verticalHintingCheckBox->setEnabled(true);
     blueZoneHintingCheckBox->setEnabled(true);
     segmentDrawingCheckBox->setEnabled(true);
-    if (engine->haveWarping)
-      warpingCheckBox->setEnabled(true);
 
     antiAliasingComboBoxx->setItemEnabled(AntiAliasing_Light, true);
   }
@@ -330,7 +327,6 @@ MainGUI::checkAutoHinting()
     verticalHintingCheckBox->setEnabled(false);
     blueZoneHintingCheckBox->setEnabled(false);
     segmentDrawingCheckBox->setEnabled(false);
-    warpingCheckBox->setEnabled(false);
 
     antiAliasingComboBoxx->setItemEnabled(AntiAliasing_Light, false);
 
@@ -740,7 +736,6 @@ MainGUI::createLayout()
   verticalHintingCheckBox = new QCheckBox(tr("Vertical Hinting"));
   blueZoneHintingCheckBox = new QCheckBox(tr("Blue-Zone Hinting"));
   segmentDrawingCheckBox = new QCheckBox(tr("Segment Drawing"));
-  warpingCheckBox = new QCheckBox(tr("Warping"));
 
   antiAliasingLabel = new QLabel(tr("Anti-Aliasing"));
   antiAliasingLabel->setAlignment(Qt::AlignRight);
@@ -824,10 +819,6 @@ MainGUI::createLayout()
   segmentDrawingLayout->addSpacing(20); // XXX px
   segmentDrawingLayout->addWidget(segmentDrawingCheckBox);
 
-  warpingLayout = new QHBoxLayout;
-  warpingLayout->addSpacing(20); // XXX px
-  warpingLayout->addWidget(warpingCheckBox);
-
   antiAliasingLayout = new QHBoxLayout;
   antiAliasingLayout->addWidget(antiAliasingLabel);
   antiAliasingLayout->addWidget(antiAliasingComboBoxx);
@@ -852,7 +843,6 @@ MainGUI::createLayout()
   generalTabLayout->addLayout(verticalHintingLayout);
   generalTabLayout->addLayout(blueZoneHintingLayout);
   generalTabLayout->addLayout(segmentDrawingLayout);
-  generalTabLayout->addLayout(warpingLayout);
   generalTabLayout->addSpacing(20); // XXX px
   generalTabLayout->addStretch(1);
   generalTabLayout->addLayout(antiAliasingLayout);

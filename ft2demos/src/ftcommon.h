@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2005-2020 by                                              */
+/*  Copyright (C) 2005-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -15,14 +15,12 @@
 
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
+#include <freetype/freetype.h>
 
-#include FT_CACHE_H
-#include FT_CACHE_MANAGER_H
-
-#include FT_GLYPH_H
-#include FT_STROKER_H
-#include FT_BITMAP_H
+#include <freetype/ftbitmap.h>
+#include <freetype/ftcache.h>
+#include <freetype/ftglyph.h>
+#include <freetype/ftstroke.h>
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -291,6 +289,11 @@
   FT_Error
   FTDemo_Get_Size( FTDemo_Handle*  handle,
                    FT_Size*        asize );
+
+
+  /* switch to a different engine if possible */
+  int
+  FTDemo_Hinting_Engine_Change( FTDemo_Handle*  handle );
 
 
   /* draw common header */

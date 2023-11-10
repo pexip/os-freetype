@@ -1,26 +1,23 @@
 # ftinspect.pro
 
-QMAKE_CXXFLAGS += -isystem ../../../freetype2/include
+QMAKE_CXXFLAGS += -isystem ../../../freetype/include
 
 # To avoid conflicts with the FreeType version compiled into or used by Qt,
 # we use the static library.
 #
 # You should adapt this to your setup.
 unix|macx {
-  LIBS += ../../../freetype2/objs/.libs/libfreetype.a
+  LIBS += ../../../freetype/objs/.libs/libfreetype.a
 
   CONFIG += link_pkgconfig
-  PKGCONFIG += libpng harfbuzz zlib bzip2 libbrotlidec
+  PKGCONFIG += libpng harfbuzz zlib bzip2 libbrotlidec librsvg-2.0
 }
 win32 {
   LIBS += ../../../freetyp2/objs/vc2010/freetype.lib
-  LIBS += -lpng -lharfbuzz -lz -lbz2 -lm -lbrotlidec
+  LIBS += -lpng -lharfbuzz -lz -lbz2 -lm -lbrotlidec -lrsvg-2
 }
 
 CONFIG += qt debug
-
-# we need access to internal FreeType header files
-DEFINES += FT2_BUILD_LIBRARY
 
 SOURCES += \
   engine/engine.cpp \

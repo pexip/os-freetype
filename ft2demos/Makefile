@@ -24,7 +24,7 @@ space := $(empty) $(empty)
 # versions of the FreeType configuration header files `ft2build.h'
 # and `ftoption.h' given in this directory).
 #
-TOP_DIR   ?= ../freetype2
+TOP_DIR   ?= ../freetype
 TOP_DIR_2 ?= .
 OBJ_DIR   ?= $(TOP_DIR)/objs
 
@@ -125,6 +125,17 @@ else
     SRC_DIR := $(TOP_DIR_2)/src
   endif
 
+  ifeq ($(PLATFORM),unixdev)
+    # `FT_DEMO_CFLAGS` comes from FreeType's `configure` script (via
+    # `builds/unix/unix-cc.mk`), holding additional flags to compile the
+    # FreeType demo programs.
+    #
+    # For the pure `make` call (without using `configure`) we have to add
+    # all needed cflags manually.
+    FT_DEMO_CFLAGS := $(shell pkg-config --cflags librsvg-2.0) \
+                      -DHAVE_LIBRSVG
+  endif
+
   FT_INCLUDES := $(OBJ_BUILD) \
                  $(DEVEL_DIR) \
                  $(TOP_DIR)/include \
@@ -133,7 +144,8 @@ else
   COMPILE = $(CC) $(ANSIFLAGS) \
                   $(INCLUDES:%=$I%) \
                   $(CPPFLAGS) \
-                  $(CFLAGS)
+                  $(CFLAGS) \
+                  $(FT_DEMO_CFLAGS)
 
   # Enable C99 for gcc to avoid warnings.
   # Note that clang++ aborts with an error if we use `-std=C99',
@@ -164,21 +176,35 @@ else
   LINK_ITEMS = $T$(subst /,$(COMPILER_SEP),$@ $<)
 
   ifeq ($(PLATFORM),unix)
+    # `LDFLAGS` comes from the `configure` script (via FreeType's
+    # `builds/unix/unix-cc.mk`), holding all linker flags necessary to
+    # link the FreeType library.
+    #
+    # `FT_DEMO_LDFLAGS` has been set in `unix-cc.mk`, too.
     override CC = $(CCraw)
-    LINK_CMD    = $(subst /,$(SEP),$(OBJ_BUILD)/libtool) \
-                  --mode=link $(CC) \
+    LINK_CMD    = $(LIBTOOL) --mode=link $(CC) \
                   $(subst /,$(COMPILER_SEP),$(LDFLAGS))
-    LINK_LIBS   = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) $(LIB_CLOCK_GETTIME)
+    LINK_LIBS   = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) \
+                  $(FT_DEMO_LDFLAGS)
   else
     LINK_CMD = $(CC) $(subst /,$(COMPILER_SEP),$(LDFLAGS))
     ifeq ($(PLATFORM),unixdev)
-      LINK_LIBS := $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) -lm -lrt -lz -lbz2
+      # For the pure `make` call (without using `configure`) we have to add
+      # all needed libraries manually.
+      LINK_LIBS := $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) \
+                   -lm -lrt -lz -lbz2 -lpthread
       LINK_LIBS += $(shell pkg-config --libs libpng)
       LINK_LIBS += $(shell pkg-config --libs harfbuzz)
       LINK_LIBS += $(shell pkg-config --libs libbrotlidec)
+      LINK_LIBS += $(shell pkg-config --libs librsvg-2.0)
     else
       LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE))
     endif
+  endif
+
+  # Only on Windows we might fall back on GDI+ for PNG saving
+  ifeq ($(OS),Windows_NT)
+    LINK_LIBS += -lgdiplus
   endif
 
   LINK        = $(LINK_CMD) \
@@ -195,7 +221,7 @@ else
                 $(LINK_LIBS) $(subst /,$(COMPILER_SEP),$(GRAPH_LIB)) \
                 $(GRAPH_LINK) $(MATH)
 
-  .PHONY: exes clean distclean
+  .PHONY: exes clean distclean install
 
 
   ###################################################################
@@ -297,6 +323,7 @@ else
           ftgamma  \
           ftgrid   \
           ftmulti  \
+          ftsdf    \
           ftstring \
           ftview
 
@@ -317,6 +344,11 @@ else
   # EXES += fttimer
   # EXES += testname
 
+  # Not all demo programs have a man page; we thus check for existence in a
+  # loop.
+  #
+  MANPAGES := $(foreach man,$(EXES),$(wildcard $(TOP_DIR_2)/man/$(man).1))
+
   exes: $(EXES:%=$(BIN_DIR_2)/%$E)
 
 
@@ -335,18 +367,31 @@ else
   $(OBJ_DIR_2)/common.$(SO): $(SRC_DIR)/common.c
   $(OBJ_DIR_2)/strbuf.$(SO): $(SRC_DIR)/strbuf.c
   $(OBJ_DIR_2)/output.$(SO): $(SRC_DIR)/output.c
+  $(OBJ_DIR_2)/md5.$(SO): $(SRC_DIR)/md5.c
   $(OBJ_DIR_2)/mlgetopt.$(SO): $(SRC_DIR)/mlgetopt.c
   COMMON_OBJ := $(OBJ_DIR_2)/common.$(SO) \
                 $(OBJ_DIR_2)/strbuf.$(SO) \
+                $(OBJ_DIR_2)/rsvg-port.$(SO) \
                 $(OBJ_DIR_2)/output.$(SO) \
+                $(OBJ_DIR_2)/md5.$(SO) \
                 $(OBJ_DIR_2)/mlgetopt.$(SO)
 
-
-  FTCOMMON_OBJ := $(OBJ_DIR_2)/ftcommon.$(SO)
-  $(FTCOMMON_OBJ): $(SRC_DIR)/ftcommon.c $(SRC_DIR)/ftcommon.h
+  $(OBJ_DIR_2)/ftcommon.$(SO): $(SRC_DIR)/ftcommon.c $(SRC_DIR)/ftcommon.h
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
                      $T$(subst /,$(COMPILER_SEP),$@ $<)
 
+  $(OBJ_DIR_2)/ftpngout.$(SO): $(SRC_DIR)/ftpngout.c $(SRC_DIR)/ftcommon.h
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
+
+  $(OBJ_DIR_2)/rsvg-port.$(SO): $(SRC_DIR)/rsvg-port.c $(SRC_DIR)/rsvg-port.h
+	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<)
+
+  FTCOMMON_OBJ := $(OBJ_DIR_2)/ftcommon.$(SO) \
+                  $(OBJ_DIR_2)/ftpngout.$(SO)
+
+  $(OBJ_DIR_2)/ftdump.$(SO): $(SRC_DIR)/ftdump.c
+	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<)
 
   $(OBJ_DIR_2)/ftlint.$(SO): $(SRC_DIR)/ftlint.c
 	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<)
@@ -388,34 +433,40 @@ else
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
                      $T$(subst /,$(COMPILER_SEP),$@ $<)
 
-  $(OBJ_DIR_2)/ftmulti.$(SO): $(SRC_DIR)/ftmulti.c \
-                              $(GRAPH_LIB)
-	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
-                     $T$(subst /,$(COMPILER_SEP),$@ $<)
-
   $(OBJ_DIR_2)/ftstring.$(SO): $(SRC_DIR)/ftstring.c \
                                $(SRC_DIR)/ftcommon.h \
                                $(GRAPH_LIB)
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
                      $T$(subst /,$(COMPILER_SEP),$@ $<)
 
+  $(OBJ_DIR_2)/ftview.$(SO): $(SRC_DIR)/ftview.c \
+                             $(SRC_DIR)/ftcommon.h \
+                             $(GRAPH_LIB)
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
 
-  ####################################################################
-  #
-  # Special rule to compile the `ftdump' program as it includes
-  # internal header files.
-  #
-  $(OBJ_DIR_2)/ftdump.$(SO): $(SRC_DIR)/ftdump.c
-	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<) $DFT2_BUILD_LIBRARY
+  $(OBJ_DIR_2)/ftsdf.$(SO): $(SRC_DIR)/ftsdf.c \
+                            $(SRC_DIR)/ftcommon.h \
+                            $(GRAPH_LIB)
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
 
+  $(OBJ_DIR_2)/ftdiff.$(SO): $(SRC_DIR)/ftdiff.c \
+                             $(SRC_DIR)/ftcommon.h \
+                             $(GRAPH_LIB)
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
 
-  ####################################################################
-  #
-  # Special rule to compile the `t1dump' program as it includes
-  # the Type1 source path.
-  #
-  $(OBJ_DIR_2)/t1dump.$(SO): $(SRC_DIR)/t1dump.c
-	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<)
+  $(OBJ_DIR_2)/ftgrid.$(SO): $(SRC_DIR)/ftgrid.c \
+                             $(SRC_DIR)/ftcommon.h \
+                             $(GRAPH_LIB)
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
+
+  $(OBJ_DIR_2)/ftmulti.$(SO): $(SRC_DIR)/ftmulti.c \
+                              $(GRAPH_LIB)
+	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
+                     $T$(subst /,$(COMPILER_SEP),$@ $<)
 
 
   ####################################################################
@@ -425,42 +476,6 @@ else
   #
   $(OBJ_DIR_2)/ftvalid.$(SO): $(SRC_DIR)/ftvalid.c
 	  $(COMPILE) $T$(subst /,$(COMPILER_SEP),$@ $<) $DFT2_BUILD_LIBRARY
-
-
-  ####################################################################
-  #
-  # Special rule to compile the `ftview' program as it includes
-  # internal header files.
-  #
-  $(OBJ_DIR_2)/ftview.$(SO): $(SRC_DIR)/ftview.c \
-                             $(SRC_DIR)/ftcommon.h \
-                             $(GRAPH_LIB)
-	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
-                     $T$(subst /,$(COMPILER_SEP),$@ $<) $DFT2_BUILD_LIBRARY
-
-
-  ####################################################################
-  #
-  # Special rule to compile the `ftdiff' program as it includes
-  # internal header files.
-  #
-  $(OBJ_DIR_2)/ftdiff.$(SO): $(SRC_DIR)/ftdiff.c \
-                             $(SRC_DIR)/ftcommon.h \
-                             $(GRAPH_LIB)
-	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
-                     $T$(subst /,$(COMPILER_SEP),$@ $<) $DFT2_BUILD_LIBRARY
-
-
-  ####################################################################
-  #
-  # Special rule to compile the `ftgrid' program as it includes
-  # internal header files.
-  #
-  $(OBJ_DIR_2)/ftgrid.$(SO): $(SRC_DIR)/ftgrid.c \
-                             $(SRC_DIR)/ftcommon.h \
-                             $(GRAPH_LIB)
-	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) \
-                     $T$(subst /,$(COMPILER_SEP),$@ $<) $DFT2_BUILD_LIBRARY
 
 
   ####################################################################
@@ -513,9 +528,6 @@ else
 #  $(BIN_DIR_2)/ftsbit$E: $(OBJ_DIR_2)/ftsbit.$(SO) $(FTLIB)
 #	  $(LINK)
 
-  $(BIN_DIR_2)/t1dump$E: $(OBJ_DIR_2)/t1dump.$(SO) $(FTLIB)
-	  $(LINK)
-
   $(BIN_DIR_2)/ttdebug$E: $(OBJ_DIR_2)/ttdebug.$(SO) $(FTLIB) $(COMMON_OBJ)
 	  $(LINK_COMMON)
 
@@ -547,7 +559,22 @@ else
                            $(GRAPH_LIB) $(COMMON_OBJ) $(FTCOMMON_OBJ)
 	  $(LINK_NEW)
 
+  $(BIN_DIR_2)/ftsdf$E: $(OBJ_DIR_2)/ftsdf.$(SO) $(FTLIB) \
+                        $(GRAPH_LIB) $(COMMON_OBJ) $(FTCOMMON_OBJ)
+	  $(LINK_NEW)
 
+  ifeq ($(PLATFORM),unix)
+    install: exes
+	    $(MKINSTALLDIRS) $(DESTDIR)$(bindir) \
+                             $(DESTDIR)$(mandir)/man1
+	    $(foreach bin,$(EXES), \
+              $(LIBTOOL) --mode=install \
+                $(INSTALL) $(BIN_DIR_2)/$(bin) \
+                           $(DESTDIR)$(bindir)/$(bin);)
+	    $(foreach man,$(MANPAGES), \
+              $(INSTALL) $(man) \
+                         $(DESTDIR)$(mandir)/man1/$(notdir $(man));)
+  endif
 endif
 
 
@@ -558,7 +585,7 @@ endif
 
 # we check for `dist', not `distclean'
 ifneq ($(findstring distx,$(MAKECMDGOALS)x),)
-  FT_H := ../freetype2/include/freetype/freetype.h
+  FT_H := ../freetype/include/freetype/freetype.h
 
   major := $(shell sed -n 's/.*FREETYPE_MAJOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
   minor := $(shell sed -n 's/.*FREETYPE_MINOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
@@ -570,8 +597,15 @@ ifneq ($(findstring distx,$(MAKECMDGOALS)x),)
 #  else
     version := $(major).$(minor).$(patch)
     winversion := $(major)$(minor)$(patch)
+    version_tag := VER-$(major)-$(minor)-$(patch)
 #  endif
 endif
+
+
+# Use the GNU 'config' repository to access the gnulib script that converts
+# git commit messages to a ChangeLog file.
+CHANGELOG_SCRIPT = ~/git/config/gitlog-to-changelog
+
 
 dist:
 	-rm -rf tmp
@@ -580,6 +614,7 @@ dist:
 	rm -f ftdmo$(winversion).zip
 
 	for d in `find . -wholename '*/.git' -prune \
+	                 -o -wholename '*/subprojects/freetype2' -prune \
 	                 -o -type f \
 	                 -o -print` ; do \
 	  mkdir -p tmp/$$d ; \
@@ -587,6 +622,7 @@ dist:
 
 	currdir=`pwd` ; \
 	for f in `find . -wholename '*/.git' -prune \
+	                 -o -wholename '*/subprojects/freetype2' -prune \
 	                 -o -name .gitignore \
 	                 -o -name .mailmap \
 	                 -o -type d \
@@ -596,6 +632,14 @@ dist:
 
 	cd tmp ; \
 	$(MAKE) distclean
+
+	@# Generate `ChangeLog' file with commits since release 2.11.0
+	@# (when we stopped creating this file manually).
+	$(CHANGELOG_SCRIPT) \
+	  --format='%B%n' \
+	  --no-cluster \
+	  -- VER-2-11-0..$(version_tag) \
+	> tmp/ChangeLog
 
 	mv tmp ft2demos-$(version)
 

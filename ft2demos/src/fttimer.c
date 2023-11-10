@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project - a Free and Portable Quality TrueType Renderer.   */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  fttimer: A simple performance benchmark.  Now with graylevel rendering  */
@@ -20,8 +20,8 @@
 /****************************************************************************/
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_GLYPH_H
+#include <freetype/freetype.h>
+#include <freetype/ftglyph.h>
 
 #include <stdio.h>
 #include <stdlib.h>

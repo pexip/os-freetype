@@ -1,11 +1,11 @@
 Description: Enable subpixel rendering to provide LCD colour filtering.
 Author: Steve Langasek <vorlon@debian.org>
 Forwarded: not-needed
-Last-Update: 2020-11-29
+Last-Update: 2021-10-07
 
---- a/devel/ftoption.h
-+++ b/devel/ftoption.h
-@@ -124,7 +124,7 @@
+--- a/include/freetype/config/ftoption.h
++++ b/include/freetype/config/ftoption.h
+@@ -123,7 +123,7 @@
     * When this macro is not defined, FreeType offers alternative LCD
     * rendering technology that produces excellent output.
     */

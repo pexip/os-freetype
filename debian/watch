@@ -1,6 +1,6 @@
 version=4
 
-# To verify each package signature, use Werner Lemberg's public PGP key.
+# To verify each package signature, use Werner Lemberg's public PGP key (BE6C3AAC63AD8E3F).
 
 # freetype2
 opts="pgpsigurlmangle=s/$/.sig/, \

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2020 by                                                   */
+/*  Copyright (C) 2020-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -171,9 +171,9 @@
       return (int)available;
     }
 
-    sb->pos += ret;
+    sb->pos += (unsigned)ret;
 
-    return (int)ret;
+    return ret;
   }
 
 

@@ -2,27 +2,25 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /****************************************************************************/
 
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_SFNT_NAMES_H
-#include FT_TRUETYPE_IDS_H
-#include FT_TRUETYPE_TABLES_H
-#include FT_TRUETYPE_TAGS_H
-#include FT_MULTIPLE_MASTERS_H
+#include <freetype/freetype.h>
 
-  /* the following header shouldn't be used in normal programs */
-#include <freetype/internal/ftdebug.h>
+#include <freetype/ftbdf.h>
+#include <freetype/ftmm.h>
+#include <freetype/ftmodapi.h>  /* showing driver name */
+#include <freetype/ftsnames.h>
+#include <freetype/ftwinfnt.h>
+#include <freetype/ttnameid.h>
+#include <freetype/tttables.h>
+#include <freetype/tttags.h>
+#include <freetype/t1tables.h>
 
-  /* showing driver name */
-#include FT_MODULE_H
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdrv.h>
 
   /* error messages */
 #undef FTERRORS_H_
@@ -61,7 +59,7 @@
     FT_Done_FreeType( library );
 
     switch( error )
-    #include FT_ERRORS_H
+    #include <freetype/fterrors.h>
 
     fprintf( stderr, "%s\n  error = 0x%04x, %s\n", message, error, str );
     exit( 1 );
@@ -76,6 +74,24 @@
 
     printf( "%s", message );
     comma_flag = 1;
+  }
+
+
+  static void
+  Print_Array( FT_Short*  data,
+               FT_Byte    num_data )
+  {
+    FT_Int  i;
+
+
+    printf( "[" );
+    if ( num_data )
+    {
+      printf( "%d", data[0] );
+      for ( i = 1; i < num_data; i++ )
+        printf( ", %d", data[i] );
+    }
+    printf( "]\n" );
   }
 
 
@@ -96,7 +112,7 @@
 
     fprintf( stderr,
       "  -c, -C    Print charmap coverage.\n"
-      "  -n        Print SFNT name tables.\n"
+      "  -n        Print SFNT 'name' table or Type1 font info.\n"
       "  -p        Print TrueType programs.\n"
       "  -t        Print SFNT table list.\n"
       "  -u        Emit UTF8.\n"
@@ -152,8 +168,8 @@
     if ( head )
     {
       char    buf[11];
-      time_t  created  = head->Created [1];
-      time_t  modified = head->Modified[1];
+      time_t  created  = (time_t)head->Created [1];
+      time_t  modified = (time_t)head->Modified[1];
 
 
       /* ignore most of upper bits until 2176 and adjust epoch */
@@ -162,13 +178,20 @@
       modified = head->Modified[0] == 1 ? modified + 2212122496U
                                         : modified - 2082844800U;
 
-      strftime( buf, sizeof ( buf ), "%Y-%m-%d", gmtime( &created  ) );
-      printf( "%s%s\n", Name_Field( "created" ), buf );
-      strftime( buf, sizeof ( buf ), "%Y-%m-%d", gmtime( &modified ) );
-      printf( "%s%s\n", Name_Field( "modified" ), buf );
+      /* ignore pre-epoch time that gmtime cannot handle on some systems */
+      if ( created >= 0 )
+      {
+        strftime( buf, sizeof ( buf ), "%Y-%m-%d", gmtime( &created ) );
+        printf( "%s%s\n", Name_Field( "created" ), buf );
+      }
+      if ( modified >= 0 )
+      {
+        strftime( buf, sizeof ( buf ), "%Y-%m-%d", gmtime( &modified ) );
+        printf( "%s%s\n", Name_Field( "modified" ), buf );
+      }
 
-      printf( "%s%.2f\n", Name_Field( "revision" ),
-              head->Font_Revision / 65536.0 );
+      printf( head->Font_Revision & 0xFFC0 ? "%s%.4g\n" : "%s%.2f\n",
+              Name_Field( "revision" ), head->Font_Revision / 65536.0 );
     }
   }
 
@@ -176,14 +199,10 @@
   static void
   Print_Type( FT_Face  face )
   {
-    FT_Module  module;
-
-
     printf( "font type entries\n" );
 
-    module = &face->driver->root;
     printf( "%s%s\n", Name_Field( "FreeType driver" ),
-            module->clazz->module_name );
+            FT_FACE_DRIVER_NAME( face ) );
 
     /* Is it better to dump all sfnt tag names? */
     printf( "%s%s\n", Name_Field( "sfnt wrapped" ),
@@ -433,6 +452,88 @@
 
 
   static void
+  Print_FontInfo_Dictionary( PS_FontInfo  fi )
+  {
+    printf( "/FontInfo dictionary\n" );
+
+    printf( "%s%s\n", Name_Field( "FamilyName" ),
+            fi->family_name );
+    printf( "%s%s\n", Name_Field( "FullName" ),
+            fi->full_name );
+    printf( "%s%d\n", Name_Field( "isFixedPitch" ),
+            fi->is_fixed_pitch );
+    printf( "%s%ld\n", Name_Field( "ItalicAngle" ),
+            fi->italic_angle );
+    printf( "%s%s\n", Name_Field( "Notice" ),
+            fi->notice );
+    printf( "%s%d\n", Name_Field( "UnderlinePosition" ),
+            fi->underline_position );
+    printf( "%s%u\n", Name_Field( "UnderlineThickness" ),
+            fi->underline_thickness );
+    printf( "%s%s\n", Name_Field( "version" ),
+            fi->version );
+    printf( "%s%s\n", Name_Field( "Weight" ),
+            fi->weight );
+  }
+
+
+  static void
+  Print_FontPrivate_Dictionary( PS_Private  fp )
+  {
+    printf( "/Private dictionary\n" );
+
+    printf( "%s%d\n", Name_Field( "BlueFuzz" ),
+            fp->blue_fuzz );
+    printf( "%s%.6f\n", Name_Field( "BlueScale" ),
+            (double)fp->blue_scale / 65536 / 1000 );
+    printf( "%s%d\n", Name_Field( "BlueShift" ),
+            fp->blue_shift );
+    printf( "%s", Name_Field( "BlueValues" ) );
+    Print_Array( fp->blue_values,
+                 fp->num_blue_values );
+    printf( "%s%.4f\n", Name_Field( "ExpansionFactor" ),
+            (double)fp->expansion_factor / 65536 );
+    printf( "%s", Name_Field( "FamilyBlues" ) );
+    Print_Array( fp->family_blues,
+                 fp->num_family_blues );
+    printf( "%s", Name_Field( "FamilyOtherBlues" ) );
+    Print_Array( fp->family_other_blues,
+                 fp->num_family_other_blues );
+    printf( "%s%s\n", Name_Field( "ForceBold" ),
+            fp->force_bold ? "true" : "false" );
+    printf( "%s%ld\n", Name_Field( "LanguageGroup" ),
+            fp->language_group );
+    printf( "%s%d\n", Name_Field( "lenIV" ),
+            fp->lenIV );
+    printf( "%s", Name_Field( "MinFeature" ) );
+    Print_Array( fp->min_feature,
+                 2 );
+    printf( "%s", Name_Field( "OtherBlues" ) );
+    Print_Array( fp->other_blues,
+                 fp->num_other_blues );
+    printf( "%s%ld\n", Name_Field( "password" ),
+            fp->password );
+    printf( "%s%s\n", Name_Field( "RndStemUp" ),
+            fp->round_stem_up ? "true" : "false" );
+    /* casting to `FT_Short` is not really correct, but... */
+    printf( "%s", Name_Field( "StdHW" ) );
+    Print_Array( (FT_Short*)fp->standard_width,
+                 1 );
+    printf( "%s", Name_Field( "StdVW" ) );
+    Print_Array( (FT_Short*)fp->standard_height,
+                 1 );
+    printf( "%s", Name_Field( "StemSnapH" ) );
+    Print_Array( fp->snap_widths,
+                 fp->num_snap_widths );
+    printf( "%s", Name_Field( "StemSnapV" ) );
+    Print_Array( fp->snap_heights,
+                 fp->num_snap_heights );
+    printf( "%s%d\n", Name_Field( "UniqueID" ),
+            fp->unique_id );
+  }
+
+
+  static void
   Print_Sfnt_Tables( FT_Face  face )
   {
     FT_ULong  num_tables, i;
@@ -507,32 +608,43 @@
 
     for( i = 0; i < face->num_charmaps; i++ )
     {
-      FT_Long   format  = FT_Get_CMap_Format( face->charmaps[i] );
-      FT_ULong  lang_id = FT_Get_CMap_Language_ID( face->charmaps[i] );
+      FT_CharMap   cmap = face->charmaps[i];
+      FT_Long      format  = FT_Get_CMap_Format( cmap );
+      FT_ULong     lang_id = FT_Get_CMap_Language_ID( cmap );
+      const char*  encoding;
+      const char*  registry;
 
+      FT_WinFNT_HeaderRec  header;
+
+
+      printf( cmap->encoding ? " %c%2d: %c%c%c%c"
+                             : " %c%2d: none",
+              i == active ? '*' : ' ',
+              i,
+              cmap->encoding >> 24,
+              cmap->encoding >> 16,
+              cmap->encoding >> 8,
+              cmap->encoding );
+
+      printf( ", platform %u, encoding %2u",
+              cmap->platform_id,
+              cmap->encoding_id );
 
       if ( format >= 0 )
-        printf( "  %2d: format %2ld, platform %u, encoding %2u",
-                i,
-                format,
-                face->charmaps[i]->platform_id,
-                face->charmaps[i]->encoding_id );
-      else
-        printf( "  %2d: synthetic, platform %u, encoding %2u",
-                i,
-                face->charmaps[i]->platform_id,
-                face->charmaps[i]->encoding_id );
-
-      if ( lang_id == 0xFFFFFFFFUL )
-        printf( "   (Unicode Variation Sequences)" );
-      else
-        printf( "   language %lu",
-                lang_id );
-
-      if ( i == active )
-        printf( " (active)" );
+        printf( lang_id != 0xFFFFFFFFUL ? ", format %2lu, language %lu "
+                                        : ", format %2lu, UVS",
+                format, lang_id );
+      else if ( !FT_Get_BDF_Charset_ID( face, &encoding, &registry ) )
+        printf( ", charset %s-%s", registry, encoding );
+      else if ( !FT_Get_WinFNT_Header( face, &header ) )
+        printf( header.charset < 10 ? ", charset %hhu"
+                                    : ", charset %hhu <%hhX>",
+                header.charset, header.charset );
 
       printf ( "\n" );
+
+      if ( lang_id == 0xFFFFFFFFUL )  /* nothing further for UVS */
+        continue;
 
       if ( coverage == 2 )
       {
@@ -541,7 +653,7 @@
         FT_String  buf[32];
 
 
-        FT_Set_Charmap( face, face->charmaps[i] );
+        FT_Set_Charmap( face, cmap );
 
         charcode = FT_Get_First_Char( face, &gindex );
         while ( gindex )
@@ -558,7 +670,7 @@
       }
       else if ( coverage == 1 )
       {
-        FT_ULong  next, last = ~1;
+        FT_ULong  next, last = ~1U;
         FT_UInt   gindex;
 
         const char*  f1 = "";
@@ -566,7 +678,7 @@
         const char*  f3 = "";
 
 
-        FT_Set_Charmap( face, face->charmaps[i] );
+        FT_Set_Charmap( face, cmap );
 
         next = FT_Get_First_Char( face, &gindex );
         while ( gindex )
@@ -722,7 +834,7 @@
   {
     FT_ULong    fpgm_length = 0;
     FT_ULong    prep_length = 0;
-    FT_ULong    loca_length = 0;
+    FT_ULong    loca_length;
     FT_ULong    glyf_length = 0;
     FT_UShort   i;
     FT_Byte*    buffer = NULL;
@@ -764,6 +876,23 @@
     Print_Bytecode( buffer, (FT_UShort)prep_length, "prep" );
 
   Glyf:
+    head =     (TT_Header*)FT_Get_Sfnt_Table( face, FT_SFNT_HEAD );
+    maxp = (TT_MaxProfile*)FT_Get_Sfnt_Table( face, FT_SFNT_MAXP );
+
+    if ( head == NULL || maxp == NULL )
+      goto Exit;
+
+    loca_length = head->Index_To_Loc_Format ? 4 * maxp->numGlyphs + 4
+                                            : 2 * maxp->numGlyphs + 2;
+
+    offset = (FT_Byte*)malloc( loca_length );
+    if ( offset == NULL )
+      goto Exit;
+
+    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, offset, &loca_length );
+    if ( error )
+      goto Exit;
+
     error = FT_Load_Sfnt_Table( face, TTAG_glyf, 0, NULL, &glyf_length );
     if ( error || glyf_length == 0 )
       goto Exit;
@@ -776,40 +905,41 @@
     if ( error )
       goto Exit;
 
-    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, NULL, &loca_length );
-    if ( error || loca_length == 0 )
-      goto Exit;
-
-    offset = (FT_Byte*)malloc( loca_length );
-    if ( offset == NULL )
-      goto Exit;
-
-    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, offset, &loca_length );
-    if ( error )
-      goto Exit;
-
-    head =     (TT_Header*)FT_Get_Sfnt_Table( face, FT_SFNT_HEAD );
-    maxp = (TT_MaxProfile*)FT_Get_Sfnt_Table( face, FT_SFNT_MAXP );
-
     for ( i = 0; i < maxp->numGlyphs; i++ )
     {
-      FT_UInt32  loc;
+      FT_UInt32  loc, end;
       FT_UInt16  len;
       char       tag[5];
 
 
       if ( head->Index_To_Loc_Format )
+      {
         loc = (FT_UInt32)offset[4 * i    ] << 24 |
               (FT_UInt32)offset[4 * i + 1] << 16 |
               (FT_UInt32)offset[4 * i + 2] << 8  |
               (FT_UInt32)offset[4 * i + 3];
+        end = (FT_UInt32)offset[4 * i + 4] << 24 |
+              (FT_UInt32)offset[4 * i + 5] << 16 |
+              (FT_UInt32)offset[4 * i + 6] << 8  |
+              (FT_UInt32)offset[4 * i + 7];
+      }
       else
+      {
         loc = (FT_UInt32)offset[2 * i    ] << 9 |
               (FT_UInt32)offset[2 * i + 1] << 1;
+        end = (FT_UInt32)offset[2 * i + 2] << 9 |
+              (FT_UInt32)offset[2 * i + 3] << 1;
+      }
 
-      if ( loc >= glyf_length )
+      if ( end > glyf_length )
+        end = glyf_length;
+
+      if ( loc == end )
+        continue;
+
+      if ( loc + 1 >= end )
       {
-        printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+        printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
         continue;
       }
 
@@ -823,9 +953,9 @@
 
         do
         {
-          if ( loc >= glyf_length )
+          if ( loc + 1 >= end )
           {
-            printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+            printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
             goto Continue;
           }
 
@@ -846,9 +976,11 @@
       else
         loc += 2 * len;
 
-      if ( loc >= glyf_length )
+      if ( loc + 1 >= end )
       {
-        printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+        /* zero-contour glyphs can have no data */
+        if ( len )
+          printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
         continue;
       }
 
@@ -859,14 +991,14 @@
 
       loc += 2;
 
-      if ( len >= glyf_length || loc >= glyf_length - len )
+      if ( loc + len > end )
       {
-        printf( "\nglyf program %hd: invalid size (%d)\n", i, len );
+        printf( "\nglyph %hd: invalid size (%d)\n", i, len );
         continue;
       }
 
       snprintf( tag, sizeof ( tag ), "%04hx", i );
-      printf( "\nglyf program %hd (%.4s)", i, tag );
+      printf( "\nglyph %hd (%.4s)", i, tag );
       Print_Bytecode( buffer + loc, len, tag );
 
     Continue:
@@ -882,7 +1014,7 @@
   static void
   Print_Glyfs( FT_Face  face )
   {
-    FT_ULong    loca_length = 0;
+    FT_ULong    loca_length;
     FT_ULong    glyf_length = 0;
     FT_UShort   i;
     FT_Byte*    buffer = NULL;
@@ -892,10 +1024,28 @@
     FT_Int      simple_overlap    = 0;
     FT_Int      composite         = 0;
     FT_Int      composite_overlap = 0;
+    FT_Int      empty             = 0;
 
     TT_Header*      head;
     TT_MaxProfile*  maxp;
 
+
+    head =     (TT_Header*)FT_Get_Sfnt_Table( face, FT_SFNT_HEAD );
+    maxp = (TT_MaxProfile*)FT_Get_Sfnt_Table( face, FT_SFNT_MAXP );
+
+    if ( head == NULL || maxp == NULL )
+      return;
+
+    loca_length = head->Index_To_Loc_Format ? 4 * maxp->numGlyphs + 4
+                                            : 2 * maxp->numGlyphs + 2;
+
+    offset = (FT_Byte*)malloc( loca_length );
+    if ( offset == NULL )
+      goto Exit;
+
+    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, offset, &loca_length );
+    if ( error )
+      goto Exit;
 
     error = FT_Load_Sfnt_Table( face, TTAG_glyf, 0, NULL, &glyf_length );
     if ( error || glyf_length == 0 )
@@ -909,40 +1059,44 @@
     if ( error )
       goto Exit;
 
-    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, NULL, &loca_length );
-    if ( error || loca_length == 0 )
-      goto Exit;
-
-    offset = (FT_Byte*)malloc( loca_length );
-    if ( offset == NULL )
-      goto Exit;
-
-    error = FT_Load_Sfnt_Table( face, TTAG_loca, 0, offset, &loca_length );
-    if ( error )
-      goto Exit;
-
-    head =     (TT_Header*)FT_Get_Sfnt_Table( face, FT_SFNT_HEAD );
-    maxp = (TT_MaxProfile*)FT_Get_Sfnt_Table( face, FT_SFNT_MAXP );
-
     for ( i = 0; i < maxp->numGlyphs; i++ )
     {
-      FT_UInt32  loc;
+      FT_UInt32  loc, end;
       FT_UInt16  len;
       FT_UShort  flags;
 
 
       if ( head->Index_To_Loc_Format )
+      {
         loc = (FT_UInt32)offset[4 * i    ] << 24 |
               (FT_UInt32)offset[4 * i + 1] << 16 |
               (FT_UInt32)offset[4 * i + 2] << 8  |
               (FT_UInt32)offset[4 * i + 3];
+        end = (FT_UInt32)offset[4 * i + 4] << 24 |
+              (FT_UInt32)offset[4 * i + 5] << 16 |
+              (FT_UInt32)offset[4 * i + 6] << 8  |
+              (FT_UInt32)offset[4 * i + 7];
+      }
       else
+      {
         loc = (FT_UInt32)offset[2 * i    ] << 9 |
               (FT_UInt32)offset[2 * i + 1] << 1;
+        end = (FT_UInt32)offset[2 * i + 2] << 9 |
+              (FT_UInt32)offset[2 * i + 3] << 1;
+      }
 
-      if ( loc >= glyf_length )
+      if ( end > glyf_length )
+        end = glyf_length;
+
+      if ( loc == end )
       {
-        printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+        empty++;
+        continue;
+      }
+
+      if ( loc + 1 >= end )
+      {
+        printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
         continue;
       }
 
@@ -953,9 +1107,9 @@
       {
         composite++;
 
-        if ( loc >= glyf_length )
+        if ( loc + 1 >= end )
         {
-          printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+          printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
           continue;
         }
 
@@ -970,9 +1124,11 @@
 
       loc += 2 * len;
 
-      if ( loc >= glyf_length )
+      if ( loc + 1 >= end )
       {
-        printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+        /* zero-contour glyphs can have no data */
+        if ( len )
+          printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
         continue;
       }
 
@@ -980,9 +1136,9 @@
 
       loc += 2 + len;
 
-      if ( len >= glyf_length )
+      if ( len >= end )
       {
-        printf( "\nglyf program %hd: invalid offset (%d)\n", i, loc );
+        printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
         continue;
       }
 
@@ -999,6 +1155,8 @@
     printf( composite_overlap ? ", with overlap flagged in %d\n"
                               : "\n",
             composite_overlap );
+    if ( empty )
+      printf( "%s%d\n", Name_Field( "   empty" ), empty );
 
   Exit:
     free( buffer );
@@ -1142,10 +1300,29 @@
       printf( "\n" );
       Print_Type( face );
 
-      if ( name_tables && FT_IS_SFNT( face ) )
+      if ( name_tables )
       {
-        printf( "\n" );
-        Print_Sfnt_Names( face );
+        PS_FontInfoRec  font_info;
+        PS_PrivateRec   font_private;
+
+
+        if ( FT_IS_SFNT( face ) )
+        {
+          printf( "\n" );
+          Print_Sfnt_Names( face );
+        }
+
+        if ( FT_Get_PS_Font_Info( face, &font_info ) == FT_Err_Ok )
+        {
+          printf( "\n" );
+          Print_FontInfo_Dictionary( &font_info );
+        }
+
+        if ( FT_Get_PS_Font_Private( face, &font_private ) == FT_Err_Ok )
+        {
+          printf( "\n" );
+          Print_FontPrivate_Dictionary( &font_private );
+        }
       }
 
       if ( tables && FT_IS_SFNT( face ) )

@@ -1,4 +1,5 @@
 #include "grobjs.h"
+#include <stdlib.h>
 #include <string.h>
 
   int  grError = 0;
@@ -14,31 +15,32 @@
   {
     grColor  color;
 
+
     color.value = 0;
 
-    switch (target->mode)
+    switch ( target->mode )
     {
       case gr_pixel_mode_mono:
-        if ( (red|green|blue) )
+        if ( ( red | green | blue ) )
           color.value = 1;
         break;
 
       case gr_pixel_mode_gray:
-        color.value = ( 3*(red   & 0xFF) +
-                        6*(green & 0xFF) +
-                          (blue  & 0xFF) ) / 10;
+        color.value = ( 3 * ( red   & 0xFF ) +
+                        6 * ( green & 0xFF ) +
+                            ( blue  & 0xFF ) ) / 10;
         break;
 
       case gr_pixel_mode_rgb555:
-        color.value = ((red   & 0xF8) << 7) |
-                      ((green & 0xF8) << 2) |
-                      ((blue  & 0xF8) >> 3);
+        color.value = ( ( (uint32_t)red   & 0xF8 ) << 7 ) |
+                      ( ( (uint32_t)green & 0xF8 ) << 2 ) |
+                      ( ( (uint32_t)blue  & 0xF8 ) >> 3 );
         break;
 
       case gr_pixel_mode_rgb565:
-        color.value = ((red   & 0xF8) << 8) |
-                      ((green & 0xFC) << 3) |
-                      ((blue  & 0xF8) >> 3);
+        color.value = ( ( (uint32_t)red   & 0xF8 ) << 8 ) |
+                      ( ( (uint32_t)green & 0xFC ) << 3 ) |
+                      ( ( (uint32_t)blue  & 0xF8 ) >> 3 );
         break;
 
       case gr_pixel_mode_rgb24:
@@ -48,15 +50,16 @@
         break;
 
       case gr_pixel_mode_rgb32:
-        color.chroma[0] = (unsigned char)red;
-        color.chroma[1] = (unsigned char)green;
-        color.chroma[2] = (unsigned char)blue;
-        color.chroma[3] = (unsigned char)alpha;
+        color.value = ( ( (uint32_t)alpha & 0xFF ) << 24 ) |
+                      ( ( (uint32_t)red   & 0xFF ) << 16 ) |
+                      ( ( (uint32_t)green & 0xFF ) <<  8 ) |
+                      ( ( (uint32_t)blue  & 0xFF )       );
         break;
 
       default:
         ;
     }
+
     return color;
   }
 
@@ -140,7 +143,8 @@
   *    grNewBitmap
   *
   * <Description>
-  *    creates a new bitmap or resizes an existing one
+  *    Creates a new bitmap or resizes an existing one.  The allocated
+  *    pixel buffer is not initialized.
   *
   * <Input>
   *    pixel_mode   :: the target surface's pixel_mode
@@ -162,7 +166,9 @@
                             int          height,
                             grBitmap    *bit )
   {
-    int  pitch;
+    int             pitch;
+    unsigned char*  buffer;
+
 
     /* check mode */
     if (check_mode(pixel_mode,num_grays))
@@ -186,7 +192,7 @@
       case gr_pixel_mode_gray  : pitch = ( width + 3 ) & ~3; break;
 
       case gr_pixel_mode_rgb555:
-      case gr_pixel_mode_rgb565: pitch = width*2; break;
+      case gr_pixel_mode_rgb565: pitch = ( width*2 + 3 ) & ~3; break;
 
       case gr_pixel_mode_rgb24 : pitch = ( width*3 + 3 ) & ~3; break;
 
@@ -197,29 +203,20 @@
         return 0;
     }
 
-    if ( !bit->buffer )
+    buffer = (unsigned char*)realloc( bit->buffer,
+                                      (size_t)pitch * (size_t)height );
+    if ( !buffer && pitch && height )
     {
-       bit->buffer = grAlloc( (size_t)pitch * (size_t)height );
-       if (!bit->buffer) goto Fail;
-    }
-    else  /* resize */
-    {
-       unsigned char*  buffer;
-
-
-       buffer = (unsigned char*)realloc( bit->buffer,
-                                         (size_t)pitch * (size_t)height );
-       if ( buffer || !pitch || !height )
-         bit->buffer = buffer;
-       else
-         goto Fail;
+      grError = gr_err_memory;
+      goto Fail;
     }
 
-    bit->width = width;
-    bit->rows  = height;
-    bit->pitch = pitch;
-    bit->mode  = pixel_mode;
-    bit->grays = num_grays;
+    bit->buffer = buffer;
+    bit->width  = width;
+    bit->rows   = height;
+    bit->pitch  = pitch;
+    bit->mode   = pixel_mode;
+    bit->grays  = num_grays;
 
     return 0;
 
@@ -247,7 +244,7 @@
   extern  void  grDoneBitmap( grBitmap*  bit )
   {
     grFree( bit->buffer );
-    bit->buffer = 0;
+    bit->buffer = NULL;
   }
 
 

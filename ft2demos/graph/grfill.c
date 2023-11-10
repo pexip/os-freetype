@@ -6,17 +6,30 @@ static void
 gr_fill_hline_mono( unsigned char*   line,
                     int              x,
                     int              width,
+                    int              incr,
                     grColor          color )
 {
-  int  c1    = (x >> 3);
-  int  lmask = 0xFF >> (x & 7);
-  int  c2    = ((x+width-1) >> 3);
-  int  rmask = 0x7F8 >> ((x+width-1) & 7);
+  int c1, c2, lmask, rmask;
+
+  if ( incr & ~3 )  /* vertical */
+  {
+    c1 = c2 = x >> 3;
+    lmask = rmask = 0x80 >> (x & 7);
+  }
+  else              /* horizontal */
+  {
+    c1    = x >> 3;
+    lmask = 0xFF >> (x & 7);
+    c2    = (x+width-1) >> 3;
+    rmask = 0x7F8 >> ((x+width-1) & 7);
+    width = 1;
+  }
 
   if ( color.value != 0 )
   {
     if ( c1 == c2 )
-      line[c1] = (unsigned char)( line[c1] | (lmask & rmask));
+      for ( ; width > 0; width--, line += incr )
+        line[c1] = (unsigned char)( line[c1] | (lmask & rmask));
     else
     {
       line[c1] = (unsigned char)(line[c1] | lmask);
@@ -28,7 +41,8 @@ gr_fill_hline_mono( unsigned char*   line,
   else
   {
     if ( c1 == c2 )
-      line[c1] = (unsigned char)( line[c1] & ~(lmask & rmask) );
+      for ( ; width > 0; width--, line += incr )
+        line[c1] = (unsigned char)( line[c1] & ~(lmask & rmask) );
     else
     {
       line[c1] = (unsigned char)(line[c1] & ~lmask);
@@ -43,53 +57,75 @@ static void
 gr_fill_hline_4( unsigned char*  line,
                  int             x,
                  int             width,
+                 int             incr,
                  grColor         color )
 {
-  int  col = color.value | (color.value << 4);
+  int  col = (int)( color.value | ( color.value << 4 ) );
+  int  height;
 
   line += (x >> 1);
-  if ( x & 1 )
-  {
-    line[0] = (unsigned char)((line[0] & 0xF0) | (col & 0x0F));
-    line++;
-    width--;
-  }
 
-  for ( ; width >= 2; width -= 2 )
+  if ( incr & ~3 )  /* vertical */
   {
-    line[0] = (unsigned char)col;
-    line++;
+    height = width;
+    width  = 1;
   }
+  else              /* horizontal */
+    height = 1;
+
+  if ( x & 1 )
+    for ( ; height > 0; height--, width--, line += incr )
+      line[0] = (unsigned char)((line[0] & 0xF0) | (col & 0x0F));
+
+  for ( ; width > 1; width -= 2, line++ )
+    line[0] = (unsigned char)col;
 
   if ( width > 0 )
-    line[0] = (unsigned char)((line[0] & 0x0F) | (col & 0xF0));
+    for ( ; height > 0; height--, line += incr )
+      line[0] = (unsigned char)((line[0] & 0x0F) | (col & 0xF0));
 }
 
 static void
 gr_fill_hline_8( unsigned char*   line,
                  int              x,
                  int              width,
+                 int              incr,
                  grColor          color )
 {
-  memset( line+x, color.value, (unsigned int)width );
+  line += x;
+
+  if ( incr == 1 )
+    memset( line, (int)color.value, (size_t)width );
+  else
+  {
+    /* there might be some pitch */
+    for ( ; width > 0; width--, line += incr )
+      *line = (unsigned char)color.value;
+  }
 }
 
 static void
 gr_fill_hline_16( unsigned char*  _line,
                   int             x,
                   int             width,
+                  int             incr,
                   grColor         color )
 {
   unsigned short*  line = (unsigned short*)_line + x;
 
-  for ( ; width > 0; width-- )
-    *line++ = (unsigned short)color.value;
+  /* adjust what looks like pitch */
+  if ( incr & ~3 )
+    incr >>= 1;
+
+  for ( ; width > 0; width--, line += incr )
+    *line = (unsigned short)color.value;
 }
 
 static void
 gr_fill_hline_24( unsigned char*  line,
                   int             x,
                   int             width,
+                  int             incr,
                   grColor         color )
 {
   int  r = color.chroma[0];
@@ -98,11 +134,15 @@ gr_fill_hline_24( unsigned char*  line,
 
   line += 3*x;
 
-  if (r == g && g == b)
-    memset( line, r, (unsigned int)(width*3) );
+  if ( incr == 1 && r == g && g == b )
+    memset( line, r, (size_t)(width*3) );
   else
   {
-    for ( ; width > 0; width--, line += 3 )
+    /* adjust what does not look like pitch */
+    if ( !( incr & ~3 ) )
+      incr *= 3;
+
+    for ( ; width > 0; width--, line += incr )
     {
       line[0] = (unsigned char)r;
       line[1] = (unsigned char)g;
@@ -112,27 +152,27 @@ gr_fill_hline_24( unsigned char*  line,
 }
 
 static void
-gr_fill_hline_32( unsigned char*  line,
+gr_fill_hline_32( unsigned char*  _line,
                   int             x,
                   int             width,
+                  int             incr,
                   grColor         color )
 {
-  line += 4*x;
+  uint32_t*  line = (uint32_t*)_line + x;
 
-  /* clearly slow */
-  for (; width > 0; width--, line += 4)
-  {
-    line[0] = color.chroma[0];
-    line[1] = color.chroma[1];
-    line[2] = color.chroma[2];
-    line[3] = color.chroma[3];
-  }
+  /* adjust what looks like pitch */
+  if ( incr & ~3 )
+    incr >>= 2;
+
+  for ( ; width > 0; width--, line += incr )
+    *line = color.value;
 }
 
-
+/* these function render vertical lines by passing pitch as increment */
 typedef void  (*grFillHLineFunc)( unsigned char*  line,
                                   int             x,
                                   int             width,
+                                  int             incr,
                                   grColor         color );
 
 static const grFillHLineFunc  gr_fill_hline_funcs[gr_pixel_mode_max] =
@@ -179,7 +219,7 @@ grFillHLine( grBitmap*  target,
   if ( target->pitch < 0 )
     line -= target->pitch*(target->rows-1);
 
-  hline_func( line, x, width, color );
+  hline_func( line, x, width, 1, color );
 }
 
 extern void
@@ -209,8 +249,7 @@ grFillVLine( grBitmap*  target,
   if ( target->pitch < 0 )
     line -= target->pitch*(target->rows-1);
 
-  for ( ; height > 0; height--, line += target->pitch )
-    hline_func( line, x, 1, color );
+  hline_func( line, x, height, target->pitch, color );
 }
 
 extern void
@@ -264,7 +303,7 @@ grFillRect( grBitmap*   target,
   case gr_pixel_mode_rgb565:
   case gr_pixel_mode_rgb555:
     size += 2;
-    hline_func( line, x, width, color );
+    hline_func( line, x, width, 1, color );
     for ( line += size * x; --height > 0; line += target->pitch )
       memcpy( line + target->pitch, line, (size_t)size * (size_t)width );
     break;
@@ -274,7 +313,7 @@ grFillRect( grBitmap*   target,
   case gr_pixel_mode_pal4:
   case gr_pixel_mode_mono:
     for ( ; height-- > 0; line += target->pitch )
-      hline_func( line, x, width, color );
+      hline_func( line, x, width, 1, color );
     break;
 
   default:

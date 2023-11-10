@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2007-2020 by                                              */
+/*  Copyright (C) 2007-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -17,15 +17,10 @@
 #include "common.h"
 #include "mlgetopt.h"
 
-#include FT_OUTLINE_H
-#include FT_LCD_FILTER_H
-#include FT_DRIVER_H
-
-  /* showing driver name -- the two internal header files */
-  /* shouldn't be used in normal programs                 */
-#include FT_MODULE_H
-#include <freetype/internal/ftobjs.h>
-#include <freetype/internal/ftdrv.h>
+#include <freetype/ftdriver.h>
+#include <freetype/ftmodapi.h>  /* showing driver name */
+#include <freetype/ftlcdfil.h>
+#include <freetype/ftoutln.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -189,7 +184,6 @@
     unsigned int   tt_interpreter_versions[3];
     int            num_tt_interpreter_versions;
     int            tt_interpreter_version_idx;
-    FT_Bool        warping;
 
   } ColumnStateRec, *ColumnState;
 
@@ -234,7 +228,6 @@
     FT_UInt  cff_hinting_engine;
     FT_UInt  type1_hinting_engine;
     FT_UInt  t1cid_hinting_engine;
-    FT_Bool  warping;
 
     unsigned int  tt_interpreter_versions[3]  = { 0, 0, 0 };
     int           num_tt_interpreter_versions = 0;
@@ -288,10 +281,6 @@
                      "truetype",
                      "interpreter-version", &dflt_tt_interpreter_version );
 
-    FT_Property_Get( library,
-                     "autofitter",
-                     "warping", &warping );
-
     state->columns[0].use_cboxes             = 0;
     state->columns[0].use_kerning            = 1;
     state->columns[0].use_deltas             = 1;
@@ -313,7 +302,6 @@
     state->columns[0].tt_interpreter_version_idx =
       tt_interpreter_version_idx;
 
-    state->columns[0].warping                = warping;
     state->columns[0].use_custom_lcd_filter  = 0;
     state->columns[0].fw_index               = 2;
     /* FreeType default filter weights */
@@ -573,7 +561,6 @@
     FT_Pos       prev_rsb_delta = 0;
     FT_Pos       x_origin       = x << 6;
     HintMode     rmode          = column->hint_mode;
-    FT_Bool      warping        = column->warping;
     FT_Bool      have_0x0A      = 0;
     FT_Bool      have_0x0D      = 0;
 
@@ -597,10 +584,6 @@
                      "interpreter-version",
                      &column->tt_interpreter_versions
                        [column->tt_interpreter_version_idx] );
-    FT_Property_Set( state->library,
-                     "autofitter",
-                     "warping",
-                     &column->warping );
 
     /* changing a property is in most cases a global operation; */
     /* we are on the safe side if we reload the face completely */
@@ -804,8 +787,8 @@
 
     /* display footer on this column */
     {
-      FT_Module    module = &state->face->driver->root;
-      void*        disp   = state->display.disp;
+      const char*  module_name = FT_FACE_DRIVER_NAME( state->face );
+      void*        disp        = state->display.disp;
 
       const char*  extra;
       const char*  msg;
@@ -815,7 +798,7 @@
       extra = "";
       if ( rmode == HINT_MODE_BYTECODE )
       {
-        if ( !strcmp( module->clazz->module_name, "cff" ) )
+        if ( !strcmp( module_name, "cff" ) )
         {
           switch ( column->cff_hinting_engine )
           {
@@ -828,7 +811,7 @@
           }
         }
 
-        else if ( !strcmp( module->clazz->module_name, "type1" ) )
+        else if ( !strcmp( module_name, "type1" ) )
         {
           switch ( column->type1_hinting_engine )
           {
@@ -841,7 +824,7 @@
           }
         }
 
-        else if ( !strcmp( module->clazz->module_name, "t1cid" ) )
+        else if ( !strcmp( module_name, "t1cid" ) )
         {
           switch ( column->t1cid_hinting_engine )
           {
@@ -854,7 +837,7 @@
           }
         }
 
-        else if ( !strcmp( module->clazz->module_name, "truetype" ) )
+        else if ( !strcmp( module_name, "truetype" ) )
         {
           switch ( column->tt_interpreter_versions[
                      column->tt_interpreter_version_idx] )
@@ -871,8 +854,6 @@
           }
         }
       }
-      else if ( rmode == HINT_MODE_AUTOHINT )
-        extra = warping ? " (+warp)" : " (-warp)";
 
       snprintf( temp, sizeof ( temp ), "%s%s",
                 render_mode_names[column->hint_mode], extra );
@@ -990,10 +971,6 @@
     grBitmap    bit;
 
 
-    if ( mode != gr_pixel_mode_gray  &&
-         mode != gr_pixel_mode_rgb24 )
-      return -1;
-
     grInitDevices();
 
     bit.mode  = mode;
@@ -1012,10 +989,10 @@
     display->bitmap  = &surface->bitmap;
     display->gamma   = GAMMA;
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetTargetGamma( display->surface, display->gamma );
 
-    memset( &display->fore_color, 0, sizeof( grColor ) );
-    memset( &display->back_color, 0xff, sizeof( grColor ) );
+    display->fore_color = grFindColor( display->bitmap,   0,   0,   0, 255 );
+    display->back_color = grFindColor( display->bitmap, 255, 255, 255, 255 );
 
     return 0;
   }
@@ -1025,30 +1002,9 @@
   adisplay_clear( ADisplay  display )
   {
     grBitmap*  bit   = display->bitmap;
-    int        pitch = bit->pitch;
 
 
-    if ( pitch < 0 )
-      pitch = -pitch;
-
-    if ( bit->mode == gr_pixel_mode_gray )
-      memset( bit->buffer,
-              display->back_color.value,
-              (unsigned int)( pitch * bit->rows ) );
-    else
-    {
-      unsigned char*  p = bit->buffer;
-      int             i, j;
-
-
-      for ( i = 0; i < bit->rows; i++ )
-      {
-        for ( j = 0; j < bit->width; j++ )
-          memcpy( p + 3 * j, display->back_color.chroma, 3 );
-
-        p += pitch;
-      }
-    }
+    grFillRect( bit, 0, 0, bit->width, bit->rows, display->back_color );
   }
 
 
@@ -1091,8 +1047,8 @@
     else if ( mode == DISPLAY_MODE_LCD )
       glyph.mode = gr_pixel_mode_lcd;
 
-    grBlitGlyphToBitmap( display->bitmap, &glyph,
-                         x, y, display->fore_color );
+    grBlitGlyphToSurface( display->surface, &glyph,
+                          x, y, display->fore_color );
   }
 
 
@@ -1121,7 +1077,7 @@
     else if ( display->gamma < 0.0001 )
       display->gamma = 0.0;
 
-    grSetTargetGamma( display->bitmap, display->gamma );
+    grSetTargetGamma( display->surface, display->gamma );
   }
 
 
@@ -1171,11 +1127,9 @@
     grWriteln( "  h           cycle hinting mode          A          unhinted               " );
     grWriteln( "  H           cycle hinting engine        B          auto-hinter            " );
     grWriteln( "               (if CFF or TTF)            C          light auto-hinter      " );
-    grWriteln( "  w           toggle warping (if          D          light auto-hinter      " );
-    grWriteln( "               normal auto-hinting)                   (subpixel)            " );
-    grWriteln( "  k           toggle kerning (only        E          native hinter          " );
-    grWriteln( "               from `kern' table)                                           " );
-    grWriteln( "  r           toggle rendering mode                                         " );
+    grWriteln( "  k           toggle kerning (only        D          light auto-hinter      " );
+    grWriteln( "               from `kern' table)                     (subpixel)            " );
+    grWriteln( "  r           toggle rendering mode       E          native hinter          " );
     grWriteln( "  x           toggle layout mode                                            " );
     grWriteln( "                                                                            " );
     grWriteln( "  l           cycle LCD filtering                                           " );
@@ -1315,33 +1269,33 @@
 
     case grKEY( 'H' ):
       {
-        FT_Module  module = &state->face->driver->root;
+        const char*  module_name = FT_FACE_DRIVER_NAME( state->face );
 
 
         if ( column->hint_mode == HINT_MODE_BYTECODE )
         {
-          if ( !strcmp( module->clazz->module_name, "cff" ) )
+          if ( !strcmp( module_name, "cff" ) )
           {
             FTDemo_Event_Cff_Hinting_Engine_Change(
               state->library,
               &column->cff_hinting_engine,
               1 );
           }
-          else if ( !strcmp( module->clazz->module_name, "type1" ) )
+          else if ( !strcmp( module_name, "type1" ) )
           {
             FTDemo_Event_Type1_Hinting_Engine_Change(
               state->library,
               &column->type1_hinting_engine,
               1 );
           }
-          else if ( !strcmp( module->clazz->module_name, "t1cid" ) )
+          else if ( !strcmp( module_name, "t1cid" ) )
           {
             FTDemo_Event_T1cid_Hinting_Engine_Change(
               state->library,
               &column->t1cid_hinting_engine,
               1 );
           }
-          else if ( !strcmp( module->clazz->module_name, "truetype" ) )
+          else if ( !strcmp( module_name, "truetype" ) )
           {
             column->tt_interpreter_version_idx += 1;
             column->tt_interpreter_version_idx %=
@@ -1354,20 +1308,6 @@
                                column->tt_interpreter_version_idx] );
           }
         }
-      }
-      break;
-
-    case grKEY( 'w' ):
-      {
-        FT_Bool  new_warping_state = !column->warping;
-
-
-        error = FT_Property_Set( state->library,
-                                 "autofitter",
-                                 "warping",
-                                 &new_warping_state );
-        if ( !error )
-          column->warping = new_warping_state;
       }
       break;
 
@@ -1482,7 +1422,7 @@
               face->family_name,
               face->style_name,
               basename );
-    grWriteCellString( adisplay->bitmap, 0, 5,
+    grWriteCellString( adisplay->bitmap, 0, 2,
                        buf, adisplay->fore_color );
 
     if ( adisplay->gamma != 0.0 )
@@ -1492,7 +1432,7 @@
               (int)( state->char_size * state->resolution / 72 + 0.5 ),
               state->resolution,
               gamma );
-    grWriteCellString( adisplay->bitmap, 0, 5 + HEADER_HEIGHT,
+    grWriteCellString( adisplay->bitmap, 0, 2 + HEADER_HEIGHT,
                        buf, adisplay->fore_color );
 
   }
@@ -1593,18 +1533,18 @@
         fprintf( stderr, "could not read textfile '%s'\n", textfile );
       else
       {
-        int  tsize;
+        size_t  tsize;
 
 
         fseek( tfile, 0, SEEK_END );
-        tsize = ftell( tfile );
+        tsize = (size_t)ftell( tfile );
 
         fseek( tfile, 0, SEEK_SET );
-        text = (char*)malloc( (unsigned int)( tsize + 1 ) );
+        text = (char*)malloc( tsize + 1 );
 
         if ( text )
         {
-          if ( !fread( text, (unsigned int)tsize, 1, tfile ) )
+          if ( !fread( text, tsize, 1, tfile ) )
           {
             fprintf( stderr, "read error\n" );
             text = (char *)default_text;
@@ -1623,7 +1563,7 @@
     }
 
     /* Initialize display */
-    if ( adisplay_init( adisplay, gr_pixel_mode_rgb24,
+    if ( adisplay_init( adisplay, gr_pixel_mode_none,
                         width, height ) < 0 )
     {
       fprintf( stderr, "could not initialize display!  Aborting.\n" );

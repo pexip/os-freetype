@@ -6,11 +6,11 @@ Author: Paul Wise <pabs@debian.org>
 Bug-Debian: http://bugs.debian.org/520879
 Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/freetype/+bug/239626
 Forwarded: not-needed
-Last-Update: 2019-08-04
+Last-Update: 2021-10-07
 
 --- a/modules.cfg
 +++ b/modules.cfg
-@@ -111,7 +111,7 @@
+@@ -117,7 +117,7 @@
  
  # TrueType GX/AAT table validation.  Needs `ftgxval.c' below.
  #
@@ -19,7 +19,7 @@ Last-Update: 2019-08-04
  
  # Support for streams compressed with gzip (files with suffix .gz).
  #
-@@ -130,7 +130,7 @@
+@@ -136,7 +136,7 @@
  
  # OpenType table validation.  Needs `ftotval.c' below.
  #

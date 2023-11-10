@@ -1,1 +1,2 @@
-ft2demos/man/*.1
+usr/share/man/man1/ft*.1
+usr/share/man/man1/tt*.1

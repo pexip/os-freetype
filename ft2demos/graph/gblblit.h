@@ -17,6 +17,7 @@ typedef enum
   GBLENDER_SOURCE_VRGB,
   GBLENDER_SOURCE_VBGR,
   GBLENDER_SOURCE_BGRA,
+  GBLENDER_SOURCE_MONO,
 
   GBLENDER_SOURCE_MAX
 
@@ -29,7 +30,7 @@ typedef enum
   GBLENDER_TARGET_RGB32,
   GBLENDER_TARGET_RGB24,
   GBLENDER_TARGET_RGB565,
-  GBLENDER_TARGET_BGR565,
+  GBLENDER_TARGET_RGB555,
 
   GBLENDER_TARGET_MAX
 
@@ -37,8 +38,8 @@ typedef enum
 
 typedef struct GBlenderBlitRec_*    GBlenderBlit;
 
-typedef void  (*GBlenderBlitFunc)( GBlenderBlit   blit,
-                                   GBlenderPixel  color );
+typedef void  (*GBlenderBlitFunc)( GBlenderBlit  blit,
+                                   grColor       color );
 
 typedef struct GBlenderBlitRec_
 {
@@ -47,13 +48,9 @@ typedef struct GBlenderBlitRec_
   const unsigned char*  src_line;
   int                   src_pitch;
   int                   src_x;
-  int                   src_y;
   unsigned char*        dst_line;
   int                   dst_pitch;
   int                   dst_x;
-  int                   dst_y;
-  GBlenderSourceFormat  src_format;
-  GBlenderTargetFormat  dst_format;
 
   GBlender              blender;
   GBlenderBlitFunc      blit_func;
@@ -62,14 +59,5 @@ typedef struct GBlenderBlitRec_
 
 
 #define  gblender_blit_run(b,color)  (b)->blit_func( (b), (color) )
-
-
-GBLENDER_API( int )
-grBlitGlyphToSurface( grSurface*  surface,
-                      grBitmap*   glyph,
-                      grPos       x,
-                      grPos       y,
-                      grColor     color );
-
 
 #endif /* GBLBLIT_H_ */

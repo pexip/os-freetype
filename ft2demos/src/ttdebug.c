@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2020 by                                              */
+/*  Copyright (C) 1996-2022 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -52,16 +52,18 @@
 
 
 #include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_MULTIPLE_MASTERS_H
+#include <freetype/freetype.h>
+
+#include <freetype/ftdriver.h>
+#include <freetype/ftmm.h>
+
 #include "common.h"
 #include "strbuf.h"
 #include "mlgetopt.h"
 
-#include FT_DRIVER_H
 
   /* The following header shouldn't be used in normal programs.    */
-  /* `freetype2/src/truetype' must be in the current include path. */
+  /* `freetype/src/truetype' must be in the current include path. */
 #include "ttobjs.h"
 #include "ttdriver.h"
 #include "ttinterp.h"
@@ -1547,7 +1549,7 @@
 
 
     switch( error )
-    #include FT_ERRORS_H
+    #include <freetype/fterrors.h>
 
     fprintf( stderr, "%s\n  error = 0x%04x, %s\n", message, error, str );
 
@@ -1670,6 +1672,7 @@
     op = CUR.code[CUR.IP];
 
     strbuf_init( bs, tempStr, sizeof ( tempStr ) );
+    strbuf_reset( bs );
     strbuf_add( bs, OpStr[op] );
 
     if ( op == 0x40 )  /* NPUSHB */
@@ -1886,25 +1889,25 @@
                 curr->tags[A] & FT_CURVE_TAG_TOUCH_Y ? 'Y' : ' ' );
 
         if ( diff & 1 )
-          print_number( prev->org[A].x,
+          print_number( curr->org[A].x,
                         "[%5ld'%2ld]", "[   -0'%2ld]", "[%8.2f]", "[%8ld]" );
         else
           printf( "          ");
 
         if ( diff & 2 )
-          print_number( prev->org[A].y,
+          print_number( curr->org[A].y,
                         "[%5ld'%2ld]", "[   -0'%2ld]", "[%8.2f]", "[%8ld]" );
         else
           printf( "          ");
 
         if ( diff & 4 )
-          print_number( prev->cur[A].x,
+          print_number( curr->cur[A].x,
                         "[%5ld'%2ld]", "[   -0'%2ld]", "[%8.2f]", "[%8ld]" );
         else
           printf( "          ");
 
         if ( diff & 8 )
-          print_number( prev->cur[A].y,
+          print_number( curr->cur[A].y,
                         "[%5ld'%2ld]", "[   -0'%2ld]", "[%8.2f]", "[%8ld]" );
         else
           printf( "          ");
@@ -2083,7 +2086,8 @@
           int     args;
 
 
-          strbuf_init( temp, temqStr, sizeof ( tempStr ) );
+          strbuf_init( temp, temqStr, sizeof ( temqStr ) );
+          strbuf_reset( temp );
 
           /* first letter of location */
           switch ( CUR.curRange )

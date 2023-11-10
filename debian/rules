@@ -3,9 +3,8 @@
 # This is free software; see the GNU General Public Licence
 # version 2 or later for copying conditions.  There is NO warranty.
 
+include /usr/share/dpkg/architecture.mk
 include /usr/share/dpkg/pkg-info.mk
-
-DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
@@ -19,6 +18,7 @@ udeb_dir := debian/udeb
 udeb_builddir := $(udeb_dir)/build
 udeb_installdir := $(udeb_dir)/install
 configure_flags := --without-bzip2 --without-harfbuzz
+doc_dir := debian/freetype2-doc/usr/share/doc/libfreetype-dev
 
 %:
 	dh $@
@@ -27,33 +27,51 @@ override_dh_autoreconf:
 	dh_autoreconf ./autogen.sh
 
 override_dh_auto_configure:
-	dh_auto_configure --builddir=$(udeb_builddir) -- $(configure_flags) --without-brotli
+ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
+	dh_auto_configure --builddir=$(udeb_builddir) -- $(configure_flags) --without-brotli --without-librsvg
+endif
 	dh_auto_configure -- $(configure_flags)
 
 override_dh_auto_build:
-	sed -i '/^#[[:space:]]*define SIZEOF_LONG/s/[0-9]/__SIZEOF_LONG__/' \
-	    $(udeb_builddir)/ftconfig.h builds/unix/ftconfig.h
+ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_build --builddir=$(udeb_builddir)
+endif
 	dh_auto_build
+ifeq (,$(filter pkg.freetype.nodemos,$(DEB_BUILD_PROFILES)))
 	dh_auto_build --sourcedir=ft2demos -- TOP_DIR=$(CURDIR)
+endif
 
 override_dh_auto_install:
+ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_install --builddir=$(udeb_builddir) --destdir=$(udeb_installdir)
+endif
 	dh_auto_install
+ifeq (,$(filter pkg.freetype.nodemos,$(DEB_BUILD_PROFILES)))
+	dh_auto_install --sourcedir=ft2demos -- TOP_DIR=$(CURDIR)
+endif
 
 override_dh_install:
+ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_install -p libfreetype6-udeb --sourcedir=$(udeb_installdir)
+endif
 	sed -i -e '/dependency_libs/s/'.*'//' debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libfreetype.la
-	dh_install -p freetype2-demos -XREADME
 	dh_install --remaining-packages
 
 override_dh_installdocs-indep:
 	dh_installdocs -p freetype2-doc --doc-main-package=libfreetype-dev \
-	    -Xreference/assets/fonts \
-	    -Xreference/assets/images \
-	    -Xjs/jquery-1.11.0.min.js
-	cp docs/CHANGES debian/freetype2-doc/usr/share/doc/libfreetype-dev/NEWS
-	cp src/pcf/README debian/freetype2-doc/usr/share/doc/libfreetype-dev/pcf/
+	    -Xreference/assets/images
+	cp docs/CHANGES $(doc_dir)/NEWS
+	cp src/pcf/README $(doc_dir)/pcf/
+	sed -i 's@\.\./\.\./js@js@' \
+	    $(doc_dir)/documentation.html \
+	    $(doc_dir)/ft2faq.html \
+	    $(doc_dir)/index.html \
+	    $(doc_dir)/design/*.html \
+	    $(doc_dir)/glyphs/*.html \
+	    $(doc_dir)/tutorial/*.html
+	sed -i '/gstatic/d' $(doc_dir)/reference/*.html
+	sed -i '/googleapis/d' $(doc_dir)/reference/*.html
+	sed -i '/assets\/javascripts/d' $(doc_dir)/reference/*.html
 
 override_dh_installchangelogs:
 	dh_installchangelogs -p freetype2-demos ft2demos/ChangeLog
