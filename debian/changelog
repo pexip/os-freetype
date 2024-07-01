@@ -1,3 +1,12 @@
+freetype (2.12.1+dfsg-5+deb12u3) bookworm; urgency=medium
+
+  * Disable the experimental and incomplete COLRv1 API once again.
+  * debian/patches:
+    + Re-enable disable_COLRv1.patch.
+    + get_colr_glyph_paint.patch: Use correct predicate before function call.
+
+ -- Hugh McMaster <hugh.mcmaster@outlook.com>  Sat, 24 Feb 2024 22:01:26 +1100
+
 freetype (2.12.1+dfsg-5+deb12u2+pexip24u3) pexip-bookworm; urgency=medium
 
   * New versioning scheme
