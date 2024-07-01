@@ -1,3 +1,9 @@
+freetype (2.12.1+dfsg-5+deb12u3+pexip24u1) pexip; urgency=medium
+
+  * New upstream release
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Mon, 01 Jul 2024 08:52:23 +0000
+
 freetype (2.12.1+dfsg-5+deb12u3) bookworm; urgency=medium
 
   * Disable the experimental and incomplete COLRv1 API once again.
