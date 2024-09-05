@@ -85,9 +85,9 @@
 		  baseline.</em></p>
 
               <p align="center">
-		<img src="layout.png"
-		     height="179"
-		     width="458"
+		<img src="glyph-metrics-1.svg"
+                     width="50%"
+                     height="50%"
 		     alt="horizontal layout">
 	      </p>
 	    </li>
@@ -96,9 +96,9 @@
 		the baseline:</p>
 
               <p align="center">
-		<img src="layout2.png"
-		     height="275"
-		     width="162"
+		<img src="glyph-metrics-2.svg"
+                     width="15%"
+                     height="15%"
 		     alt="vertical layout">
               </p>
 	    </li>
@@ -108,7 +108,7 @@
 	  <h3 id="section-2">2. Typographic metrics and bounding
 	    boxes</h3>
 
-	  <p>A various number of face metrics are defined for all
+	  <p>Various face metrics are defined for all
 	    glyphs in a given font.</p>
 
 	  <ul>
@@ -186,7 +186,7 @@
 
 	  <h3 id="section-3">3. Bearings and Advances</h3>
 
-	  <p>Each glyph has also distances called <em>bearings</em> and
+	  <p>Each glyph also has distances called <em>bearings</em> and
 	    <em>advances</em>.  The actual values depend on the
 	    layout, as the same glyph can be used to render text
 	    either horizontally or vertically:</p>
@@ -231,9 +231,11 @@
 	    <li class="emph">
               <p>Advance height</p>
 
-              <p>The vertical distance to decrement the pen position
-		after a glyph has been rendered.  It is always zero
-		for horizontal layouts, and positive for vertical
+              <p>The vertical distance to decrement (for top-to-bottom
+		writing) or increment (for bottom-to-top writing,
+		which is extremely rare) the pen position after a
+		glyph has been rendered.  It is always zero for
+		horizontal layouts, and positive for vertical
 		layouts.</p>
 	
               <p>In the FreeType API, this is also called
@@ -285,18 +287,18 @@
 	  <p>Here is a picture giving all the details for horizontal metrics:
 
 	  <p align="center">
-	    <img src="metrics.png"
-		 height="253"
-		 width="388"
+	    <img src="glyph-metrics-3.svg"
+                 width="45%"
+                 height="45%"
 		 alt="horizontal glyph metrics">
 	  </p>
 
 	  <p>And here is another one for the vertical metrics:</p>
 
 	  <p align="center">
-	    <img src="metrics2.png"
-		 height="278"
-		 width="294"
+	    <img src="glyph-metrics-4.svg"
+                 width="40%"
+                 height="40%"
 		 alt="vertical glyph metrics">
 	  </p>
 
@@ -428,7 +430,7 @@
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 13-Feb-2018</p>
+          <p>Last update: 6-Oct-2022</p>
         </div>
       </div>
     </div>

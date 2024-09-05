@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2021-2022 by                                              */
+/*  Copyright (C) 2021-2024 by                                              */
 /*  D. Turner, R.Wilhelm, W. Lemberg, and Anuj Verma                        */
 /*                                                                          */
 /*                                                                          */
@@ -275,6 +275,7 @@
     int  speed = 10 * (int)status.scale;
 
 
+    grRefreshSurface( display->surface );
     grListenSurface( display->surface, 0, &event );
 
     switch ( event.key )
@@ -660,7 +661,7 @@
 
 
   static void
-  usage( char*  exec_name )
+  usage( const char*  exec_name )
   {
     fprintf( stderr,
       "\n"
@@ -684,13 +685,11 @@
   main( int     argc,
         char**  argv )
   {
-    FT_Error  err       = FT_Err_Ok;
-    char*     exec_name = NULL;
+    FT_Error     err       = FT_Err_Ok;
+    const char*  exec_name = ft_basename( argv[0] );
 
     int  flip_y = 1;
 
-
-    exec_name = ft_basename( argv[0] );
 
     if ( argc != 3 )
       usage( exec_name );
@@ -704,7 +703,8 @@
       goto Exit;
     }
 
-    display = FTDemo_Display_New( NULL, "800x600x24" );
+    display = FTDemo_Display_New( NULL, "800x600x24",
+                                  "Signed Distance Field Viewer" );
     if ( !display )
     {
       printf( "Failed to create FTDemo_Display\n" );
@@ -714,7 +714,6 @@
     FT_CALL( FT_Property_Set( handle->library, "sdf", "flip_y", &flip_y ) );
     FT_CALL( FT_Property_Set( handle->library, "bsdf", "flip_y", &flip_y ) );
 
-    grSetTitle( display->surface, "Signed Distance Field Viewer" );
     event_color_change();
 
     FT_CALL( FT_New_Face( handle->library, argv[2], 0, &status.face ) );
@@ -726,8 +725,6 @@
 
       draw();
       write_header();
-
-      grRefreshSurface( display->surface );
 
     } while ( !Process_Event() );
 

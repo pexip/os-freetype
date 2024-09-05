@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2022 by                                              */
+/*  Copyright (C) 1996-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -38,7 +38,7 @@
 #define  HEADER_HEIGHT  12
 
 #define  MAXPTSIZE    500               /* dtp */
-#define  MAX_MM_AXES    6
+#define  MAX_MM_AXES   16
 
   /* definitions in ftcommon.c */
   unsigned int
@@ -74,7 +74,7 @@
   static unsigned int  cff_hinting_engine;
   static unsigned int  type1_hinting_engine;
   static unsigned int  t1cid_hinting_engine;
-  static unsigned int  tt_interpreter_versions[3];
+  static unsigned int  tt_interpreter_versions[2];
   static unsigned int  num_tt_interpreter_versions;
   static unsigned int  tt_interpreter_version_idx;
 
@@ -82,28 +82,25 @@
 
   static FT_Error      error;        /* error returned by FreeType? */
 
-  static grSurface*    surface;      /* current display surface     */
-  static grBitmap*     bit;          /* current display bitmap      */
+  static grSurface*  surface;        /* current display surface     */
+  static grBitmap*   bit;            /* current display bitmap      */
+  static grColor     fore_color;     /* foreground on black back    */
 
-  static int  width     = DIM_X;     /* window width                */
-  static int  height    = DIM_Y;     /* window height               */
+  static unsigned short  width  = DIM_X;     /* window width        */
+  static unsigned short  height = DIM_Y;     /* window height       */
 
-  static int  num_glyphs;            /* number of glyphs            */
   static int  ptsize;                /* current point size          */
+  static int  res       = 72;        /* resolution, dpi             */
 
   static int  hinted    = 1;         /* is glyph hinting active?    */
   static int  grouping  = 1;         /* is axis grouping active?    */
   static int  antialias = 1;         /* is anti-aliasing active?    */
-  static int  use_sbits = 1;         /* do we use embedded bitmaps? */
+  static int  fillrule  = 0x0;       /* flip fill flags or not?     */
+  static int  overlaps  = 0x0;       /* flip overlap flags or not?  */
+
+  static int  num_glyphs;            /* number of glyphs            */
   static int  Num;                   /* current first glyph index   */
-
-  static int  res       = 72;
-
-  static grColor  fore_color = { 255 };
-
-  static int  Fail;
-
-  static int  graph_init  = 0;
+  static int  Fail;                  /* number of failed glyphs     */
 
   static int  render_mode = 1;
 
@@ -112,7 +109,7 @@
   static FT_Fixed      requested_pos[MAX_MM_AXES];
   static unsigned int  requested_cnt =  0;
   static unsigned int  used_num_axis =  0;
-  static int           increment     = 20;  /* for axes */
+  static double        increment     = 0.025;  /* for axes */
 
   /*
    * We use the following arrays to support both the display of all axes and
@@ -201,18 +198,18 @@
 
 
       /*
-       * `ftmulti' is a diagnostic tool that should be able to handle
-       * pathological situations also; for this reason the looping code
-       * below is a bit more complicated in comparison to normal
+       * `ftmulti' is a diagnostic tool that should also be able to
+       * handle pathological situations; for this reason the looping
+       * code below is a bit more complicated in comparison to normal
        * applications.
        *
        * In particular, the loop handles the following cases gracefully,
        * avoiding grouping.
        *
-       * . multiple non-hidden axes have the same tag
+       * . multiple non-hidden axes that have the same tag
        *
-       * . multiple hidden axes have the same tag without a corresponding
-       *   non-hidden axis
+       * . multiple hidden axes that have the same tag without a
+       *   corresponding non-hidden axis.
        */
 
       idx = -1;
@@ -237,7 +234,7 @@
         }
         else
         {
-          /* otherwise check whether we have already assigned this axis */
+          /* otherwise, check whether we have already assigned this axis */
           for ( j = 0; j <= idx; j++ )
             if ( shown_axes[j] == i )
             {
@@ -282,6 +279,7 @@
   static void
   Clear_Display( void )
   {
+    /* fast black background */
     memset( bit->buffer, 0, (size_t)bit->rows *
                             (size_t)( bit->pitch < 0 ? -bit->pitch
                                                      : bit->pitch ) );
@@ -292,7 +290,8 @@
   static void
   Init_Display( void )
   {
-    grBitmap  bitmap = { height, width, 0, gr_pixel_mode_gray, 256, NULL };
+    grBitmap  bitmap = { (int)height, (int)width, 0,
+                         gr_pixel_mode_none, 256, NULL };
 
 
     grInitDevices();
@@ -303,7 +302,9 @@
 
     bit = (grBitmap*)surface;
 
-    graph_init = 1;
+    fore_color = grFindColor( bit, 255, 255, 255, 255 );  /* white */
+
+    grSetTitle( surface, "FreeType Variations Viewer - press ? for help" );
   }
 
 
@@ -319,6 +320,11 @@
     /* first, render the glyph image into a bitmap */
     if ( glyph->format != FT_GLYPH_FORMAT_BITMAP )
     {
+      /* overlap flags mitigate AA rendering artifacts in overlaps */
+      /* by oversampling; even-odd fill rule reveals the overlaps; */
+      /* toggle these flag to test the effects                     */
+      glyph->outline.flags ^= overlaps | fillrule;
+
       error = FT_Render_Glyph( glyph, antialias ? FT_RENDER_MODE_NORMAL
                                                 : FT_RENDER_MODE_MONO );
       if ( error )
@@ -354,12 +360,12 @@
   }
 
 
-  static void
+  static FT_Error
   Reset_Scale( int  pointSize )
   {
-    (void)FT_Set_Char_Size( face,
-                            pointSize << 6, pointSize << 6,
-                            (FT_UInt)res, (FT_UInt)res );
+    return FT_Set_Char_Size( face,
+                             pointSize << 6, pointSize << 6,
+                             (FT_UInt)res, (FT_UInt)res );
   }
 
 
@@ -367,47 +373,33 @@
   LoadChar( unsigned int  idx,
             int           hint )
   {
-    int  flags;
+    int  flags = FT_LOAD_NO_BITMAP;
 
-
-    flags = FT_LOAD_DEFAULT;
 
     if ( !hint )
       flags |= FT_LOAD_NO_HINTING;
-
-    if ( !use_sbits )
-      flags |= FT_LOAD_NO_BITMAP;
 
     return FT_Load_Glyph( face, idx, flags );
   }
 
 
   static FT_Error
-  Render_All( unsigned int  first_glyph,
-              int           pt_size )
+  Render_All( int  first_glyph )
   {
-    FT_F26Dot6    start_x, start_y, step_y, x, y;
-    unsigned int  i;
+    int  start_x = 18 * 8;
+    int  start_y = size->metrics.y_ppem * 4 / 5 + HEADER_HEIGHT * 3;
+    int  step_y  = size->metrics.y_ppem + 10;
+    int  x, y, w, i;
 
-
-    start_x = 4;
-    start_y = pt_size + HEADER_HEIGHT *
-                        ( num_shown_axes > MAX_MM_AXES / 2 ? 6 : 5 );
-
-    step_y = size->metrics.y_ppem + 10;
 
     x = start_x;
     y = start_y;
 
     i = first_glyph;
 
-#if 0
-    while ( i < first_glyph + 1 )
-#else
-    while ( i < (unsigned int)num_glyphs )
-#endif
+    while ( i < num_glyphs )
     {
-      if ( !( error = LoadChar( i, hinted ) ) )
+      if ( !( error = LoadChar( (unsigned int)i, hinted ) ) )
       {
 #ifdef DEBUG
         if ( i <= first_glyph + 6 )
@@ -422,18 +414,18 @@
         }
 #endif
 
-        Render_Glyph( x, y );
-
-        x += ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
-
-        if ( x + size->metrics.x_ppem > bit->width )
+        w = ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
+        if ( x + w > bit->width - 4 )
         {
           x  = start_x;
           y += step_y;
 
-          if ( y >= bit->rows )
+          if ( y >= bit->rows - size->metrics.y_ppem / 5 )
             return FT_Err_Ok;
         }
+
+        Render_Glyph( x, y );
+        x += w;
       }
       else
         Fail++;
@@ -446,19 +438,15 @@
 
 
   static FT_Error
-  Render_Text( unsigned int  first_glyph,
-               int           pt_size )
+  Render_Text( int  first_glyph )
   {
-    FT_F26Dot6    start_x, start_y, step_y, x, y;
-    unsigned int  i;
+    int  start_x = 18 * 8;
+    int  start_y = size->metrics.y_ppem * 4 / 5 + HEADER_HEIGHT * 3;
+    int  step_y  = size->metrics.y_ppem + 10;
+    int  x, y, w, i;
 
     const unsigned char*  p;
 
-
-    start_x = 4;
-    start_y = pt_size + ( num_shown_axes > MAX_MM_AXES / 2 ? 52 : 44 );
-
-    step_y = size->metrics.y_ppem + 10;
 
     x = start_x;
     y = start_y;
@@ -490,18 +478,18 @@
         }
 #endif
 
-        Render_Glyph( x, y );
-
-        x += ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
-
-        if ( x + size->metrics.x_ppem > bit->width )
+        w = ( ( glyph->metrics.horiAdvance + 32 ) >> 6 ) + 1;
+        if ( x + w > bit->width - 4 )
         {
           x  = start_x;
           y += step_y;
 
-          if ( y >= bit->rows )
+          if ( y >= bit->rows - size->metrics.y_ppem / 5 )
             return FT_Err_Ok;
         }
+
+        Render_Glyph( x, y );
+        x += w;
       }
       else
         Fail++;
@@ -552,33 +540,34 @@
     grLn();
     grWriteln( "Use the following keys:");
     grLn();
-    grWriteln( "?           display this help screen" );
-    grWriteln( "A           toggle axis grouping" );
-    grWriteln( "a           toggle anti-aliasing" );
-    grWriteln( "h           toggle outline hinting" );
-    grWriteln( "b           toggle embedded bitmaps" );
-    grWriteln( "space       toggle rendering mode" );
+    grWriteln( "F1, ?       display this help screen" );
+    grWriteln( "q, ESC      quit ftmulti" );
     grLn();
-    grWriteln( "p, n        previous/next font" );
+    grWriteln( "F2          toggle axis grouping" );
+    grWriteln( "F3          toggle fill rule flags" );
+    grWriteln( "F4          toggle overlap flags" );
+    grWriteln( "F5          toggle outline hinting" );
+    grWriteln( "F6          cycle through hinting engines (if available)" );
     grLn();
-    grWriteln( "H           cycle through hinting engines (if available)" );
+    grWriteln( "Tab         toggle anti-aliasing" );
+    grWriteln( "Space       toggle rendering mode" );
+    grLn();
+    grWriteln( ", .         previous/next font" );
     grLn();
     grWriteln( "Up, Down    change pointsize by 1 unit" );
     grWriteln( "PgUp, PgDn  change pointsize by 10 units" );
     grLn();
     grWriteln( "Left, Right adjust index by 1" );
-    grWriteln( "F7, F8      adjust index by 10" );
-    grWriteln( "F9, F10     adjust index by 100" );
-    grWriteln( "F11, F12    adjust index by 1000" );
+    grWriteln( "F7, F8      adjust index by 16" );
+    grWriteln( "F9, F10     adjust index by 256" );
+    grWriteln( "F11, F12    adjust index by 4096" );
     grLn();
-    grWriteln( "F1, F2      adjust first axis" );
-    grWriteln( "F3, F4      adjust second axis" );
-    grWriteln( "F5, F6      adjust third axis" );
-    grWriteln( "1, 2        adjust fourth axis" );
-    grWriteln( "3, 4        adjust fifth axis" );
-    grWriteln( "5, 6        adjust sixth axis" );
+    grWriteln( "a, A        adjust axis 0" );
+    grWriteln( "b, B        adjust axis 1" );
+    grWriteln( "..." );
+    grWriteln( "p, P        adjust axis 16" );
     grLn();
-    grWriteln( "i, I        adjust axis range increment" );
+    grWriteln( "-, +        adjust axis range increment" );
     grLn();
     grWriteln( "Axes marked with an asterisk are hidden." );
     grLn();
@@ -607,10 +596,11 @@
   Process_Event( void )
   {
     grEvent       event;
-    int           i;
+    double        i;
     unsigned int  axis;
 
 
+    grRefreshSurface( surface );
     grListenSurface( surface, 0, &event );
 
     if ( event.type == gr_event_resize )
@@ -622,49 +612,45 @@
     case grKEY( 'q' ):
       return 0;
 
+    case grKeyF1:
     case grKEY( '?' ):
       Help();
       break;
 
+    case grKEY( ',' ):
+    case grKEY( '.' ):
+      return (int)event.key;
+
     /* mode keys */
 
-    case grKEY( 'A' ):
+    case grKeyF2:
       grouping = !grouping;
       new_header = grouping ? "axis grouping is now on"
                             : "axis grouping is now off";
       set_up_axes();
       break;
 
-    case grKEY( 'a' ):
-      antialias  = !antialias;
-      new_header = antialias ? "anti-aliasing is now on"
-                             : "anti-aliasing is now off";
+    case grKeyF3:
+      fillrule  ^= FT_OUTLINE_EVEN_ODD_FILL;
+      new_header = fillrule
+                     ? "fill rule flags are flipped"
+                     : "fill rule flags are unchanged";
       break;
 
-    case grKEY( 'b' ):
-      use_sbits  = !use_sbits;
-      new_header = use_sbits
-                     ? "embedded bitmaps are now used if available"
-                     : "embedded bitmaps are now ignored";
+    case grKeyF4:
+      overlaps  ^= FT_OUTLINE_OVERLAP;
+      new_header = overlaps
+                     ? "overlap flags are flipped"
+                     : "overlap flags are unchanged";
       break;
 
-    case grKEY( 'n' ):
-    case grKEY( 'p' ):
-      return (int)event.key;
-
-    case grKEY( 'h' ):
+    case grKeyF5:
       hinted     = !hinted;
       new_header = hinted ? "glyph hinting is now active"
                           : "glyph hinting is now ignored";
       break;
 
-    case grKEY( ' ' ):
-      render_mode ^= 1;
-      new_header   = render_mode ? "rendering all glyphs in font"
-                                 : "rendering test text string";
-      break;
-
-    case grKEY( 'H' ):
+    case grKeyF6:
       if ( !strcmp( font_format, "CFF" ) )
         FTDemo_Event_Cff_Hinting_Engine_Change( library,
                                                 &cff_hinting_engine,
@@ -681,129 +667,120 @@
         tt_interpreter_version_change();
       break;
 
-    /* MM related keys */
-
-    case 'i':
-      /* value 100 is arbitrary */
-      if ( increment < 100 )
-        increment += 1;
+    case grKeyTab:
+      antialias  = !antialias;
+      new_header = antialias ? "anti-aliasing is now on"
+                             : "anti-aliasing is now off";
       break;
 
-    case 'I':
-      if ( increment > 1 )
-        increment -= 1;
+    case grKEY( ' ' ):
+      render_mode ^= 1;
+      new_header   = render_mode ? "rendering all glyphs in font"
+                                 : "rendering test text string";
       break;
 
-    case grKeyF1:
+    /* MM-related keys */
+
+    case grKEY( '+' ):
+      if ( increment < 0.1 )
+        increment *= 2.0;
+      break;
+
+    case grKEY( '-' ):
+      if ( increment > 0.01 )
+        increment *= 0.5;
+      break;
+
+    case grKEY( 'a' ):
+    case grKEY( 'b' ):
+    case grKEY( 'c' ):
+    case grKEY( 'd' ):
+    case grKEY( 'e' ):
+    case grKEY( 'f' ):
+    case grKEY( 'g' ):
+    case grKEY( 'h' ):
+    case grKEY( 'i' ):
+    case grKEY( 'j' ):
+    case grKEY( 'k' ):
+    case grKEY( 'l' ):
+    case grKEY( 'm' ):
+    case grKEY( 'n' ):
+    case grKEY( 'o' ):
+    case grKEY( 'p' ):
       i = -increment;
-      axis = 0;
+      axis = event.key - 'a';
       goto Do_Axis;
 
-    case grKeyF2:
+    case grKEY( 'A' ):
+    case grKEY( 'B' ):
+    case grKEY( 'C' ):
+    case grKEY( 'D' ):
+    case grKEY( 'E' ):
+    case grKEY( 'F' ):
+    case grKEY( 'G' ):
+    case grKEY( 'H' ):
+    case grKEY( 'I' ):
+    case grKEY( 'J' ):
+    case grKEY( 'K' ):
+    case grKEY( 'L' ):
+    case grKEY( 'M' ):
+    case grKEY( 'N' ):
+    case grKEY( 'O' ):
+    case grKEY( 'P' ):
       i = increment;
-      axis = 0;
-      goto Do_Axis;
-
-    case grKeyF3:
-      i = -increment;
-      axis = 1;
-      goto Do_Axis;
-
-    case grKeyF4:
-      i = increment;
-      axis = 1;
-      goto Do_Axis;
-
-    case grKeyF5:
-      i = -increment;
-      axis = 2;
-      goto Do_Axis;
-
-    case grKeyF6:
-      i = increment;
-      axis = 2;
-      goto Do_Axis;
-
-    case grKEY( '1' ):
-      i = -increment;
-      axis = 3;
-      goto Do_Axis;
-
-    case grKEY( '2' ):
-      i = increment;
-      axis = 3;
-      goto Do_Axis;
-
-    case grKEY( '3' ):
-      i = -increment;
-      axis = 4;
-      goto Do_Axis;
-
-    case grKEY( '4' ):
-      i = increment;
-      axis = 4;
-      goto Do_Axis;
-
-    case grKEY( '5' ):
-      i = -increment;
-      axis = 5;
-      goto Do_Axis;
-
-    case grKEY( '6' ):
-      i = increment;
-      axis = 5;
+      axis = event.key - 'A';
       goto Do_Axis;
 
     /* scaling related keys */
 
     case grKeyPageUp:
-      i = 10;
+      ptsize += 10;
       goto Do_Scale;
 
     case grKeyPageDown:
-      i = -10;
+      ptsize -= 10;
       goto Do_Scale;
 
     case grKeyUp:
-      i = 1;
+      ptsize++;
       goto Do_Scale;
 
     case grKeyDown:
-      i = -1;
+      ptsize--;
       goto Do_Scale;
 
     /* glyph index related keys */
 
     case grKeyLeft:
-      i = -1;
+      Num--;
       goto Do_Glyph;
 
     case grKeyRight:
-      i = 1;
+      Num++;
       goto Do_Glyph;
 
     case grKeyF7:
-      i = -10;
+      Num -= 16;
       goto Do_Glyph;
 
     case grKeyF8:
-      i = 10;
+      Num += 16;
       goto Do_Glyph;
 
     case grKeyF9:
-      i = -100;
+      Num -= 256;
       goto Do_Glyph;
 
     case grKeyF10:
-      i = 100;
+      Num += 256;
       goto Do_Glyph;
 
     case grKeyF11:
-      i = -1000;
+      Num -= 4096;
       goto Do_Glyph;
 
     case grKeyF12:
-      i = 1000;
+      Num += 4096;
       goto Do_Glyph;
 
     default:
@@ -815,32 +792,28 @@
     if ( axis < num_shown_axes )
     {
       FT_Var_Axis*  a;
-      FT_Fixed      pos;
+      FT_Fixed      pos, rng;
       unsigned int  n;
 
 
       /* convert to real axis index */
       axis = (unsigned int)shown_axes[axis];
+      a    = multimaster->axis + axis;
 
-      a   = multimaster->axis + axis;
+      rng = a->maximum - a->minimum;
       pos = design_pos[axis];
 
-      /*
-       * Normalize i.  Changing by 20 is all very well for PostScript fonts,
-       * which tend to have a range of ~1000 per axis, but it's not useful
-       * for mac fonts, which have a range of ~3.  And it's rather extreme
-       * for optical size even in PS.
-       */
-      pos += FT_MulDiv( i, a->maximum - a->minimum, 1000 );
+      pos += (FT_Fixed)( i * rng );
       if ( pos < a->minimum )
-        pos = a->minimum;
-      if ( pos > a->maximum )
         pos = a->maximum;
+      if ( pos > a->maximum )
+        pos = a->minimum;
 
-      /* for MM fonts, round the design coordinates to integers,         */
+      /* for MM fonts or large ranges, round the design coordinates      */
       /* otherwise round to two decimal digits to make the PS name short */
-      if ( !FT_IS_SFNT( face ) )
-        pos = FT_RoundFix( pos );
+      if ( !FT_IS_SFNT( face ) || rng > 0x200000 )
+        pos = i > 0 ? FT_CeilFix( pos )
+                    : FT_FloorFix( pos );
       else
       {
         double  x;
@@ -871,15 +844,14 @@
     return 1;
 
   Do_Scale:
-    ptsize += i;
     if ( ptsize < 1 )
       ptsize = 1;
     if ( ptsize > MAXPTSIZE )
       ptsize = MAXPTSIZE;
+    Reset_Scale( ptsize );
     return 1;
 
   Do_Glyph:
-    Num += i;
     if ( Num < 0 )
       Num = 0;
     if ( Num >= num_glyphs )
@@ -889,7 +861,7 @@
 
 
   static void
-  usage( char*  execname )
+  usage( const char*  execname )
   {
     fprintf( stderr,
       "\n"
@@ -897,7 +869,7 @@
       "--------------------------------------------------------\n"
       "\n" );
     fprintf( stderr,
-      "Usage: %s [options] pt font ...\n"
+      "Usage: %s [options] [pt] font ...\n"
       "\n",
              execname );
     fprintf( stderr,
@@ -908,9 +880,7 @@
       "  font         The font file(s) to display.\n"
       "\n" );
     fprintf( stderr,
-      "  -w W         Set window width to W pixels (default: %dpx).\n"
-      "  -h H         Set window height to H pixels (default: %dpx).\n"
-      "\n",
+      "  -d WxH       Set window dimensions (default: %ux%u).\n",
              DIM_X, DIM_Y );
     fprintf( stderr,
       "  -e encoding  Specify encoding tag (default: no encoding).\n"
@@ -918,7 +888,7 @@
       "               `ADOB' (Adobe standard), `ADBC' (Adobe custom).\n"
       "  -r R         Use resolution R dpi (default: 72dpi).\n"
       "  -f index     Specify first glyph index to display.\n"
-      "  -d \"axis1 axis2 ...\"\n"
+      "  -a \"axis1 axis2 ...\"\n"
       "               Specify the design coordinates for each\n"
       "               variation axis at start-up.\n"
       "\n"
@@ -933,22 +903,18 @@
   main( int    argc,
         char*  argv[] )
   {
-    int    old_ptsize, orig_ptsize, file;
+    int    orig_ptsize, file;
     int    first_glyph = 0;
-    int    XisSetup = 0;
-    char*  execname;
     int    option;
     int    file_loaded;
 
     unsigned int  n;
 
     unsigned int  dflt_tt_interpreter_version;
-    unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
-                                  TT_INTERPRETER_VERSION_38,
+    unsigned int  versions[2] = { TT_INTERPRETER_VERSION_35,
                                   TT_INTERPRETER_VERSION_40 };
+    const char*   execname = ft_basename( argv[0] );
 
-
-    execname = ft_basename( argv[0] );
 
     /* Initialize engine */
     error = FT_Init_FreeType( &library );
@@ -970,7 +936,7 @@
     FT_Property_Get( library,
                      "truetype",
                      "interpreter-version", &dflt_tt_interpreter_version );
-    for ( n = 0; n < 3; n++ )
+    for ( n = 0; n < 2; n++ )
     {
       error = FT_Property_Set( library,
                                "truetype",
@@ -987,15 +953,20 @@
 
     while ( 1 )
     {
-      option = getopt( argc, argv, "d:e:f:h:r:vw:" );
+      option = getopt( argc, argv, "a:d:e:f:h:r:vw:" );
 
       if ( option == -1 )
         break;
 
       switch ( option )
       {
-      case 'd':
+      case 'a':
         parse_design_coords( optarg );
+        break;
+
+      case 'd':
+        if ( sscanf( optarg, "%hux%hu", &width, &height ) != 2 )
+          usage( execname );
         break;
 
       case 'e':
@@ -1003,13 +974,7 @@
         break;
 
       case 'f':
-        first_glyph = atoi( optarg );
-        break;
-
-      case 'h':
-        height = atoi( optarg );
-        if ( height < 1 )
-          usage( execname );
+        sscanf( optarg, "%i", &first_glyph );
         break;
 
       case 'r':
@@ -1033,12 +998,6 @@
         }
         /* break; */
 
-      case 'w':
-        width = atoi( optarg );
-        if ( width < 1 )
-          usage( execname );
-        break;
-
       default:
         usage( execname );
         break;
@@ -1048,13 +1007,18 @@
     argc -= optind;
     argv += optind;
 
-    if ( argc <= 1 )
+    if ( argc == 0 )
       usage( execname );
 
-    if ( sscanf( argv[0], "%d", &orig_ptsize ) != 1 )
+    if ( argc > 1 && sscanf( argv[0], "%d", &orig_ptsize ) == 1 )
+    {
+      argc--;
+      argv++;
+    }
+    else
       orig_ptsize = 64;
 
-    file = 1;
+    file = 0;
 
   NewFile:
     ptsize      = orig_ptsize;
@@ -1069,7 +1033,9 @@
       goto Display_Font;
     }
 
-    font_format = FT_Get_Font_Format( face );
+    error = Reset_Scale( ptsize );
+    if ( error )
+      goto Display_Font;
 
     if ( encoding != FT_ENCODING_NONE )
     {
@@ -1114,12 +1080,15 @@
 
     for ( n = 0; n < used_num_axis; n++ )
     {
+      FT_Var_Axis*  a = multimaster->axis + n;
+
+
       design_pos[n] = n < requested_cnt ? requested_pos[n]
-                                        : multimaster->axis[n].def;
-      if ( design_pos[n] < multimaster->axis[n].minimum )
-        design_pos[n] = multimaster->axis[n].minimum;
-      else if ( design_pos[n] > multimaster->axis[n].maximum )
-        design_pos[n] = multimaster->axis[n].maximum;
+                                        : a->def;
+      if ( design_pos[n] < a->minimum )
+        design_pos[n] = a->minimum;
+      else if ( design_pos[n] > a->maximum )
+        design_pos[n] = a->maximum;
 
       /* for MM fonts, round the design coordinates to integers */
       if ( !FT_IS_SFNT( face ) )
@@ -1130,26 +1099,19 @@
     if ( error )
       goto Display_Font;
 
-    file_loaded++;
+    file_loaded = 1;
 
-    Reset_Scale( ptsize );
-
-    num_glyphs = face->num_glyphs;
-    glyph      = face->glyph;
-    size       = face->size;
+    font_format = FT_Get_Font_Format( face );
+    num_glyphs  = face->num_glyphs;
+    glyph       = face->glyph;
+    size        = face->size;
 
   Display_Font:
     /* initialize graphics if needed */
-    if ( !XisSetup )
-    {
-      XisSetup = 1;
+    if ( !surface )
       Init_Display();
-    }
 
-    grSetTitle( surface, "FreeType Glyph Viewer - press ? for help" );
-    old_ptsize = ptsize;
-
-    if ( file_loaded >= 1 )
+    if ( file_loaded )
     {
       Fail = 0;
       Num  = first_glyph;
@@ -1172,16 +1134,16 @@
       strbuf_init( header, Header, sizeof ( Header ) );
       strbuf_reset( header );
 
-      if ( file_loaded >= 1 )
+      if ( file_loaded )
       {
         switch ( render_mode )
         {
         case 0:
-          Render_Text( (unsigned int)Num, ptsize );
+          Render_Text( Num );
           break;
 
         default:
-          Render_All( (unsigned int)Num, ptsize );
+          Render_All( Num );
         }
 
         strbuf_format( header, "%.50s %.50s (file %.100s)",
@@ -1201,47 +1163,24 @@
         grWriteCellString( bit, 0, 2 * HEADER_HEIGHT, Header, fore_color );
 
         strbuf_reset( header );
-        strbuf_add( header, "axes:" );
-
+        strbuf_format( header, "axes (\361 %.1f%%):", 100.0 * increment );
+        grWriteCellString( bit, 0, 4 * HEADER_HEIGHT, Header, fore_color );
+        for ( n = 0; n < num_shown_axes; n++ )
         {
-          unsigned int  limit = num_shown_axes > MAX_MM_AXES / 2
-                                  ? MAX_MM_AXES / 2
-                                  : num_shown_axes;
-
-
-          for ( n = 0; n < limit; n++ )
-          {
-            int  axis = shown_axes[n];
-
-
-            strbuf_format( header, "  %.50s%s: %.02f",
-                           multimaster->axis[axis].name,
-                           hidden[axis] ? "*" : "",
-                           design_pos[axis] / 65536.0 );
-          }
-        }
-        grWriteCellString( bit, 0, 3 * HEADER_HEIGHT, Header, fore_color );
-
-        if ( num_shown_axes > MAX_MM_AXES / 2 )
-        {
-          unsigned int  limit = num_shown_axes;
+          int  axis = shown_axes[n];
 
 
           strbuf_reset( header );
-          strbuf_add( header, "     " );
-
-          for ( n = MAX_MM_AXES / 2; n < limit; n++ )
-          {
-            int  axis = shown_axes[n];
-
-
-            strbuf_format( header, "  %.50s%s: %.02f",
-                           multimaster->axis[axis].name,
-                           hidden[axis] ? "*" : "",
-                           design_pos[axis] / 65536.0 );
-          }
-
-          grWriteCellString( bit, 0, 4 * HEADER_HEIGHT, Header, fore_color );
+          strbuf_format( header, "%c %.50s%s:",
+                         n + 'A',
+                         multimaster->axis[axis].name,
+                         hidden[axis] ? "*" : "" );
+          if ( design_pos[axis] & 0xFFFF )
+            strbuf_format( header, "% .2f", design_pos[axis] / 65536.0 );
+          else
+            strbuf_format( header,   "% d", design_pos[axis] / 65536 );
+          grWriteCellString( bit, 0, (int)( n + 5 ) * HEADER_HEIGHT,
+                             Header, fore_color );
         }
 
         {
@@ -1265,19 +1204,16 @@
                          : "CID Type 1 (Adobe)" );
           else if ( !strcmp( font_format, "TrueType" ) )
             format_str = ( tt_ver == TT_INTERPRETER_VERSION_35
-                                   ? "TrueType (v35)"
-                                   : ( tt_ver == TT_INTERPRETER_VERSION_38
-                                       ? "TrueType (v38)"
-                                       : "TrueType (v40)" ) );
+                         ? "TrueType (v35)"
+                         : "TrueType (v40)" );
 
           strbuf_reset( header );
           strbuf_format(
             header,
-            "size: %dpt, first glyph: %d, format: %s, axis incr.: %.1f%%",
+            "size: %dpt, first glyph: %d, format: %s",
             ptsize,
             Num,
-            format_str,
-            increment / 10.0 );
+            format_str );
         }
       }
       else
@@ -1286,14 +1222,13 @@
                        ft_basename( argv[file] ) );
 
       grWriteCellString( bit, 0, HEADER_HEIGHT, Header, fore_color );
-      grRefreshSurface( surface );
 
       if ( !( key = Process_Event() ) )
         goto End;
 
-      if ( key == 'n' )
+      if ( key == grKEY( '.' ) )
       {
-        if ( file_loaded >= 1 )
+        if ( file_loaded )
           FT_Done_Face( face );
 
         if ( file < argc - 1 )
@@ -1302,31 +1237,24 @@
         goto NewFile;
       }
 
-      if ( key == 'p' )
+      if ( key == grKEY( ',' ) )
       {
-        if ( file_loaded >= 1 )
+        if ( file_loaded )
           FT_Done_Face( face );
 
-        if ( file > 1 )
+        if ( file > 0 )
           file--;
 
         goto NewFile;
       }
 
-      if ( key == 'H' )
+      if ( key == grKeyF6 )
       {
         /* enforce reloading */
-        if ( file_loaded >= 1 )
+        if ( file_loaded )
           FT_Done_Face( face );
 
         goto NewFile;
-      }
-
-      if ( ptsize != old_ptsize )
-      {
-        Reset_Scale( ptsize );
-
-        old_ptsize = ptsize;
       }
     }
 
@@ -1334,12 +1262,13 @@
     grDoneSurface( surface );
     grDoneDevices();
 
-    free            ( multimaster );
+    FT_Done_MM_Var  ( library, multimaster );
     FT_Done_Face    ( face        );
     FT_Done_FreeType( library     );
 
     printf( "Execution completed successfully.\n" );
     printf( "Fails = %d\n", Fail );
+    fflush( stdout );  /* clean mintty pipes */
 
     exit( 0 );      /* for safety reasons */
     /* return 0; */ /* never reached */

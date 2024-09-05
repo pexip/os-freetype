@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2004-2022 by                                              */
+/*  Copyright (C) 2004-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -327,6 +327,7 @@
     int      ret = 0;
 
 
+    grRefreshSurface( display->surface );
     grListenSurface( display->surface, 0, &event );
 
     if ( event.type == gr_event_resize )
@@ -372,13 +373,12 @@
     char  buf[4];
     int   i;
 
-    display = FTDemo_Display_New( NULL, DIM "x24" );
+    display = FTDemo_Display_New( NULL, DIM "x24",
+                        "FreeType Gamma Matcher - press ? for help" );
     if ( !display )
     {
       PanicZ( "could not allocate display surface" );
     }
-
-    grSetTitle( display->surface, "FreeType Gamma Matcher - press ? for help" );
 
     grNewBitmap( bit1.mode, bit1.grays, bit1.width, bit1.rows, &bit1 );
     GammaGrid( &bit1 );
@@ -427,8 +427,6 @@
 
       grWriteCellString( display->bitmap, x - 20, y + 170,
                          "Gamma", display->fore_color );
-
-      grRefreshSurface( display->surface );
     } while ( Process_Event() == 0 );
 
     FTDemo_Display_Done( display );

@@ -4,7 +4,7 @@
  *
  *    basic object classes definitions
  *
- *  Copyright (C) 1999-2022 by
+ *  Copyright (C) 1999-2024 by
  *  The FreeType Development Team - www.freetype.org
  *
  *
@@ -93,11 +93,11 @@
   *   size  :: size in bytes of the requested block
   *
   * <Return>
-  *   the memory block address. 0 in case of error
+  *   the memory block address. NULL in case of error
   *
   ********************************************************************/
 
-  extern unsigned char*
+  extern void*
   grAlloc( size_t  size );
 
 

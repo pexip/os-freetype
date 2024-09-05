@@ -1,32 +1,66 @@
-freetype (2.12.1+dfsg-5+deb12u4) bookworm-security; urgency=high
+freetype (2.13.3+dfsg-1) unstable; urgency=medium
 
-  * Non-maintainer upload by the Security Team.
-  * Minimal stop-gap fix for CVE-2025-27363
-
- -- Salvatore Bonaccorso <carnil@debian.org>  Fri, 14 Mar 2025 20:57:00 +0100
-
-freetype (2.12.1+dfsg-5+deb12u3) bookworm; urgency=medium
-
-  * Disable the experimental and incomplete COLRv1 API once again.
+  * New upstream version 2.13.3.
+  * debian/control:
+    + Build-Depend on pkgconf instead of pkg-config.
+    + Sort the Build-Depends list.
+    + Raise Standards-Version to 4.7.0 from 4.6.2 (no changes needed).
+  * debian/copyright: Update for FreeType 2.13.3 and 2024.
   * debian/patches:
-    + Re-enable disable_COLRv1.patch.
-    + get_colr_glyph_paint.patch: Use correct predicate before function call.
+    + ftoption.patch: Refresh due to upstream changes.
+    + hide-donations-information.patch: Update description.
+  * debian/tests/control: Depend on pkgconf instead of pkg-config.
 
- -- Hugh McMaster <hugh.mcmaster@outlook.com>  Sat, 24 Feb 2024 22:01:26 +1100
+ -- Hugh McMaster <hmc@debian.org>  Thu, 05 Sep 2024 22:09:27 +1000
 
-freetype (2.12.1+dfsg-5+deb12u2) bookworm; urgency=high
+freetype (2.13.2+dfsg-1) unstable; urgency=medium
 
-  * debian/patches: Temporarily revert disable_COLRv1.patch to allow
-    Chromium to start (Closes: #1053142).
+  * New upstream version 2.13.2:
+    + Better support for CFF2 variation fonts.
+    + TrueType interpreter version 38 has been removed.
+  * debian/patches: Drop ftlint.patch and ftmulti.patch (applied upstream).
 
- -- Hugh McMaster <hugh.mcmaster@outlook.com>  Fri, 29 Sep 2023 22:27:32 +1000
+ -- Hugh McMaster <hmc@debian.org>  Mon, 28 Aug 2023 21:12:08 +1000
 
-freetype (2.12.1+dfsg-5+deb12u1) bookworm; urgency=medium
+freetype (2.13.1+dfsg-1) unstable; urgency=medium
 
-  * debian/patches: Disable COLRv1 support, which was unintentionally enabled
-    by upstream in this version of FreeType (Closes: #1051816).
+  * New upstream version 2.13.1:
+    + TrueType interpreter version 38 has been deactivated.
+    + Updates to the 'ftbench', 'ftview' and 'ftmulti' demo programs.
+  * debian/control: Drop transitional package libfreetype6-dev
+    (Closes: #1038235).
+  * debian/copyright: Update for FreeType 2.13.1.
+  * debian/patches:
+    + Refresh ftoption.patch.
+    + ftlint.patch: Instruct man(1) to run the `tbl` preprocessor.
+    + ftmulti.patch: Fix spelling and comments in src/ftmulti.c.
+  * libfreetype6: Update symbols file.
+  * debian/rules: Exclude sitemap.xml.gz during dh_installdocs-indep.
 
- -- Hugh McMaster <hugh.mcmaster@outlook.com>  Mon, 25 Sep 2023 19:45:10 +1000
+ -- Hugh McMaster <hmc@debian.org>  Thu, 17 Aug 2023 21:53:14 +1000
+
+freetype (2.13.0+dfsg-1) unstable; urgency=medium
+
+  * New upstream version 2.13.0:
+    + The 'COLR' v1 API is now considered stable.
+    + TrueType interpreter version 38  (also known as 'Infinality') has been
+      deprecated and will be removed in the next upstream version.
+    + TrueType interpreter version 40 remains the default.
+    + Various updates to the demo programs.
+  * debian/control:
+    + Update Maintainer email address.
+    + {Build-}Depend on libbz2-dev.
+  * debian/copyright: Update for FreeType 2.13.0 and 2023.
+  * debian/patches:
+    + Drop CVE-*, fix-wild-free-svg and hardening patches.
+    + Refresh hide-donations-information.patch.
+    + Rename enable-subpixel-rendering.patch to ftoption.patch.
+    + Enable long PCF font family names in ftoption.h.
+  * debian/rules: Update configure flags for main and udeb builds.
+  * freetype2-doc: Update Lintian overrides.
+  * libfreetype6: Update symbols file.
+
+ -- Hugh McMaster <hmc@debian.org>  Thu, 13 Jul 2023 21:39:06 +1000
 
 freetype (2.12.1+dfsg-5) unstable; urgency=medium
 

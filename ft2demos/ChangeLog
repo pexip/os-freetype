@@ -1,3 +1,2222 @@
+2024-08-12  Werner Lemberg  <wl@gnu.org>
+
+	* Version 2.13.3 released.
+	==========================
+
+	Tag sources with 'VER-2-13-3'.
+
+	* README: Updated.
+	* meson.build: Updated.
+	* man/*.1: Updated.
+
+2024-08-12  Werner Lemberg  <wl@gnu.org>
+
+	subprojects/*.wrap: Updated.
+
+2024-06-21  Werner Lemberg  <wl@gnu.org>
+
+	ftcommon.c (FTDemo_Icon): Sync with unsigned variables in `FT_Outline`.
+
+2024-06-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Sync with unsigned variables in `FT_Outline`.
+
+	* src/ftinspect/glyphcomponents/glyphpointnumbers.cpp, src/ftgrid.c,
+	src/ftlint.c, src/ftstring.c: Update some variable types.
+
+2024-04-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblblit.c (grBlitGlyphToSurface): Validate the source buffer.
+
+	Thanks to Marc Schönefeld for the report.
+
+2024-01-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Update all copyright notices.
+
+2023-12-14  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftdump.c (Print_Glyfs): Avoid numeric overflow.
+
+	Reported by Marc Schönefeld <marc.schoenefeld@gmx.org>.
+
+2023-12-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (Explore): Minor improvement.
+
+2023-12-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* builds/windows/msvc/.gitignore: Added.
+
+2023-12-10  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[msbuild] Backport solution and projects.
+
+2023-12-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[msbuild] Isolate more properties.
+
+	* builds/windows/msvc/*.vcxproj: Move `IntDir` and `OutDir` to...
+	* builds/windows/msvc/ft2demos.props: ... here.
+
+2023-12-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[msbuild] Streamline the process.
+
+	MSBuild.exe can now be fired from the root folder without options.
+
+	* builds/windows/msvc/ft2demos.sln: Relocated to...
+	* MSBuild.sln: ... here with minor changes.
+	* MSBuild.rsp: New file with command line options.
+
+2023-12-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[msbuild] Isolate common options.
+
+	* builds/windows/msvc/*.vcxproj: Move common options to...
+	* builds/windows/msvc/ft2demos.props: ... this imported file.
+
+2023-11-18  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftlint] Count X- and Y-turns.
+
+	The number of turns reflects the glyph complexity and the workload
+	for the B/W rasterizer.
+
+	* src/ftlint.c (Explore): New function to count turns.
+	(Main): Report them.
+
+2023-11-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (Examine): Minor improvement.
+
+2023-11-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (header): Look up the render mode.
+
+2023-11-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (main): Spell out the render mode.
+
+2023-11-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (main): Sync and report loading options.
+
+2023-10-05  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add PostScript constructed name display for MM/GX fonts.
+
+	Fixes #57 . Added a text box showing current constructed PostScript name
+	with MM/GX coords included according to TN #5902.
+
+	* src/ftinspect/panels/settingpanelmmgx.cpp,
+	  src/ftinspect/panels/settingpanelmmgx.hpp:
+	  Add the PostScript name text box.
+	  Track the dirty state of the axes, so when all axes are in "default" state
+	  the "basic" PS name will be displayed (e.g. "NotoSansCJKtc-DemiLight"),
+	  while when any axis has its value modified, the constructed PS name will
+	  be displayed (e.g. "NotoSansCJKTC_350wght").
+	  Even when the value equals to the default one, as long as the value was
+	  touched by user, the name will be the constructed one. To clear the dirty
+	  state, the "Def" button for each axis, or the "Reset to Default" button
+	  should be used.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add two fields tracking PS name (one with "basic" name, and one possibly
+	  constructed from MM/GX coords).
+
+	* src/ftinspect/engine/fontinfo.cpp: Change to use the PS name from engine.
+
+2023-10-05  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Separate the `FTC_FaceID` of faces/sizes for rendering and ...
+
+	... information retrieval.
+
+	This fixes the PostScript name display in the Font Info tab.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Use the highest bit of `FTC_FaceID` to indicate that the face/size is for
+	  rendering (safe for some modification to the face, e.g. MM/GX coords).
+
+2023-10-03  Charlie Jiang  <w@chariri.moe>
+
+	* src/ftmulti.c: Fix crash when exiting due to `FT_Get_MM_Var` and `free` mismatch.
+
+2023-08-25  Werner Lemberg  <wl@gnu.org>
+
+	* Version 2.13.2 released.
+	==========================
+
+	Tag sources with 'VER-2-13-2'.
+
+	* README: Updated.
+	* meson.build: Updated.
+	* man/*.1: Updated.
+
+2023-08-25  Werner Lemberg  <wl@gnu.org>
+
+	Fix clang warnings.
+
+	* graph/gblblit.c (gblender_glyph_upgray), src/ftmulti.c (Render_All): Add
+	  cast.
+	* src/ftdump.c (get_english_name_entry): Initialize `name`.
+
+2023-08-24  Werner Lemberg  <wl@gnu.org>
+
+	* subprojects/*.wrap: Updated.
+
+2023-08-17  Hugh McMaster  <hugh.mcmaster@outlook.com>
+
+	ftlint.1: Instruct man(1) to run the groff `tbl` preprocessor
+
+	The latest version of groff (1.23.0) emits a warning when it detects the
+	use of table macros (.TS, .TE) with no .TW (table width) macro defined:
+
+	  tbl preprocessor failed, or it or soelim was not run; table(s) likely
+	  not rendered (TE macro called with TW register undefined).
+
+	The warning occurs because the `tbl` preprocessor was not invoked by
+	the `man` command. To fix the issue, we need to instruct man(1) to
+	run the `tbl` preprocessor before rendering the source as text.
+
+	This issue was detected by Debian's Lintian tool.
+
+2023-08-13  Hugh McMaster  <hmc@debian.org>
+
+	* src/ftmulti.c: Miscellaneous spelling and readability fixes.
+
+	 * Update comments.
+	 * Fix a typo: dimentions -> dimensions.
+
+2023-08-06  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix default named instance handling.
+
+	Now the named instance selector no longer doubles the default named instance.
+	`FT_Get_Default_Named_Instance` is used to get the default NI index.
+	The default one is labeled as " (default)".
+
+	* src/ftinspect/widgets/tripletselector.cpp: Properly handle the new 1-based
+	  named instance indices. Label the default NI correctly.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `Engine::defualtNamedInstanceIndex`.
+
+	* src/ftinspect/engine/mmgx.cpp: Change comments.
+
+2023-08-06  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix named instances switching.
+
+	* src/ftinspect/engine/mmgx.cpp, src/ftinspect/engine/mmgx.hpp:
+	  Load the default values of MMGX axes from the named instance instead of
+	  the global default one.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Switch the named instance using `FT_Set_Named_Instance` when loading
+	  fonts.
+
+2023-07-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (usage): Document the `-a` option.
+
+2023-07-26  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix the glyph index selector layout when the window resizes.
+
+	Fixes #26. When the window resizes, the invisible tabs don't get notified.
+	Therefore, when the active tab changes, we need to trigger a manual
+	relayouting of invisible tabs.
+
+	* src/ftinspect/widgets/glyphindexselector.hpp,
+	  src/ftinspect/widgets/glyphindexselector.cpp:
+	  Extract public method `relayoutNavigation` from `resizeEvent`.
+
+	* src/ftinspect/panels/abstracttab.hpp: Add `relayout` virtual method.
+
+	* src/ftinspect/maingui.cpp: Call `AbstractTab::relayout` on the new tab
+	  when the active tab changes.
+
+	* src/ftinspect/panels/singular.cpp, src/ftinspect/panels/singular.hpp,
+	  src/ftinspect/panels/continuous.cpp, src/ftinspect/panels/continuous.hpp:
+	  Implement `relayout` method and call `relayoutNavigation` of the glyph
+	  index selector in `relayout`.
+
+2023-07-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (Print_MM_Info): Fix signedness mismatch.
+
+2023-07-21  Jouk Jansen  <joukj@hrem.nano.tudelft.nl>
+
+	* vms_make.com: Synchronize with similar changes in the FreeType library.
+
+2023-07-16  Hin-Tak Leung  <htl10@users.sourceforge.net>
+
+	src/rsvg-port.c: Correct usage of `FT_Bool` vs `gboolean` comparison.
+
+	`TRUE` in this context is from glib headers (`glib-2.0/glib/gmacros.h`),
+	imported indirectly from rsvg headers.  It should not be used for comparison
+	with `FT_Bool` types.  Other usages of `TRUE/FALSE` in this file is okay.
+
+2023-07-08  Hin-Tak Leung  <htl10@users.sourceforge.net>
+
+	rsvg-port.c: Simplify usage of `rsvg_handle_render_*`.
+
+	* src/rsvg-port.c (rsvg_port_preset_slot): Remove usage of
+	`rsvg_handle_render_document` (and `rsvg_handle_render_cairo`).  They are
+	functionally the same as `rsvg_handle_render_layer` (and
+	`rsvg_handle_render_cairo_sub`) with argument id set to NULL.
+
+2023-07-08  Hin-Tak Leung  <htl10@users.sourceforge.net>
+
+	* src/ttdebug.c (RunIns): Signature fix.
+
+	A somewhat similar change to what happened in the FreeType library:
+
+	  commit 95d635eab1b08a0051de07b6c33067d2c1984848
+	  Author: Werner Lemberg <wl@gnu.org>
+	  Date:   Sun May 7 08:34:32 2023 +0200
+
+	      [truetype] Signature fixes.
+
+2023-06-24  Werner Lemberg  <wl@gnu.org>
+
+	* Version 2.13.1 released.
+	==========================
+
+	Tag sources with 'VER-2-13-1'.
+
+	* README: Updated.
+	* meson.build: Updated.
+	* man/*.1: Updated.
+	* subprojects/zlib.wrap: Updated.
+
+2023-06-24  Werner Lemberg  <wl@gnu.org>
+
+	* src/rsvg-port.c (rsvg_port_preset_slot): Fix C++ compilation warning.
+
+2023-06-03  Hin-Tak Leung  <htl10@users.sourceforge.net>
+
+	Fix out-of-memory conditions with newer 'librsvg'.
+
+	Excerpts from `rsvg_handle_get_intrinsic_dimensions` section in
+	`librsvg/rsvg.h`:
+
+	```
+	Before librsvg 2.54.0, the `out_has_width` and `out_has_height` arguments
+	would be set to true or false depending on whether the SVG document actually
+	had `width` and `height` attributes, respectively.
+
+	However, since librsvg 2.54.0, `width` and `height` are now [geometry
+	properties](https://www.w3.org/TR/SVG2/geometry.html) per the SVG2
+	specification; they are not plain attributes.  SVG2 made it so that the
+	initial value of those properties is `auto`, which is equivalent to
+	specifying a value of `100%`.  In this sense, even SVG documents which lack
+	`width` or `height` attributes semantically have to make them default to
+	`100%`.  This is why since librsvg 2.54.0, `out_has_width` and
+	`out_has_heigth` are always returned as `TRUE`, since with SVG2 all
+	documents *have* a default width and height of `100%`.
+	```
+
+	* src/rsvg-port.c (rsvg_port_preset_slot): Adjust for change of behavior of
+	`rsvg_handle_get_intrinsic_dimensions` in librsvg 2.53+.  We avoid
+	`LIBRSVG_CHECK_VERSION` as it is possible to build against one version but
+	run against another version.
+
+2023-06-03  Hin-Tak Leung  <htl10@users.sourceforge.net>
+
+	Fix 'librsvg' deprecation warnings.
+
+	* src/rsvg-port.c (rsvg_port_preset_slot): Use `rsvg_handle_render_document`
+	instead of `rsvg_handle_render_cairo`, and `rsvg_handle_render_layer`
+	instead of `rsvg_handle_render_cairo_sub`, as suggested by the warning,
+	conditionally on newer librsvg 2.52+.
+
+2023-05-22  Werner Lemberg  <wl@gnu.org>
+
+	man/ftview.1: Improve documentation of option `-l`.
+
+2023-05-19  Seigo Nonaka  <nona@google.com>
+
+	* src/ftmulti.c (main): Make program actually handle option `-a`.
+
+2023-05-19  Seigo Nonaka  <nona@google.com>
+
+	[ftbench] New option `-a` to apply design coordinates.
+
+	The performance of MM fonts is quite different in comparison to static
+	fonts.  To be able to get benchmarks for the former, add a new command-line
+	option to pass design coordinates.
+
+	* src/ftbench.c: Include `ftmm.h`.
+	(MAX_MM_AXES): New macro.
+	(multimaster, design_pos, requested_pos, requested_cnt, used_num_axes): New
+	global variables.
+	(get_face): Load MM data if requested.
+	(parse_design_coords): New function.
+
+	* man/ftbench.1: Updated.
+
+2023-05-15  Werner Lemberg  <wl@gnu.org>
+
+	[ftview] New key 'Z' to flip SVG rendering.
+
+	* src/ftcommon.h (FTDemo_Handle): New field `use_svg`.
+	* src/ftcommon.c (FTDemo_New, FTDemo_Update_Current_Flags): Handle it.
+
+	* src/ftview.c (Process_Event): Make key 'Z' toggle SVG usage.
+	(event_help, write_header): Updated.
+
+2023-05-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench] Set up cache earlier.
+
+	* src/ftbench.c (main): Run `FTC_Manager_New` and `FTC_*Cache_New`
+	earlier and decide the test availability accordingly.
+	(test_*_cache,benchmark): Do not check if cache is set.
+
+2023-05-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	*src/ftbench.c (test_stroke): Test outline glyphs only.
+
+2023-05-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Assure cache setup, clean exit.
+
+2023-05-12  Ben Wagner  <bungeman@chromium.org>
+
+	Correct type of icon_span
+
+	The `icon_span` is used as a `FT_SpanFunc`. To avoid undefined behavior
+	and a CFI sanitizer report, this function needs to called through a
+	pointer of the same type. Fix this by making `icon_span` take the right
+	parameter types and cast the argument in the function body.
+
+	* src/ftcommon.c (icon_span): take correct parameters and cast in
+	function body. (FTDemo_Icon): remove cast
+
+2023-05-12  Ben Wagner  <bungeman@chromium.org>
+
+	[graph] Correct function pointer types
+
+	Building the demos with the CFI sanitizer detects a number of uses of
+	undefined behavior in the Minimalist Graphics Subsystem where an
+	indirect function call is made through a pointer of a different type.
+	All of these cases worked in practice since the differing argument
+	types were the same size and would have the same pointer value at
+	runtime.
+
+	Change the functions to take the correct types and downcast inside the
+	function.
+
+	* graph/beos/grbeos.cpp: remove casts
+
+	* graph/mac/grmac.c: correct return type of `listen_event`, remove casts
+
+	* graph/os2/gros2pm.c: correct function signatures, downcast inside
+	functions, remove function pointer casts
+
+	* graph/win32/grwin32.c: ditto
+
+	* graph/x11/grx11.c: ditto
+
+2023-05-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench] Use proper `face_requester`.
+	
+	It is wrong to forfeit the face ownership to the cache manager. Fixes #29.
+	
+	* src/ftbench.c (face_requester): Call `get face`.
+	(main): Never pass `face` to the cache manager.
+
+2023-05-10  Werner Lemberg  <wl@gnu.org>
+
+	subprojects/*.wrap: Updated.
+
+2023-05-09  Jouk Jansen  <joukj@hrem.nano.tudelft.nl>
+
+	vms_make.com: Correctly handle 'libbz2'.
+
+2023-05-08  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftdump.c (Print_Sfnt_Tables): Insert spaces between bytes.
+
+2023-05-08  Werner Lemberg  <wl@gnu.org>
+
+	[ftdump] Show more variation font info.
+
+	* src/ftdump.c (Print_MM_Axes): Rename to...
+	(Print_MM_Info): ...this.
+	Show Variation Font PostScript name prefix.
+	Show named instances.
+
+2023-05-08  Werner Lemberg  <wl@gnu.org>
+
+	[ftdump] Code cleanup.
+
+	* src/ftdump.c (Print_MM_Axes): Move code to find an English name entry
+	to...
+	(get_english_name_entry): ... this new function.
+
+2023-05-08  Werner Lemberg  <wl@gnu.org>
+
+	* src/output.c: Handle `\0` specially.
+
+	Broken or intentionally invalidated fonts might contain NULL bytes at
+	arbitrary places.
+
+2023-05-05  suzuki toshiya  <mpsuzuki@hiroshima-u.ac.jp>
+
+	[ftdump] Print CID-keyed font properties if available.
+
+	* src/ftdump.c
+
+	(FT_CID_MAX): New macro.
+
+	(usage): Mention the CID coverage in `-c' and `-C'
+	options.
+
+	(Print_UInt_Range): New function to print 2 numbers
+	with a separator if needed.
+
+	(Print_CIDs): New function to print the implemented
+	CIDs in a compressed syntax.  If a case
+	`gid_N < gid_M && CID_N > CID_M' is found, ftdump
+	aborts and guide the user to file the issue.
+
+	(Print_ROS_From_Face): New function to print the
+	Registry, Ordering, and Supplement of the CID-keyed
+	fonts, if available.  If `-c' or `-C' option is
+	given, Print_CIDs() is invoked.
+
+	(main): Invoke Print_ROS_From_Face().
+
+2023-04-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftgrid.c (grid_status_rescale): Use PPEM-based scaling.
+
+	The zoom becomes well defined for the given size but the ascender and
+	descender lines might be offside.
+
+2023-04-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	 * src/ftview.c (Render_{All,Fancy,Stroke}): Improve zero-width glyphs.
+
+2023-04-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Render_{All,Fancy,Stroke}): Tweak zero-width glyphs.
+
+	This helps to avoid collisions and unhides zero-width glyphs better.
+
+2023-04-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Use green empty boxes instead.
+
+	* src/ftview.c (status): Store green color.
+	(main): Initialize it.
+	(Render_*): Use it.
+
+2023-04-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (main): Remove unnecessary code.
+
+2023-03-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (main): Handle rendering errors differently.
+
+2023-03-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (main): Fix segfault with bad command line.
+
+2023-03-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftlint] Examine the outline shape complexity.
+
+	Measured as a ratio of the outline half-perimeter to the sum of its
+	control box dimensions, the shape complexity is a useful metric.
+	For example, an `I` and an `M` would have complexities of about
+	1.0 and 2.0, respectively.
+
+	* src/ftlint.c (Examine): Implement the shape complexity calculation.
+	(main) Report the shape complexity.
+	* man/ftlint.1: Add a brief explanation.
+
+2023-03-15  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support gray level scaling.
+
+	See commit 746d5be5: Convert to 256 grays. Slightly tweaked code style.
+
+	* src/ftinspect/engine/rendering.cpp (RenderingEngine::convertBitmapTo8Bpp):
+	Implement it.
+
+2023-03-10  Jouk Jansen  <joukj@hrem.nano.tudelft.nl>
+
+	Update VMS installation support.
+
+2023-03-03  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix uninitialized memory issue and reference misuse.
+
+	Fixes issue #23.
+
+	* src/ftinspect/engine/rendering.cpp (RenderingEngine::convertBitmapTo8Bpp):
+	Properly initialize `FT_Bitmap` since it is a value type.
+	(RenderingEngine::convertBitmapToQImage): Fix the accidental overwriting of
+	the source bitmap when converting the bitmap format (only happens for
+	`FT_PIXEL_MODE_GRAY2` and `FT_PIXEL_MODE_GRAY4`) due to a misuse of a C++
+	reference.
+
+	* src/ftinspect/glyphcomponents/glyphcontinuous.cpp
+	(GlyphContinuous::drawCacheGlyph): Fix a crash when the `QImage` was failed
+	to produce.
+
+2023-03-02  Werner Lemberg  <wl@gnu.org>
+
+	* graph/gblblit.c: Include `<stdlib.h>`.
+
+	This is for the `abs` function.
+
+2023-03-02  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Handle glyphs with 4 or 16 grays.
+
+	* graph/gblblit.c (gblender_glyph_upgray): Convert to 256 grays.
+	(gblender_blit_init): Call it if necessary.
+
+2023-02-27  Werner Lemberg  <wl@gnu.org>
+
+	TrueType mode v38 is gone.
+
+	Synchronize with FreeType commit 'Hide Infinality.' from 2023-Feb-17.
+
+	Both macros `TT_INTERPRETER_VERSION_38` and `TT_INTERPRETER_VERSION_40` have
+	now the same value, leading to numerous compilation errors because we use
+	these two macros as (different) case labels in switch statements.
+
+	* src/ftbench.c (tt_interpreter_versions, header, usage, main): Don't use
+	`TT_INTERPRETER_VERSION_38`.
+	* src/ftcommon.c (FTDemo_Hinting_Engine_Change, FTDemo_Get_Info): Ditto.
+	* src/ftdiff.c (ColumnStateRec, render_state_init, render_state_draw):
+	Ditto.
+	* src/ftmulti.c (tt_interpreter_versions, main): Ditto.
+	* src/ttdebug.c (tt_interpreter_versions, Usage, main): Ditto.
+
+	* src/ftinspect/engine/engine.hpp (EngineDefaultValues): Ditto.
+	* src/ftinspect/engine/engine.cpp (Engine::queryEngine): Ditto.
+	* src/ftinspect/models/customcomboboxmodels.hpp (HintingModeComboBoxModel):
+	Ditto.
+	* src/ftinspect/models/customcomboboxmodels.cpp
+	(HintingModeComboBoxModel::HintingModeComboBoxModel): Ditto.
+	* src/ftinspect/panels/settingpanel.cpp (SettingPanel::setDefaults): Ditto.
+
+2023-02-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c: Clean up loading and scaling.
+
+2023-02-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (main, Init_Display): Clean up GUI setup.
+
+2023-02-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c: Clean up and fix MSVC warnings.
+
+2023-02-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* man/ftmulti.1: Updated.
+
+2023-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftmulti] Enable fill rule flag testing.
+
+	Variation fonts often relay on overlapping contours. To reveal them,
+	we enable turning the even-odd fill rule on and off. This flag is
+	always off in FreeType by default but supported by the anti-aliased
+	renderer.
+
+	* src/ftmulti.c (Process_Event): Reassign F3 to fill rule toggle,
+	assign Tab to anti-aliasing toggle.
+	(Render_Glyph): Tinker with the fill rule flags before rendering.
+
+2023-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c: Clean up and fix warnings.
+
+2023-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (Process_Event): Miscellaneous tweaks.
+
+	Set default step at 1/40 which covers most preferable coordinates.
+	Adjust the step by doubling or halving it. Round all large-range
+	coordinates, not just MM. Wrap the coordinates around.
+
+2023-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (Render_All, Render_Text, main): Layout tweaks.
+
+2023-02-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftmulti] Enable overlap flag testing.
+
+	Variation fonts often relay on overlapping contours, which require
+	oversampling to render properly. FreeType relies on FT_OUTLINE_OVERLAP
+	to trigger the expensive mitigation algorithm. This commit enables
+	tinkering with the overlap flags and, therefore, the oversampling.
+	Normally, the flags should be set by the font designers sparingly.
+
+	The bitmap strike toggle is no longer available, which has never
+	been important for the variation font testing.
+
+	* src/ftmulti.c (Process_Event): Reassign F4 to overlap toggle.
+	(Render_Glyph): Tinker with the overlap flags before rendering.
+
+2023-02-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (Init_Display): Use automatic color depth.
+
+2023-02-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (main): Synchronize options with the others.
+
+2023-02-09  Werner Lemberg  <wl@gnu.org>
+
+	* Version 2.13.0 released.
+	==========================
+
+	Tag sources with 'VER-2-13-0'.
+
+	* README: Updated.
+	* meson.build: Updated.
+	* man/*.1: Updated.
+
+2023-02-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c (Message_Process): Drop some sizing messages.
+
+	With the window procedure in a separate thread we only need to forward
+	basic WM_SIZE, which is sent frequently enough.
+
+2023-02-08  Werner Lemberg  <wl@gnu.org>
+
+	Fix various minor compiler warnings.
+
+2023-02-08  Werner Lemberg  <wl@gnu.org>
+
+	[ftgrid] Synchronize with FreeType git.
+
+	The changes are necessary due to the commit
+
+	```
+	Avoid reserved identifiers that are globally defined.
+	```
+
+2023-02-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftmulti.c (Render_All): Tighten right margin.
+
+2023-02-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[builds/windows] Add ftmulti.
+
+	* builds/windows/msvc/ftmulti.vcxproj: New project.
+	* builds/windows/msvc/ft2demos.sln: Add it to solutions.
+
+2023-02-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph/win32] Minor driver improvements.
+
+	* graph/win32/grwin32.c: (gr_win32_device_init): Do not set icon
+	or background, which is covered anyway.
+	(Message_Process) [WM_PAINT]: Paint only updated rectangle.
+
+2023-02-06  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftmulti.c (Process_Event): Simplify.
+
+2023-02-06  Werner Lemberg  <wl@gnu.org>
+
+	[ftmulti] More key reassignments.
+
+	This is a try to better harmonize with other demo programs, and to make the
+	selection of axes more mnemonic.
+
+	* src/ftmulti.c (MAX_MM_AXES): Set to 16.
+	(Process_Event): Use keys 'aA' for axis 0, 'bB' for axis 1, ..., 'pP' for
+	axis 16.
+	Use F1 for help, too.
+	Use 16, 256, and 4096 as the glyph index increments.
+	Also adjust other keys to avoid collisions.
+	(Help): Updated.
+	(main): Show mnemonic letter next to axis.
+	Updated.
+
+2023-02-05  Werner Lemberg  <wl@gnu.org>
+
+	[ftmulti] Display up to 15 axes.
+
+	Due to the support of the 'avar' version 2 OpenType extension it is expected
+	that the number of axes in many fonts will increase because adding 'virtual
+	axes' is cheap now.
+
+	* src/ftmulti.c (MAX_MM_AXES): Set to 15.
+	(Help): Updated.
+	(Process_Event): Handle keys '7890-=' for axes 6-8, '!@#$%^' for axes 9-11,
+	and '&*()_+' for axes 12-14.
+
+2023-02-05  Werner Lemberg  <wl@gnu.org>
+
+	[ftmulti] Change layout to list axes vertically.
+
+	* src/ftmulti.c (Render_All, Render_Text): Shift 'upper left corner' for
+	glyph display up and to the right.
+	(main): Emit one axis per line at the left side of the screen.
+
+2023-02-05  Werner Lemberg  <wl@gnu.org>
+
+	* graph/grevents.h (grKey): Add `grKeyHash` and `grKeyAmpersand`.
+
+2023-02-04  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (my_face_requester): Recognize t1 file extension.
+
+2023-02-04  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c (Message_Process): Return TRUE on WM_SIZING.
+
+2023-02-02  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph/win32] Improve error handling.
+
+	* graph/win32/grwin32.c (gr_win32_surface_resize): Change return type.
+	(gr_win32_surface_init): Ditto and handle failure gracefully.
+
+2023-02-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (write_header): Change layout.
+
+2023-01-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (Analyze): Report void bitmaps.
+
+2023-01-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Reduce floating point use.
+
+	* src/ftcommon.c (FTDemo_String_Load): Use signed integers, not doubles.
+	* src/ftstring.c (event_angle_change): Minor.
+
+2023-01-30  Werner Lemberg  <wl@gnu.org>
+
+	* subprojects/libpng.wrap: Updated.
+
+2023-01-29  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (write_header): Always report kerning info.
+
+2023-01-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] New feature: simple string editor.
+
+	It only handles printable ASCII characters and backspace to erase them.
+
+	* src/ftstring.c (Process_Event): Use Enter key to initiate this mode.
+	(Process_TTY): Intercept and handle relevant keys while editing.
+	(Render_TTY): Special rendering mode while editing.
+	(main, event_help): Updated.
+
+2023-01-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (event_render_mode_change): Remove report.
+
+2023-01-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c (key_translators): Sort virtual-key codes.
+
+2023-01-27  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (Render_Waterfall): Avoid bitmap reloading.
+
+	This hides horrible performance of compressed PCF fonts.
+
+2023-01-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Render_Waterfall): Fill the right margin.
+
+	The waterfall looks better if the string runs over the edge.
+
+2023-01-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid,ftstring,ftview] Option to select charmap by index.
+
+	* src/ftcommon.c (FTDemo_Install_Font): Accept a charmap index.
+	(FTDemo_Make_Encoding_Tag): Fall back on a numeric value to return.
+
+	* src/ftgrid.c, src/ftstring.c, src/ftview.c (usage): Updated.
+	* man/ftgrid.1, man/ftstring.1, man/ftview.1: Ditto.
+
+2023-01-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Typos.
+
+2023-01-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (Usage): Output to stderr, like others do.
+
+2023-01-22  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench,ftgrid,ftmulti,ftview] Accept hexadecimal glyph indices.
+
+	This helps to use charcodes on the command line.
+
+	* src/ftbench.c (main): Use sscanf with "%i".
+	* src/ftgrid.c (parse_cmdline): Ditto.
+	* src/ftmulti.c (main): Ditto.
+	* src/ftview.c (parse_cmdline): Ditto.
+
+2023-01-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c (gr_win32_surface_init): Polish gray mode.
+
+2023-01-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Edit comments.
+
+2023-01-20  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Explain the blender cache.
+
+2023-01-18  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Typos.
+
+2023-01-17  Werner Lemberg  <wl@gnu.org>
+
+	Update all copyright notices.
+
+2023-01-17  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftinspect/*.[ch]pp: Normalize copyright notices
+
+	This allows the use of FreeType's `update-copyright-year` script.
+
+2023-01-17  Werner Lemberg  <wl@gnu.org>
+
+	Minor comment typos.
+
+2023-01-16  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Process_Event): Fix -Wswitch warning.
+
+2023-01-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Microoptimization.
+
+	* src/ftview.c (parse_cmdline, write_header, Process_Event, parse):
+	Prioritize easy checks.
+
+2023-01-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Process_Event): Trigger screen updates locally.
+	(main, status): Cleaned up.
+
+2023-01-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Process_Event): Minor refactoring.
+
+2023-01-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Process_Event): Small harmonization.
+
+2023-01-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Typos.
+
+2023-01-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Minor comment.
+
+2023-01-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Draw_Header): Minor.
+
+2023-01-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/*.c: Pair up `grRefreshSurface` and `grListenSurface` calls.
+
+2023-01-10  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (main, write_header): Reset custom header differently.
+
+2023-01-10  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Fix error reporting.
+
+	* src/ftstring.c (Render_*): Do not return or overwrite errors.
+	(main): Updated accordingly.
+
+2023-01-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c: Remove obsolete comments.
+
+2023-01-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Draw_Header): Show sizing errors again.
+
+2023-01-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview, ftstring] Prevent locking on broken unsizable fonts.
+
+	* src/ftstring.c (Render_Waterfall): Break on error.
+	* src/ftview.c (Render_Waterfall): Break on error.
+
+2023-01-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c: Fix a warning.
+
+2023-01-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (main): Decorate opening and sizing errors.
+
+2023-01-03  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftcommon.c (FTDemo_Draw_Header): Handle invalid `size` objects.
+
+2022-12-07  Werner Lemberg  <wl@gnu.org>
+
+	* subprojects/zlib.wrap: Micro-update from upstream.
+
+2022-12-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Sync the render mode and the load target.
+
+2022-11-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Honor render mode with FT_LOAD_RENDER.
+
+2022-11-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c: Relocate and undo BBox rotations.
+
+2022-11-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* man/ftbench.1: Minor updates.
+
+2022-11-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (test_get_bbox): Use `FT_Set_Transform`.
+
+2022-11-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench] Fix up charmap benchmarking.
+
+	* src/ftbench.c (main): Parse and process the charmap index option.
+	(header): Report the active charmap index.
+	(usage): Document it.
+	(test_cmap_cache): Call `FTC_CMapCache_Lookup` with correct argument.
+	(test_cmap_iter): Do not count idle charmaps.
+
+	* man/ftbench.1: Document the charmap selection.
+
+2022-10-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Improve error tracking.
+
+	* src/ftcommon.c (FTDemo_Error_String): Spin off new function from...
+	(PanicZ): ... this function.
+	* src/ftcommon.h (FTDemo_Error_String): Declare it.
+	* src/ftview.c (Process_Error): Count and track persistent errors.
+	(Render_*): Use it.
+	(main): Report the persistent error code and description.
+
+2022-10-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftview.c (Render_Stroke): Render bitmaps without stroking.
+
+2022-10-24  Werner Lemberg  <wl@gnu.org>
+
+	Replace '1/50th' (and similar entries) with '1/64' in output and comments.
+
+2022-10-20  Werner Lemberg  <wl@gnu.org>
+
+	* subprojects/zlib.wrap: Update to zlib version 1.2.13.
+
+2022-10-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c (gr_x11_surface_{init,done}): Use DefaultGC.
+
+2022-10-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c (gr_x11_surface_init): Ignore border and colormap.
+	
+	The colormap is unused. The border is set by a window manager.
+
+2022-10-03  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Change unclear comments.
+
+	* src/ftinspect/engine/fontinfo.hpp,
+	  src/ftinspect/glyphcomponents/glyphcontinuous.cpp: Clearify comments.
+
+	* src/ftinspect/maingui.cpp: Actually the left widget does more than
+	  setting the margin, so the comment line about removing the left widget and
+	  layout is removed.
+
+2022-10-03  Charlie Jiang  <w@chariri.moe>
+
+	* src/ftinspect/engine/engine.cpp: Fix CBDT/CBLC colored fonts.
+
+	Add `FT_LOAD_COLOR` for those fonts.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/*`.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/widgets/*`.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/panels/*`.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/models/*`.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/glyphcomponents/*`.
+
+2022-10-03  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format `src/ftinspect/engine/*`.
+
+2022-10-02  Werner Lemberg  <wl@gnu.org>
+
+	[ftinspect] Format build files for cmake and meson.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Do it.
+	Also sort entries.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Activate the color layers by default.
+
+	Don't deactivate it when color layers are absent. Also fix typo.
+
+	* src/ftinspect/panels/settingpanel.cpp: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix memory-related crash, and refactor outline-retaining...
+
+	graphics items. Also fix some compiler warnings.
+
+	* src/ftinspect/glyphcomponents/glyphoutline.cpp,
+	  src/ftinspect/glyphcomponents/glyphoutline.hpp:
+	  Don't retain the `FT_Outline*` whose lifetime is bound to the glyph.
+	  Prepare the path in the ctor so the outline isn't saved.
+	  Add `GlyphUsingOutline` as the base class for all classes that have to
+	  retain a `FT_Outline` object.
+
+	* src/ftinspect/glyphcomponents/glyphpointnumbers.cpp,
+	  src/ftinspect/glyphcomponents/glyphpointnumbers.hpp,
+	  src/ftinspect/glyphcomponents/glyphpoints.cpp,
+	  src/ftinspect/glyphcomponents/glyphpoints.hpp: Refactored.
+
+	* src/ftinspect/engine/engine.hpp, src/ftinspect/panels/singular.hpp,
+	  src/ftinspect/engine/rendering.hpp
+	  Add default values to initialize member fields.
+
+	* src/ftinspect/panels/singular.cpp:
+	  Pass the `FT_Library` into the graphics items.
+
+	* src/ftinspect/models/fontinfomodels.cpp: Fix warning.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add transformation and scaling info to the composite glyph view.
+
+	Note: Untested since no font with non-1.0 scale subglyphs is found.
+
+	* src/ftinspect/engine/fontinfo.cpp, src/ftinspect/engine/fontinfo.hpp:
+	  Fetch transformation and scaling info from the font.
+
+	* src/ftinspect/models/fontinfomodels.cpp,
+	  src/ftinspect/models/fontinfomodels.hpp:
+	  Change the "Position" column to "Position and Transformation".
+	  Display the transformation info.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Improve bitmap display in the glyph details pane.
+
+	Now the ppem square is displayed as light gray, ink box as blue,
+	xy-axis as thin black lines.
+	Adding ppem square improves displaying of non-spacing glyphs.
+
+	* src/ftinspect/panels/glyphdetails.cpp:
+	  Pass the ppem box to the `GlyphBitmap` widget.
+
+	* src/ftinspect/glyphcomponents/glyphbitmap.cpp,
+	  src/ftinspect/glyphcomponents/glyphbitmap.hpp:
+	  Add a `placeholderRect` to store the ppem square info. Layout the glyph
+	  bitmap on the basis of the ppem square.
+	  Draw auxiliary lines on the canvas.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Modify the about text and add actual version.
+
+	* src/ftinspect/maingui.cpp: As described.
+
+	* src/ftinspect/ftinspect.cpp: Pass the actual version.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `dynamicLibraryVersion` func.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	* src/ftinspect/engine/engine.cpp: Minor formatting.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Fix random crash when closing fonts.
+
+	* src/ftinspect/widgets/tripletselector.cpp: Disallow font indices below 0.
+	  It seems the CFF driver can't handle this properly.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add "Font Info" tab.
+
+	* src/ftinspect/panels/info.cpp, src/ftinspect/panels/info.hpp:
+	  New files, add the `InfoTab` class.
+
+	* src/ftinspect/engine/fontinfo.cpp, src/ftinspect/engine/fontinfo.hpp:
+	  Add `SFNTTableInfo`, `FontBasicInfo`, `FontTypeEntries`, `FontFixedSize`
+	  and `CompositeGlyphInfo`. The `SFNTTableInfo` and `CompositeGlyphInfo`
+	  classes retrieve info without the related FreeType API, but directly
+	  parse the font data.
+
+	* src/ftinspect/models/fontinfomodels.cpp,
+	  src/ftinspect/models/fontinfomodels.hpp:
+	  New files. Add models for the tables and the tree view in the info tab to
+	  use.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `loadDefaults` function for the composite glyphs view to draw its
+	  small icon.
+	  Add `currentFontHasGlyphName`, `currentFontPSInfo`,
+	  `currentFontPSPrivateInfo` and `currentFontSFNTTableInfo` to obtain info.
+	  Add getters.
+
+	* src/ftinspect/engine/fontinfonamesmapping.cpp: New file for name mapping.
+
+	* src/ftinspect/engine/fontfilemanager.cpp,
+	  src/ftinspect/engine/fontfilemanager.hpp:
+	  Add `currentReloadDueToPeriodicUpdate` so the composite glyph tree isn't
+	  refreshed (which is a very expensive process) for the periodic updating of
+	  symbolic font files.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add the font info tab info the main window and wire events.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add "Comparator View".
+
+	* src/ftinspect/panels/comparator.cpp, src/ftinspect/panels/comparator.hpp:
+	  New files, adding the `ComparatorTab`.
+
+	* src/ftinspect/panels/settingpanel.cpp,
+	  src/ftinspect/panels/settingpanel.hpp: Add comparator mode.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add comparator tab and modify `switchTab` to prevent unwanted window
+	  resizing, and to fix the tab bar position.
+	  Modify `applySettings` to skip applying for comparator tab.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add left/right click behaviour to the continuous view.
+
+	Left clicking will open the glyph details pane, and right clicking will
+	switch to the singular tab.
+
+	* src/ftinspect/panels/glyphdetails.cpp,
+	  src/ftinspect/panels/glyphdetails.hpp:
+	  New files, add the `GlyphDetails` class.
+
+	* src/ftinspect/glyphcomponents/glyphcontinuous.cpp,
+	  src/ftinspect/glyphcomponents/glyphcontinuous.hpp:
+	  Add `mouseReleaseEvent` event handler which emits the new
+	  `updateGlyphDetails` and `rightClickGlyph` signals.
+
+	* src/ftinspect/glyphcomponents/glyphbitmap.cpp,
+	  src/ftinspect/glyphcomponents/glyphbitmap.hpp:
+	  Add `GlyphBitmapWidget` to show the enlarged bitmap.
+
+	* src/ftinspect/panels/continuous.cpp, src/ftinspect/panels/continuous.hpp:
+	  Add code to update the details panel, and wire up events.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add code to initialize the glyph details panel, and wire up components and
+	  events.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add "Continuous View".
+
+	Most new features in the continuous view are included in the commit, except
+	the mouse left (details pane)/right (go to singular) click behaviour.
+
+	* src/ftinspect/panels/continuous.cpp, src/ftinspect/panels/continuous.hpp:
+	  New files, the main continuous tab.
+
+	* src/ftinspect/glyphcomponents/glyphcontinuous.cpp,
+	  src/ftinspect/glyphcomponents/glyphcontinuous.hpp:
+	  New files, adding the `GlyphContinuous` as the actual canvas for
+	  continuous rendering.
+
+	* src/ftinspect/engine/stringrenderer.cpp,
+	  src/ftinspect/engine/stringrenderer.hpp:
+	  New files, adding `StringRenderer` to layout the strings and produce
+	  glyphs for the canvas to draw.
+
+	* src/ftinspect/widgets/charmapcombobox.cpp,
+	  src/ftinspect/widgets/charmapcombobox.hpp:
+	  New files, add the `CharMapComboBox` widget.
+
+	* src/ftinspect/engine/charmap.cpp，src/ftinspect/engine/charmap.hpp:
+	  New files, adding `CharMapInfo` class.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add necessary fields and getters for string rendering.
+	  Retrieve charmap when loading fonts.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add the continuous view to the main window.
+	  Call `ContinuousTab::highlightGlyph` when switching from singular to
+	  continuous view.
+
+	* src/ftinspect/panels/settingpanel.cpp: Uncomment functional code.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	# This is a combination of 2 commits.
+	# This is the 1st commit message:
+
+	[ftinspect] Add "Continuous View".
+
+	Most new features in the continuous view are included in the commit, except
+	the mouse left (details pane)/right (go to singular) click behaviour.
+
+	* src/ftinspect/panels/continuous.cpp, src/ftinspect/panels/continuous.hpp:
+	  New files, the main continuous tab.
+
+	* src/ftinspect/glyphcomponents/glyphcontinuous.cpp,
+	  src/ftinspect/glyphcomponents/glyphcontinuous.hpp:
+	  New files, adding the `GlyphContinuous` as the actual canvas for
+	  continuous rendering.
+
+	* src/ftinspect/engine/stringrenderer.cpp,
+	  src/ftinspect/engine/stringrenderer.hpp:
+	  New files, adding `StringRenderer` to layout the strings and produce
+	  glyphs for the canvas to draw.
+
+	* src/ftinspect/widgets/charmapcombobox.cpp,
+	  src/ftinspect/widgets/charmapcombobox.hpp:
+	  New files, add the `CharMapComboBox` widget.
+
+	* src/ftinspect/engine/charmap.cpp，src/ftinspect/engine/charmap.hpp:
+	  New files, adding `CharMapInfo` class.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add necessary fields and getters for string rendering.
+	  Retrieve charmap when loading fonts.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add the continuous view to the main window.
+	  Call `ContinuousTab::highlightGlyph` when switching from singular to
+	  continuous view.
+
+	* src/ftinspect/panels/settingpanel.cpp: Uncomment functional code.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+	# This is the commit message #2:
+
+	* src/ftinspect/engine/stringrenderer.cpp: Fix infinite loop.
+
+	Don't limit the glyph position and exit too early, or the loop in `render`
+	function won't stop forever. Also, since the string can be moved by the
+	mouse, there's no point to limit the line position in the canvas viewport.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add SFNT `name` table retrieving.
+
+	* src/ftinspect/engine/fontinfo.cpp, src/ftinspect/engine/fontinfo.hpp:
+	  New files, add `SFNTName` to retrieve `name` table.
+	  Conversions to `QString` from mainstream encodings are supported.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `currentFontSFNTNames` and retrieve the `name` table when loading the
+	  font. Also pass the SFNT name table when loading palettes.
+
+	* src/ftinspect/engine/mmgx.cpp, src/ftinspect/engine/paletteinfo.cpp:
+	  Uncomment functional code to make use of the `name` table.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support MM/GX.
+
+	* src/ftinspect/panels/settingpanelmmgx.cpp,
+	  src/ftinspect/panels/settingpanelmmgx.hpp:
+	  Add GUI widgets for MM/GX settings.
+
+	* src/ftinspect/engine/mmgx.cpp, src/ftinspect/engine/mmgx.hpp:
+	  Add `MMGXAxisInfo` to retrieve axes info. However, the SFNT name table
+	  isn't implemented, so the SFNT based axis names are unavailable.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `applyMMGXDesignCoords`. Add getters `currentFontMMGXState` and
+	  `currentFontMMGXAxes`. Info is retrieved when loading font.
+
+	* src/ftinspect/panels/settingpanel.cpp,
+	  src/ftinspect/panels/settingpanel.hpp: Uncomment functional code.
+	  Remove `checkHintingMode` and `checkStemDarkening`. Applying of delayed
+	  settings is taken care by the `MainGUI`. So emitting `fontReloadNeeded`
+	  simply will do the work.
+
+	* src/ftinspect/maingui.cpp: Don't reset the cache so aggressively.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add auxiliary lines for the grid view.
+
+	The aux lines will show advance and asc/descender.
+
+	* src/ftinspect/glyphcomponents/grid.cpp,
+	  src/ftinspect/glyphcomponents/grid.hpp: Implement aux lines.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `currentSizeAscDescPx`.
+
+	* src/ftinspect/panels/singular.cpp, src/ftinspect/panels/singular.hpp:
+	  Pass parameters to the `Grid` graphics item.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support opening files drag-dropping.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: Add related code.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support opening files via command-line.
+
+	* src/ftinspect/engine/fontfilemanager.cpp,
+	  src/ftinspect/engine/fontfilemanager.hpp:
+	  Add `loadFromCommandLine` func.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add and call `loadCommandLine` func.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support LCD rendering.
+
+	* src/ftinspect/engine/rendering.cpp, src/ftinspect/engine/rendering.hpp:
+	  Implement `convertLCDToARGB` and `convertLCDVToARGB`.
+	  Add `lcdUsesBGR` property.
+
+	* src/ftinspect/panels/settingpanel.cpp: Uncomment functional code.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support color layers.
+
+	* src/ftinspect/engine/rendering.cpp:
+	  Add implementation of `tryDirectRenderColorLayers`.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Implement `loadPaletteInfos` and `loadPalette`.
+	  Add `currentFontHasColorLayers` and a group of getters/setters supporting
+	  color layer rendering.
+	  Also reorder fields as the number of fields grows.
+
+	* src/ftinspect/panels/settingpanel.cpp,
+	  src/ftinspect/panels/settingpanel.hpp:
+	  Implement `populatePalettes` and reorder functions.
+	  Fix `checkPalette` about combo box enabling state and reset the cache when
+	  the palette settings change.
+	  Uncomment functional code.
+
+	* src/ftinspect/engine/paletteinfo.cpp,
+	  src/ftinspect/engine/paletteinfo.hpp: New files adding `PaletteInfo`.
+	  Retrieving palette names using SFNT name tables is not supported yet.
+
+	* src/ftinspect/panels/singular.cpp:
+	  Call `Engine::loadPalette` when drawing.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support stem darkening.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `setStemDarkening` func.
+
+	* src/ftinspect/panels/settingpanel.cpp: Uncomment function code.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support tricky fonts.
+
+	For tricky fonts, we disable auto-hinter and limit the TT interpreter
+	version.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `currentFontTricky` function and turn off hinting forcibly when the
+	  user turns it off in the GUI for tricky fonts.
+
+	* src/ftinspect/panels/settingpanel.cpp: As described.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Support embedded bitmap and bitmap-only fonts.
+
+	Bitmap glyphs are already supported in the new rendering engine, so we make
+	the option effective in the GUI. Also support bitmap-only fonts by coercing
+	sizes to available ones and force embedded bitmaps.
+
+	* src/ftinspect/widgets/fontsizeselector.cpp,
+	  src/ftinspect/widgets/fontsizeselector.hpp:
+	  Retrieve fixed sizes info from the engine and coerce to nearest available
+	  sizes when using bitmap-only fonts.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `embeddedBitmapEnabled` property and `currentFontHasEmbeddedBitmap`,
+	  `currentFontBitmapOnly` and `currentFontFixedSizes` getters.
+
+	* src/ftinspect/panels/settingpanel.cpp: Uncomment functional code.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Refactor `Engine` and fix the singular tab.
+
+	This comment brings the new glyph loading and bitmap rendering code.
+	The bitmap rendering part is in `RenderingEngine` which can be obtained
+	from the `Engine`. The `Engine` now supports loading the glyph by loading
+	with image cache and without image cache.
+	The `loadOutline` function is removed.
+
+	Accompanying this change, some new features are introduced as well. Most
+	notable the improvements in rendering: back/foreground color and gamma,
+	support bitmap glyphs (not enabled in the UI). Support for LCD and color
+	layer font is absent yet.
+
+	The singular tab is now enabled by uncommented functional code that was
+	commented in the last commit.
+
+	In `Engine`, a `ftFallbackFace_` is introduced for all non-rendering work,
+	and the old `ftSize_` is only used for rendering. This helps dealing with
+	non-scalable fonts since we can safely retrieve info with the fallback face.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Integrate the `RenderingEngine`.
+	  Change `loadFont` to update the `ftFallbackFace_` as well.
+	  Change all info-retrieving functions to use `ftFallbackFace_`.
+	  Add `loadGlyph`, `loadGlyphIntoSlotWithoutCache` and
+	  `loadGlyphWithoutUpdate`, and remove `loadOutline`.
+	  Extract code about "get a face object from the cache and do sth."
+	  into a new function `withFace`.
+	  Add property `antiAliasingEnabled` and `renderMode` for the rendering
+	  engine.
+	  Some minor changes are included.
+
+	* src/ftinspect/engine/rendering.cpp, src/ftinspect/engine/rendering.hpp:
+	  New files, as described.
+
+	* src/ftinspect/panels/settingpanel.cpp,
+	  src/ftinspect/glyphcomponents/glyphbitmap.cpp,
+	  src/ftinspect/panels/singular.cpp: Uncomment functional code.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Add the `SingularTab` and related widgets.
+
+	This introduces the new singular tab. However, because the new tab heavily
+	depend on the new engine structure, it's current not functional. No bitmap
+	or outline will be displayed. This would be fixed after the `Engine` was
+	refactored in the next commit.
+
+	The new singular tab has the size and glyph index selector moved out as
+	modular widgets to be reused.
+
+	The new scroll and shortcut behaviours are introduced in this commit, which
+	depend on scroll events introduced in the custom `QGraphicsViewx`.
+
+	The infinity panning of grid is implemented mainly via
+	`SingularTab::updateGrid` and `Grid::updateRect`.
+
+	This commit is introducing new features since it would be unfavorable to
+	"backport" old version of glyph components, and add those new features in
+	future commits - this is way too complex.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `currentFontNumberOfGlyphs` and `dpi` functions.
+
+	* src/ftinspect/widgets/fontsizeselector.cpp,
+	  src/ftinspect/widgets/fontsizeselector.hpp:
+	  This is the new font size selector to replace the old size/DPI/zoom boxes.
+	  This widget is capable of handling wheel and key events delegated from
+	  other widgets.
+	  The support for fixed sizes and bitmap-only font is not yet added.
+
+	* src/ftinspect/widgets/glyphindexselector.cpp,
+	  src/ftinspect/widgets/glyphindexselector.hpp:
+	  This is the new glyph index selector to replace the old navi buttons.
+	  This selector is aware of index min/max, consists of a group of navi
+	  buttons, a text box (actually a spin box without buttons) to directly
+	  input glyph index.
+
+	* src/ftinspect/glyphcomponents/graphicsdefault.cpp,
+	  src/ftinspect/glyphcomponents/graphicsdefault.hpp:
+	  This struct contains all default graphical settings (mainly for singular
+	  view, e.g. the grid line color).
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  Add the new tab into the main window.
+
+	* src/ftinspect/glyphcomponents/glyphbitmap.cpp,
+	  src/ftinspect/glyphcomponents/glyphbitmap.hpp:
+	  This will now delegate rendering to the engine instead of doing rendering
+	  itself. However, since the rendering part of the `Engine` is not
+	  implemented, code initializing `image_` is left commented.
+	  Also add another constructor for initializing directly from a `QImage`.
+
+	* src/ftinspect/glyphcomponents/glyphoutline.cpp,
+	  src/ftinspect/glyphcomponents/glyphoutline.hpp,
+	  src/ftinspect/glyphcomponents/glyphpointnumbers.cpp,
+	  src/ftinspect/glyphcomponents/glyphpointnumbers.hpp,
+	  src/ftinspect/glyphcomponents/glyphpoints.cpp,
+	  src/ftinspect/glyphcomponents/glyphpoints.hpp:
+	  Constructors of those items now accept a `FT_Glyph` instead of
+	  `FT_Outline`. The conversion is done inside the view, and the view won't
+	  be displayed if the glyph isn't outline glyph.
+	  This simplifies the code of `SingularTab`.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Rewrite `MainGUI`.
+
+	Note: This commit compiles, but the main view is removed, so you will get a
+	blank right panel. The singular view will be added back with major changes
+	in the next commit.
+
+	This commit mainly introduces below changes:
+
+	1. The original `MainGUI` contains almost all GUI elements. Most of them are
+	   taken out to modular components. The current `MainGUI` serves only as
+	   a skeleton provides coordinate between components, greatly shortened.
+	   It also provides some auxiliary code such as calling to file chooser.
+	2. The left panel is moved to `SettingPanel` class. The current
+	   `settingpanel.[ch]pp` are directly modified from the latest code, so they
+	   contains some options not implemented in the `Engine`.
+	   Structural code that is only added accompanying later change is removed,
+	   such as the comparator mode. Such code will be added back with the
+	   related feature. However, code for unimplemented options are simply
+	   commented out.
+	3. The main part is transformed into a tabbed view. The original code is
+	   removed. Refactored, it will be added back in the next commit.
+	4. The navigation buttons (Next/Prev Font/Face/NI) are changed into the new
+	   triplet-selector, which is a major UI improvement.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: As described.
+
+	* src/ftinspect/panels/abstracttab.hpp: Add `AbstractTab` which is an
+	  interface for all tabs listening for font reloading and repainting.
+
+	* src/ftinspect/panels/settingpanel.cpp,
+	  src/ftinspect/panels/settingpanel.hpp:
+	  As described, this is the left panel. This requires intensive reviewing
+	  since many bugs had rooted here.
+
+	* src/ftinspect/widgets/tripletselector.cpp,
+	  src/ftinspect/widgets/tripletselector.hpp:
+	  As described, this is the triplet (Font/Subface/NI) selector.
+	  This component is also responsible for repopulating triplet information
+	  and keep up with the font file change (i.e. the
+	  `FontFileManager::currentFileChanged` event is captured here).
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  Add `fontValid` and `namedInstanceName` since `TripletSelector` requires
+	  them. However, they'll subject to change later.
+
+	* src/ftinspect/ftinspect.cpp: Remove call to `MainGUI::setDefaults`.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] WIP: Rewrite `MainGUI`.
+
+	Note: This commit doesn't compile. This change is splitted into 2 commits
+	to avoid a complicated diff.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: Old version removed.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Rename `rendering` dir to `glyphcomponents`.
+
+	All classes in `rendering` directory will be responsible for draw
+	glyphs, either as independent widgets or as `QGraphicsItem`. However, the
+	actual drawing part will be placed into `RenderingEngine`. Therefore, we
+	rename it to `glyphcomponents`.
+
+	* src/ftinspect/rendering/**: Renamed.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build,
+	  src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Re-organize custom widgets.
+
+	* src/ftinspect/widgets/customwidgets.cpp,
+	  src/ftinspect/widgets/customwidgets.cpp: New files.
+	  Include `QGraphicsViewx`, `ZoomSpinBox` and `UnboundScrollArea` (for later
+	  use).
+
+	* src/ftinspect/widgets/qspinboxx.hpp, src/ftinspect/widgets/qspinboxx.hpp:
+	  Changed into `ZoomSpinBox` in `customwidgets.cpp`.
+
+	* src/ftinspect/widgets/qgraphicsviewx.cpp,
+	  src/ftinspect/widgets/qgraphicsviewx.hpp:
+	  Merged into `customwidgets.cpp`
+
+	* src/ftinspect/widgets/qcomboboxx.hpp,
+	  src/ftinspect/widgets/qcomboboxx.cpp: Removed. No longer needed.
+	  We're using custom `QAbstractListModel`'s `flags` func to disable items.
+
+	* src/ftinspect/widgets/qpushbuttonx.hpp,
+	  src/ftinspect/widgets/qpushbuttonx.cpp: Removed. No longer needed.
+	  We're using `setButtonNarrowest` in `uihelper.cpp`.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: Updated to use new
+	  custom widgets.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Use custom `QAbstractListModel` instead of manually mapping.
+
+	In `maingui.cpp`, mapping between `QComboBox` indices and actual FreeType
+	values was done manually. The enabled statuses of individual ComboBox items
+	were also maintained in `maingui.cpp`.
+
+	In this commit, those code was moved to seperate custom classes
+	implementating `QAbstractListModel`. All mapping was done there.
+	Enable/Disable states was maintained in the classes as well.
+	By doing this, the reason why some items were disabled was made more clear
+	and explicit. Adding more items is easier.
+
+	The `QComboBoxx` custom widget is no longer needed since disable flag can
+	be provided by the custom model by overriding the `flags` function.
+
+	`SimpleComboBoxModel` is a basic class for Key-Value-DisplayName mapping.
+	Other models could extend this class if no complicated mapping (e.g.
+	`HintingModeComboBoxModel`) is needed.
+
+	* src/ftinspect/models/customcomboboxmodels.cpp,
+	  src/ftinspect/models/customcomboboxmodels.cpp: New files.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  `Engine` now accepts "load target" value of certain anti-aliasing mode
+	  instead of the anti-aliasing enum value. The mapping was moved into
+	  `AntiAliasingComboBoxModel`.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp: Move all mappings
+	  and enabled/disabled statuses to separate models.
+	  Remove mapping `QHash`es. Use `QComboBox` instead of `QComboBoxx`.
+
+	* src/ftinspect/meson.build, src/ftinspect/CMakeLists.txt: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Rename all private member variables with an underscore suffix.
+
+	(pure mechnical commit)
+
+	* src/ftinspect/**: Renaming. Also some variables with abbreviations
+	were renamed.
+
+	This will enable nicer getter/setters, as discussed in #13.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Refactor `Engine`.
+
+	This commit decouples `Engine` so it no longer depends on `MainGUI`.
+
+	Because of that, a lot of getters and setters are added to `Engine`, and
+	`MainGUI` call setters in its `applySettings` function, which makes applying
+	of the settings lazy (only happen when the glyph repaints).
+
+	In the later commits, options will be divided into two types: mostly lazy
+	ones, and a few eager ones which need to be immediately applied, because
+	they need the cache to be purged.
+
+	Some code in `MainGUI` is moved into `Engine`, as well.
+
+	Functions in the `Engine` are re-ordered. Constructor is greatly reduced to
+	`queryEngine`.
+
+	* src/ftinspect/engine/engine.cpp, src/ftinspect/engine/engine.hpp:
+	  As described.
+
+	* src/ftinspect/maingui.cpp, src/ftinspect/maingui.hpp:
+	  As described.
+
+	* src/ftinspect/ftinspect.cpp: Remove dependency of `Engine` against
+	  `MainGUI`.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Move out font file managing/watching out to a new class.
+
+	Introduce the feature that rejects invalid files.
+
+	* src/ftinspect/maingui.hpp, src/ftinspect/maingui.cpp: Move `fontList`,
+	  `fontWatcher`, `timer` and other code related to font file managing to
+	  new class `FontFileManager`.
+
+	* src/ftinspect/engine.hpp, src/ftinspect/engine.cpp:
+	  `Engine` class now holds `FontFileManager`.
+	  Also, make `MainGUI` open and close fonts indirectly via `Engine`.
+
+	* src/ftinspect/fontfilemanager.hpp, src/ftinspect/fontfilemanager.cpp:
+	  New files.
+
+	* src/ftinspect/CMakeLists.txt, src/ftinspect/meson.build: Updated.
+
+2022-09-25  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Update build system settings.
+
+	* src/ftinspect/CMakeLists.txt: Fix MSVC-only options. Require Qt 5.15 and
+	  enable higher warning level.
+
+	* src/ftinspect/meson.build: Set C++ version. Require Qt 5.15.
+
+2022-09-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c (gr_x11_blitter_reset): Minor improvement.
+
+2022-09-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/meson.build: No macOS driver yet.
+
+	Fixes #19.
+
+2022-09-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Revert "* src/ftlint.c (Checksum): Accept negative pitch."
+
+	This reverts commit bac9a53080b24e76a2dfe8def2b15682135b8454.
+	The pitch is always positive in the converted bitmap.
+
+2022-09-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftlint.c (Checksum): Accept negative pitch.
+
+2022-09-16  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblblit.c (gblender_blit_init): Fix for negative pitch.
+
+	Reported by Anurag Thakur.
+
+2022-09-15  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Clean up the cache clearance.
+
+	Use separate functions to clear the color and channel gradient
+	caches and call them conditionally instead of passing the switch
+	around.
+
+	* graph/gblender.c (gblender_clear): Separate out...
+	(gblender_clear_channels): ... this function.
+	(gblender_use_channels): Removed.
+	* graph/gblender.h: Update their declarations.
+	* graph/gblgblit.c (gblender_blit_init, grSetTargetPenBrush):
+	Updated to call the above functions and formatted.
+
+2022-09-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdiff.c: Add const qualifier to the executable basename.
+
+2022-09-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Display_New): Handle window titles.
+	* src/ftcommon.h: Update its prototype.
+	* src/ftgamma.c, src/ftgrid.c, src/ftsdf.c, src/ftstring.c, src/ftview.c
+	(main): Updated accordingly.
+
+2022-09-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdiff.c (render_state_draw), src/common.d (ft_strdup): Clean up.
+
+2022-09-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/*.*: Add const qualifier to the executable basename.
+
+2022-09-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/grobjs.* (grAlloc): Return void pointer.
+
+2022-09-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Fortify channel cache.
+
+	Using signed short offsets in the channel cache will risk to overflow
+	if the current cache size is to increase.  Here we switch to unsigned
+	index and express it in the cache units.
+
+	* graph/gblender.h (GBlenderChanKeyRec): Update `index`.
+	* graph/gblender.c (gblender_clear, gblender_lookup_channel,
+	gblender_reset_channel_key): Updated accordingly.
+
+2022-09-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.* (GBlenderRec): Cosmetic changes to cache array.
+
+2022-08-29  shugaley  <https://gitlab.freedesktop.org/shugaley>
+
+	* src/ftpngout.c (FTDemo_Display_Print): Declare `code` volatile.
+
+	Fixes #18.
+
+2022-08-29  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* Makefile (FTCOMMON_OBJ): Add `graph` dependency, include `rsvg-port`.
+
+2022-08-29  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Rework #ifdef GBLENDER_STORE_BYTES.
+
+	This also settles on tripling the number of channel keys, which is
+	a safe bet in all circumstances.  Quadrupling might only work on
+	64-bit architectures or with added key structure padding, without
+	GBLENDER_STORE_BYTES defined.
+
+	* graph/gblender.h (GBlenderCell): Change definition.
+	* graph/gblblit.c (GDST_STOREB): Updated accordingly.
+	* graph/gblender.c (gblender_clear, gblender_reset_key,
+	  gblender_lookup, gblender_lookup_channel): Ditto.
+
+2022-08-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Better hash function and a fix.
+
+	* graph/gblender.c (gblender_clear): Initialize recently grown array.
+	(gblender_lookup_channel): Improve hash function.
+
+2022-08-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c (gblender_lookup): Quest for perfect hash function.
+
+2022-08-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Minor fixes.
+
+	(gblender_clear): Initialize with black background, whereas
+	foreground stays invalid.
+	(gblender_lookup_channel): Increase cache utilization.
+
+2022-08-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Slight optimization of cached gradients.
+
+	This saves about 1% of `ftgrid` execution time.
+
+	* graph/gblender.c (gblender_reset_key, gblender_reset_channel_key):
+	Implement faster gradients, which are rounded anyway.
+
+2022-08-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Rework cache management.
+
+	With more complex rendering in `ftgrid`, the old cache management
+	resulted in excessive clashes and slow `gblender_lookup`.  It is
+	better to replace the clashing entries than to preserve them and
+	search for an available spot in the table.  This saves about 10%
+	of execution time in `ftgrid` without much effect on the others.
+
+	* graph/gblender.c (gblender_lookup): Replace old clashing entries
+	and hash function.
+	(gblender_lookup_channel): Ditto.
+	* graph/gblender.h (GBlenderRec): Remove `stat_clears`.
+
+2022-08-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c (gblender_lookup*): Count clashes directly.
+
+2022-08-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Count the number of hash clashes.
+
+	The hash table lookups take very noticeable time when rendering is
+	complex like in `ftgrid`.  This can help optimize the hash function.
+
+	* graph/gblender.h (GBLENDER_STATS): New field for clashes.
+	* graph/gblender.c (gblender_init, gblender_lookup{,_channel},
+	gblender_dump_stats): Initialize, collect, and report clashes.
+
+2022-08-18  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Fix mishandling of LCDv formats.
+
+	* graph/gblblit.c (gblender_blit)init): Triple the LCDv pitch.
+	* graph/gblany.h (_gblender_blit_{vrgb,vbgr}_*): Updated accordingly.
+
+2022-08-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c: Minor.
+
+2022-08-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblblit.c (grBlitGlyphToSurface): Remove redundant check.
+	
+	The rare empty glyphs will be caught later in `gblender_blit_init`.
+
+2022-08-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c (gblender_set_gamma_table): Reintroduce linear loops.
+
+2022-08-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c (gblender_set_gamma_table): Updated sRGB ramps.
+
+	When we use finite approxination it is more appropriate to use the
+	actual values for the linear portion instead of the standard ones.
+
+2022-08-16  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/common.c (utf8_next): Use more efficient algorithm.
+
+2022-08-15  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_String_Set): Refactor.
+
+2022-08-15  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Make_Encoding_Tag): Refactor.
+
+2022-08-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblender.c (gblender_set_gamma_table): Minor improvements.
+
+2022-08-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Draw_Header): Show non-trivial face index.
+
+	This is a useful hint if a file contains multiple faces.
+
+2022-08-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/win32/grwin32.c: Cosmetic updates.
+
+2022-08-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid,ftmulti,ftstring,ftview] Document optional size.
+
+	* man/ftgrid.1, man/ftmulti.1, man/ftstring.1, man/ftview.1: Update.
+	* src/ftgrid.c, src/ftmulti.c, src/ftstring.c, src/ftview.c: Ditto.
+
+2022-08-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid,ftmulti,ftstring,ftview] Make the size optional.
+
+	* src/ftgrid.c (parse_cmdline), src/ftview.c (parse_cmdline),
+	src/ftstring.c (parse_cmdline), src/ftmulti.c (main): Fallback on
+	a default size if it is missing on the command line.
+
+2022-07-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftgrid.c: Sync with freetype.
+
+2022-07-30  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftlint.c (main): Check number of glyphs.
+
+	Problem reported by Marc Schönefeld <marc.schoenefeld@gmx.org>.
+
+2022-07-30  Werner Lemberg  <wl@gnu.org>
+
+	[ftgrid] Fix memory-related problems.
+
+	Reported by Marc Schönefeld <marc.schoenefeld@gmx.org>.
+
+	* src/ftgrid.c (bitmap_scale): Limit bitmap size.
+	(grid_status_draw_outline): Handle errors in `FT_Get_Glyph`.
+
+2022-07-11  Charlie Jiang  <w@chariri.moe>
+
+	[meson] Add option to disable librsvg dependency.
+
+	As discussed in #14.
+
+	Currently, 'librsvg' is used to render OT-SVG glyphs.  However, 'librsvg' is
+	far from simple to build as it requires tons of transitive dependencies,
+	especially on Windows.
+
+	Therefore we introducee a configuration option to switch 'librsvg' on or
+	off.  This is trivial because the source code itself already honors a
+	`HAVE_LIBRSVG` macro.
+
+	* meson_options.txt: Add `librsvg` option (feature), defaulting to
+	`enabled`.
+
+	* meson.build: Honor the option above.
+
+2022-06-28  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Drop QMake, add CMake.
+
+	* src/ftinspect/CMakeLists.txt: Add CMake build file for `ftinspect`.
+
+	* src/ftinspect/ftinspect.pro: Remove QMake build file.
+
+	Fixes #11
+
+2022-06-28  Charlie Jiang  <w@chariri.moe>
+
+	* /src/ftinspect/.gitignore: Ignore Visual Studio specific files.
+
+	This is for `ftinspect`.
+
+2022-06-28  Charlie Jiang  <w@chariri.moe>
+
+	[ftinspect] Eliminate compile warnings.
+
+	* src/ftinspect/engine.hpp: Use `uintptr_t` as type for `faceCounter`
+	instead of `int`.
+
+	* src/ftinspect/engine.cpp: Changing all casts to use `FTC_IDType` type
+	(=`uintptr_t`) we defined.
+
+	Fixes #10.
+
+2022-06-21  Hugh McMaster  <hugh.mcmaster@outlook.com>
+
+	* Makefile: Append CPPFLAGS to CFLAGS so that they work in `graph`.
+
+2022-06-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Hinting_Engine_Change): Minor fix.
+
+2022-06-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Minor.
+
+2022-06-04  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench] Minor tweaks.
+
+	* builds/windows/msvc/ftbench.vcxproj: Do not depend on "common.c".
+	* src/ftbench.c: Do not include "common.h".
+	(main): Minor output optimization.
+
+2022-06-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (main): Report filename.
+
+2022-06-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* subprojects/zlib.wrap: Update to zlib version 1.2.12.
+
+2022-06-02  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Indicate memory-mapped fonts.
+
+2022-05-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftbench] Create more concise and informative header.
+
+	* src/ftbench.c (header): Report face, driver, and target info.
+	Borrowed from `FTDemo_Get_Info`.
+	(main): Remove and rearrange output.
+
+2022-05-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Output spaces before units.
+
+2022-05-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Reformat output (cont'd).
+
+2022-05-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Reformat output.
+
+2022-05-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (main): Check the number of glyphs.
+	
+	Fixes #8.
+
+2022-05-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c: Do not include <string.h>, formatting.
+
+2022-05-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph/win32] Simplify icon setting further.
+
+	* graph/win32/grwin32.c (gr_win32_surface_set_icon): Use `CreateIcon`.
+
+2022-05-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph/win32] Simplify icon setting.
+
+	* graph/win32/grwin32.c (gr_win32_surface_set_icon): Use basic
+	`CreateBitmap` for color, which seems to work.
+
+2022-05-22  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	This reverts commit 454797135a90.
+
+	* graph/win32/grwin32.c (gr_win32_surface_refresh_rectangle): Revert
+	to fix the 24 bpp rectangle invalidation.
+
+2022-05-19  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/win32/grwin32.c (gr_win32_surface_refresh_rectangle): Minor move.
+
 2022-05-01  Werner Lemberg  <wl@gnu.org>
 
 	* Version 2.12.1 released.

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2015-2022 by                                              */
+/*  Copyright (C) 2015-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -37,6 +37,11 @@
     {
       switch ( string[i] )
       {
+      case '\0':
+        *out++ = '\\';
+        *out++ = '0';
+        break;
+
       case '\n':
         *out++ = '\\';
         *out++ = 'n';
@@ -125,6 +130,7 @@
         }
         break;
 
+      case '\0':
       case '\r':
       case '\t':
       case '\\':
@@ -196,6 +202,11 @@
 
       switch ( ch )
       {
+      case '\0':
+        *out++ = '\\';
+        *out++ = '0';
+        continue;
+
       case '\n':
         *out++ = '\\';
         *out++ = 'n';
@@ -350,6 +361,7 @@
         }
         continue;
 
+      case '\0':
       case '\r':
       case '\t':
       case '\\':

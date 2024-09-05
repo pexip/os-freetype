@@ -1,11 +1,4 @@
 enable-gxvalid-otvalid.patch
-enable-subpixel-rendering.patch
+ftoption.patch
 no-web-fonts.patch
 hide-donations-information.patch
-CVE-2022-31782.patch
-fix-wild-free-svg.patch
-hardening.patch
-CVE-2023-2004.patch
-disable_COLRv1.patch
-get_colr_glyph_paint.patch
-Minimal-stop-gap-fix-for-CVE-2025-27363.patch

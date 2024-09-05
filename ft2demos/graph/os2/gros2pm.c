@@ -170,8 +170,11 @@
 
   /* close a given window */
   static
-  void  done_surface( grPMSurface*  surface )
+  void  done_surface( grSurface*  baseSurface )
   {
+    grPMSurface*  surface = (grPMSurface*)baseSurface;
+
+
     LOG(( "Os2PM: done_surface(%08lx)\n", (long)surface ));
 
     if ( surface->frame_window )
@@ -260,12 +263,15 @@
 
 
   static
-  void  refresh_rectangle( grPMSurface* surface,
-                           int          x,
-                           int          y,
-                           int          w,
-                           int          h )
+  void  refresh_rectangle( grSurface* baseSurface,
+                           int        x,
+                           int        y,
+                           int        w,
+                           int        h )
   {
+    grPMSurface*  surface = (grPMSurface*)baseSurface;
+
+
     LOG(( "Os2PM: refresh_rectangle( %08lx, %d, %d, %d, %d )\n",
           (long)surface, x, y, w, h ));
 
@@ -291,10 +297,11 @@
 
 
   static
-  void  set_title( grPMSurface* surface,
+  void  set_title( grSurface*   baseSurface,
                    const char*  title )
   {
-    ULONG  rc;
+    grPMSurface*  surface = (grPMSurface*)baseSurface;
+    ULONG         rc;
 
 #if 1
     LOG(( "Os2PM: set_title( %08lx == %08lx, %s )\n",
@@ -311,11 +318,12 @@
 
 
   static
-  void  listen_event( grPMSurface* surface,
-                      int          event_mask,
-                      grEvent*     grevent )
+  int  listen_event( grSurface*  baseSurface,
+                     int         event_mask,
+                     grEvent*    grevent )
   {
-    ULONG  ulRequestCount;
+    grPMSurface*  surface = (grPMSurface*)baseSurface;
+    ULONG         ulRequestCount;
 
     (void) event_mask;   /* ignored for now */
 
@@ -325,14 +333,15 @@
     *grevent = surface->event;
     DosResetEventSem( surface->event_lock, &ulRequestCount );
 
-    return;
+    return 1;
   }
 
 
   static
-  grPMSurface*  init_surface( grPMSurface*  surface,
-                              grBitmap*     bitmap )
+  grPMSurface*  init_surface( grSurface*  baseSurface,
+                              grBitmap*   bitmap )
   {
+    grPMSurface*  surface = (grPMSurface*)baseSurface;
     PBITMAPINFO2  bit;
     SIZEL         sizl = { 0, 0 };
     LONG          palette[256];
@@ -474,10 +483,10 @@
     LOCK(surface->image_lock);
     UNLOCK(surface->image_lock);
 
-    surface->root.done         = (grDoneSurfaceFunc) done_surface;
-    surface->root.refresh_rect = (grRefreshRectFunc) refresh_rectangle;
-    surface->root.set_title    = (grSetTitleFunc)    set_title;
-    surface->root.listen_event = (grListenEventFunc) listen_event;
+    surface->root.done         = done_surface;
+    surface->root.refresh_rect = refresh_rectangle;
+    surface->root.set_title    = set_title;
+    surface->root.listen_event = listen_event;
 
     /* convert_rectangle( surface, 0, 0, bitmap->width, bitmap->rows ); */
     return surface;
@@ -743,7 +752,7 @@
     init_device,
     done_device,
 
-    (grDeviceInitSurfaceFunc) init_surface,
+    init_surface,
 
     0,
     0

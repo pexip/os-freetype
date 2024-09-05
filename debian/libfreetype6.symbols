@@ -65,6 +65,7 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_Color_Glyph_Layer@Base 2.10.1
  FT_Get_Color_Glyph_Paint@Base 2.11.0
  FT_Get_Colorline_Stops@Base 2.11.0
+ FT_Get_Default_Named_Instance@Base 2.13.1
  FT_Get_FSType_Flags@Base 2.3.9
  FT_Get_First_Char@Base 2.2.1
  FT_Get_Font_Format@Base 2.6
@@ -102,9 +103,11 @@ libfreetype.so.6 libfreetype6 #MINVER#
  FT_Get_Var_Design_Coordinates@Base 2.7.1
  FT_Get_WinFNT_Header@Base 2.2.1
  FT_Get_X11_Font_Format@Base 2.2.1
+ FT_GlyphSlot_AdjustWeight@Base 2.13.1
  FT_GlyphSlot_Embolden@Base 2.2.1
  FT_GlyphSlot_Oblique@Base 2.2.1
  FT_GlyphSlot_Own_Bitmap@Base 2.2.1
+ FT_GlyphSlot_Slant@Base 2.13.0
  FT_Glyph_Copy@Base 2.2.1
  FT_Glyph_Get_CBox@Base 2.2.1
  FT_Glyph_Stroke@Base 2.2.1
