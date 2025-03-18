@@ -8,3 +8,4 @@ hardening.patch
 CVE-2023-2004.patch
 disable_COLRv1.patch
 get_colr_glyph_paint.patch
+Minimal-stop-gap-fix-for-CVE-2025-27363.patch
