@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2019-2022 by                                              */
+/*  Copyright (C) 2019-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -26,13 +26,13 @@
     int        width  = bit->width;
     int        height = bit->rows;
     int        color_type;
-
-    int   code = 1;
-    FILE *fp   = NULL;
+    FILE*      fp     = NULL;
 
     png_structp  png_ptr  = NULL;
     png_infop    info_ptr = NULL;
     png_bytep    row      = NULL;
+
+    volatile int  code = 1;
 
 
     /* Set color_type */

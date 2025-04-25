@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright (C) 2005-2022 by                                              */
+/*  Copyright (C) 2005-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftvalid: Validates layout related tables of OpenType and                */
@@ -38,7 +38,7 @@
 #include <stdlib.h>
 
 
-  static char*  execname;
+  static const char*  execname;
 
   typedef enum
   {

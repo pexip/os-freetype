@@ -1,6 +1,7 @@
 // ftinspect.cpp
 
-// Copyright (C) 2016-2022 by Werner Lemberg.
+// Copyright (C) 2016-2024 by
+// Werner Lemberg.
 
 
 #include "maingui.hpp"
@@ -8,24 +9,26 @@
 
 #include <QApplication>
 
-#define VERSION "X.Y.Z"
+#include <freetype/freetype.h>
 
 
 int
 main(int argc,
      char** argv)
 {
+  auto version = QString("%1.%2.%3")
+                   .arg(QString::number(FREETYPE_MAJOR),
+                        QString::number(FREETYPE_MINOR),
+                        QString::number(FREETYPE_PATCH));
+
   QApplication app(argc, argv);
   app.setApplicationName("ftinspect");
-  app.setApplicationVersion(VERSION);
+  app.setApplicationVersion(version);
   app.setOrganizationName("FreeType");
   app.setOrganizationDomain("freetype.org");
 
-  MainGUI gui;
-  Engine engine(&gui);
-
-  gui.update(&engine);
-  gui.setDefaults();
+  Engine engine;
+  MainGUI gui(&engine);
 
   gui.show();
 

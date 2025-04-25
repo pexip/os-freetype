@@ -1,5 +1,5 @@
 '\" t
-.TH FTBENCH 1 "May 2022" "Freetype 2.12.1"
+.TH FTBENCH 1 "August 2024" "FreeType 2.13.3"
 .
 .
 .SH NAME
@@ -25,6 +25,12 @@ This program is part of the FreeType demos package.
 .
 .
 .SH OPTIONS
+.
+.TP
+.BI "\-a\ \(dq" "axis1\ axis2\ .\|.\|." \(dq
+For Multiple Master, GX, or OpenType variation fonts, specify design
+coordinates for each axis at start-up.
+Ignored for all other font formats.
 .
 .TP
 .BI \-b \ tests
@@ -56,27 +62,31 @@ this is, all tests).
 .
 .IP
 The number of used glyphs per test (within a single iteration) is given by
-options
-.B \-i
-and
-.BR \-j .
+option
+.BR \-i .
 .
 .TP
 .B \-C
 Compare with cached version if available.
 .
 .TP
-.BI \-c \ n
+.BI \-c \ N
 Use at most
-.I n
+.I N
 iterations for each test (0 means time limited).
 .
 .TP
-.BI \-f \ l
+.BI \-e \ E
+Use charmap with index
+.I E
+instead of the default unicode.
+.
+.TP
+.BI \-f \ L
 Use
 .B hexadecimal
 (not decimal) number
-.I l
+.I L
 as load flags (see the
 .RB ` \%FT_\:LOAD_\:XXX '
 macros in the FreeType reference).
@@ -105,7 +115,7 @@ Forward or reverse range of glyph indices to use
 (default is from 0 to the number of glyphs minus one).
 .
 .TP
-.BI \-m \ m
+.BI \-m \ M
 Set maximum cache size to
 .I M
 KiByte (default is 1024).
@@ -118,9 +128,9 @@ instead of
 .BR \%FT_\:New_\:Face ).
 .
 .TP
-.BI \-r \ n
+.BI \-r \ R
 Set render mode to
-.IR n :
+.IR R :
 .
 .RS
 .TS
@@ -141,9 +151,9 @@ This corresponds to the values of the
 flags.
 .
 .TP
-.BI \-s \ s
+.BI \-s \ S
 Use
-.I s
+.I S
 ppem as face size (default is 10ppem).
 If set to zero, don't call
 .BR \%FT_\:Set_\:Pixel_\:Sizes .
@@ -153,9 +163,9 @@ or something similar to load the glyphs unscaled,
 otherwise errors will show up.
 .
 .TP
-.BI \-t \ t
+.BI \-t \ T
 Use at most
-.I t
+.I T
 seconds per test (default is 2).
 .
 .TP

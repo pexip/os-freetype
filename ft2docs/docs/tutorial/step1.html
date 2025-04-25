@@ -366,10 +366,12 @@ if ( error ) { ... }</pre>
           <p>FreeType&nbsp;2 uses <em>size objects</em> to model all
             information related to a given character size for a given
             face.  For example, a size object holds the value of
-            certain metrics like the ascender or text height,
-            expressed in 1/64th of a pixel, for a character size of
-            12&nbsp;points (however, those values are rounded to
-            integers, i.e., multiples of 64).</p>
+            certain metrics, such as <code>x_ppem</code>
+            and <code>y_ppem</code>, which are both expressed in
+            pixels, and the ascender, text height, and maximum
+            horizontal advance, which are each expressed in 1/64 of a
+            pixel (however, those values are rounded to integers,
+            i.e., multiples of 64).</p>
 
           <p>When the <code>FT_New_Face</code> function is called (or
             one of its siblings), it <em>automatically</em> creates a
@@ -392,19 +394,19 @@ if ( error ) { ... }</pre>
 
           <pre>
 error = FT_Set_Char_Size(
-          face,    <span class="comment">/* handle to face object           */</span>
-          0,       <span class="comment">/* char_width in 1/64th of points  */</span>
-          16*64,   <span class="comment">/* char_height in 1/64th of points */</span>
-          300,     <span class="comment">/* horizontal device resolution    */</span>
-          300 );   <span class="comment">/* vertical device resolution      */</span></pre>
+          face,    <span class="comment">/* handle to face object         */</span>
+          0,       <span class="comment">/* char_width in 1/64 of points  */</span>
+          16*64,   <span class="comment">/* char_height in 1/64 of points */</span>
+          300,     <span class="comment">/* horizontal device resolution  */</span>
+          300 );   <span class="comment">/* vertical device resolution    */</span></pre>
 
           <p>Some notes.</p>
 
           <ul>
-            <li>The character widths and heights are specified in
-              1/64th of points.  A point is a <em>physical</em>
-              distance, equaling 1/72th of an inch.  Normally, it is
-              not equivalent to a pixel.</li>
+            <li>The character widths and heights are specified in 1/64
+              of points.  A point is a <em>physical</em> distance,
+              equaling 1/72 of an inch.  Normally, it is not
+              equivalent to a pixel.</li>
 
             <li>Value of&nbsp;0 for the character width means
               &lsquo;same as character height&rsquo;, value of&nbsp;0
@@ -721,7 +723,7 @@ error = FT_Set_Transform(
 
           <p>The vector pointer can also be set to NULL (in which case
             a delta of (0,0) is used).  The vector coordinates are
-            expressed in 1/64th of a pixel (also known as 26.6
+            expressed in 1/64 of a pixel (also known as 26.6
             fixed-point numbers).</p>
 
           <p class="warning">The transformation is applied to every
@@ -816,8 +818,8 @@ for ( n = 0; n &lt; num_chars; n++ )
               <code>slot-&gt;advance</code>, which correspond to the
               glyph's <em>advance width</em> (also known as
               its <em>escapement</em>).  The advance vector is
-              expressed in 1/64th of pixels, and is truncated to
-              integer pixels on each iteration.</li>
+              expressed in 1/64 of pixels, and is truncated to integer
+              pixels on each iteration.</li>
 
             <li>The function <code>my_draw_bitmap</code> is not part
               of FreeType but must be provided by the application to
@@ -957,8 +959,8 @@ for ( n = 0; n &lt; num_chars; n++ )
           <ul>
             <li>We now use a vector of type <code>FT_Vector</code> to
               store the pen position, with coordinates expressed as
-              1/64th of pixels, hence a multiplication.  The position
-              is expressed in cartesian space.</li>
+              1/64 of pixels, hence a multiplication.  The position is
+              expressed in cartesian space.</li>
 
             <li>Glyph images are always loaded, transformed, and
               described in the cartesian coordinate system within
@@ -1001,7 +1003,7 @@ for ( n = 0; n &lt; num_chars; n++ )
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 13-Feb-2018</p>
+          <p>Last update: 24-Oct-2022</p>
         </div>
       </div>
     </div>

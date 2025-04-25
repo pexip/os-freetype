@@ -6,7 +6,7 @@
  *  used by the graphics utility of the FreeType test suite.
  *
  *  Written by Antoine Leca.
- *  Copyright (C) 1999-2022 by
+ *  Copyright (C) 1999-2024 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  Borrowing liberally from the other FreeType drivers.
@@ -18,8 +18,6 @@
  *  understand and accept it fully.
  *
  ******************************************************************/
-
-#include <string.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -72,14 +70,14 @@
   static
   Translator  key_translators[] =
   {
+    { VK_PRIOR,     grKeyPageUp    },
+    { VK_NEXT,      grKeyPageDown  },
+    { VK_END,       grKeyEnd       },
     { VK_HOME,      grKeyHome      },
     { VK_LEFT,      grKeyLeft      },
     { VK_UP,        grKeyUp        },
     { VK_RIGHT,     grKeyRight     },
     { VK_DOWN,      grKeyDown      },
-    { VK_PRIOR,     grKeyPageUp    },
-    { VK_NEXT,      grKeyPageDown  },
-    { VK_END,       grKeyEnd       },
     { VK_F1,        grKeyF1        },
     { VK_F2,        grKeyF2        },
     { VK_F3,        grKeyF3        },
@@ -112,8 +110,11 @@
 
 /* destroys the surface*/
 static void
-gr_win32_surface_done( grWin32Surface*  surface )
+gr_win32_surface_done( grSurface*  baseSurface )
 {
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+
+
   /* The graphical window has perhaps already destroyed itself */
   if ( surface->window )
   {
@@ -136,15 +137,17 @@ gr_win32_surface_done( grWin32Surface*  surface )
 
 static void
 gr_win32_surface_refresh_rectangle(
-         grWin32Surface*  surface,
-         int              x,
-         int              y,
-         int              w,
-         int              h )
+         grSurface*  baseSurface,
+         int         x,
+         int         y,
+         int         w,
+         int         h )
 {
-  int        delta;
-  RECT       rect;
-  grBitmap*  bitmap = &surface->root.bitmap;
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+  int              delta;
+  RECT             rect;
+  grBitmap*        bitmap = &surface->root.bitmap;
+
 
   LOG(( "gr_win32_surface_refresh_rectangle: ( %p, %d, %d, %d, %d )\n",
         surface->root.bitmap.buffer, x, y, w, h ));
@@ -236,39 +239,25 @@ gr_win32_surface_refresh_rectangle(
 
 
 static void
-gr_win32_surface_set_title( grWin32Surface*  surface,
-                            const char*      title )
+gr_win32_surface_set_title( grSurface*   baseSurface,
+                            const char*  title )
 {
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+
+
   SetWindowText( surface->window, title );
 }
 
 
 static int
-gr_win32_surface_set_icon( grWin32Surface*  surface,
-                           grBitmap*        icon )
+gr_win32_surface_set_icon( grSurface*  baseSurface,
+                           grBitmap*   icon )
 {
-  int       s[] = { GetSystemMetrics( SM_CYSMICON ),
-                    GetSystemMetrics( SM_CYICON ) };
-  WPARAM    wParam;
-  HDC       hDC;
-  VOID*     bts;
-  ICONINFO  ici = { TRUE };
-  HICON     hIcon;
-
-  /* NOTE: The Mingw64 header file `wingdi.h` defines this macro as `sRGB`,
-   * which triggers the `-Wmultichar` warning during compilation, so replace
-   * it with the corresponding numerical value.
-   */
-#ifdef __MINGW64__
-# undef  LCS_sRGB
-# define LCS_sRGB  0x73524742
-#endif
-
-  BITMAPV4HEADER  hdr = { sizeof( BITMAPV4HEADER ),
-                          0, 0, 1, 32, BI_BITFIELDS, 0, 0, 0, 0, 0,
-                          0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000,
-                          LCS_sRGB };
-
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+  int              s[] = { GetSystemMetrics( SM_CYSMICON ),
+                           GetSystemMetrics( SM_CYICON ) };
+  WPARAM           wParam;
+  HICON            hIcon;
 
   if ( !icon )
     return s[1];
@@ -281,19 +270,8 @@ gr_win32_surface_set_icon( grWin32Surface*  surface,
   else
     return 0;
 
-  ici.hbmMask  = CreateBitmap( icon->width, icon->rows, 1, 1, NULL);
-
-  hdr.bV4Width  =  icon->width;
-  hdr.bV4Height = -icon->rows;
-
-  hDC = GetDC( NULL );
-  ici.hbmColor = CreateDIBSection( hDC, (LPBITMAPINFO)&hdr,
-                                   DIB_RGB_COLORS, &bts, NULL, 0 );
-  ReleaseDC( NULL, hDC );
-
-  memcpy( bts, icon->buffer, icon->rows * icon->width * 4 );
-
-  hIcon = CreateIconIndirect( &ici );
+  hIcon = CreateIcon( NULL, icon->width, icon->rows, 1, 32,
+                      NULL, icon->buffer );
 
   PostMessage( surface->window, WM_SETICON, wParam, (LPARAM)hIcon );
 
@@ -317,7 +295,7 @@ gr_win32_surface_set_icon( grWin32Surface*  surface,
  */
 
 
-static grWin32Surface*
+static int
 gr_win32_surface_resize( grWin32Surface*  surface,
                          int              width,
                          int              height )
@@ -340,7 +318,7 @@ gr_win32_surface_resize( grWin32Surface*  surface,
                       width,
                       height,
                       &surface->shadow_bitmap ) )
-    return 0;
+      return 0;
 
 #ifdef SWIZZLE
     if ( grNewBitmap( bitmap->mode,
@@ -358,15 +336,16 @@ gr_win32_surface_resize( grWin32Surface*  surface,
   surface->bmiHeader.biWidth  = width;
   surface->bmiHeader.biHeight = -height;
 
-  return surface;
+  return 1;
 }
 
-static void
-gr_win32_surface_listen_event( grWin32Surface*  surface,
-                               int              event_mask,
-                               grEvent*         grevent )
+static int
+gr_win32_surface_listen_event( grSurface*  baseSurface,
+                               int         event_mask,
+                               grEvent*    grevent )
 {
-  MSG     msg;
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+  MSG              msg;
 
   event_mask=event_mask;  /* unused parameter */
 
@@ -390,7 +369,7 @@ gr_win32_surface_listen_event( grWin32Surface*  surface,
           grevent->type  = gr_event_resize;
           grevent->x     = width;
           grevent->y     = height;
-          return;
+          return 1;
         }
       }
       break;
@@ -404,11 +383,13 @@ gr_win32_surface_listen_event( grWin32Surface*  surface,
                                     ? "KeyPress: Char = '%c'\n"
                                     : "KeyPress: Char = <%02x>\n",
               msg.wParam ));
-        return;
+        return 1;
       }
       break;
     }
   }
+
+  return 0;
 }
 
 
@@ -435,13 +416,13 @@ DWORD WINAPI Window_ThreadProc( LPVOID lpParameter )
        /* int nWidth;              */  WndRect.right - WndRect.left,
        /* int nHeight;             */  WndRect.bottom - WndRect.top,
        /* HWND hwndParent;         */  HWND_DESKTOP,
-       /* HMENU hmenu;             */  0,
+       /* HMENU hmenu;             */  NULL,
        /* HINSTANCE hinst;         */  GetModuleHandle( NULL ),
        /* void FAR* lpvParam;      */  surface );
 
   PostThreadMessage( surface->host, WM_STATUS, (WPARAM)surface->window, 0 );
 
-  if ( surface->window == 0 )
+  if ( surface->window == NULL )
     return -1;
 
   ShowWindow( surface->window, SW_SHOWNORMAL );
@@ -457,13 +438,13 @@ DWORD WINAPI Window_ThreadProc( LPVOID lpParameter )
 }
 
 
-static grWin32Surface*
-gr_win32_surface_init( grWin32Surface*  surface,
-                       grBitmap*        bitmap )
+static int
+gr_win32_surface_init( grSurface*  baseSurface,
+                       grBitmap*   bitmap )
 {
-  MSG  msg;
+  grWin32Surface*  surface = (grWin32Surface*)baseSurface;
+  MSG              msg;
 
-  surface->root.bitmap.grays = bitmap->grays;
 
   /* Set default mode */
   if ( bitmap->mode == gr_pixel_mode_none )
@@ -478,7 +459,8 @@ gr_win32_surface_init( grWin32Surface*  surface,
     switch ( bpp )
     {
     case 8:
-      surface->root.bitmap.mode = gr_pixel_mode_gray;
+      surface->root.bitmap.mode  = gr_pixel_mode_gray;
+      surface->root.bitmap.grays = 256;
       break;
     case 16:
       surface->root.bitmap.mode = gr_pixel_mode_rgb565;
@@ -492,10 +474,10 @@ gr_win32_surface_init( grWin32Surface*  surface,
     }
   }
   else
+  {
     surface->root.bitmap.mode  = bitmap->mode;
-
-  if ( !gr_win32_surface_resize( surface, bitmap->width, bitmap->rows ) )
-    return 0;
+    surface->root.bitmap.grays = bitmap->grays;
+  }
 
   surface->bmiHeader.biSize   = sizeof( BITMAPINFOHEADER );
   surface->bmiHeader.biPlanes = 1;
@@ -515,17 +497,16 @@ gr_win32_surface_init( grWin32Surface*  surface,
 
   case gr_pixel_mode_gray:
     surface->bmiHeader.biBitCount = 8;
-    surface->bmiHeader.biClrUsed  = bitmap->grays;
+    surface->bmiHeader.biClrUsed  = surface->root.bitmap.grays;
     {
-      int   count = bitmap->grays;
-      int   x;
+      int       x, count = surface->root.bitmap.grays - 1;
       RGBQUAD*  color = surface->bmiColors;
 
-      for ( x = 0; x < count; x++, color++ )
+      for ( x = 0; x <= count; x++, color++ )
       {
         color->rgbRed   =
         color->rgbGreen =
-        color->rgbBlue  = (unsigned char)(x*255/(count-1));
+        color->rgbBlue  = (BYTE)( x * 255 / count );
         color->rgbReserved = 0;
       }
     }
@@ -562,6 +543,10 @@ gr_win32_surface_init( grWin32Surface*  surface,
     return 0;         /* Unknown mode */
   }
 
+  /* allocate buffers */
+  if ( !gr_win32_surface_resize( surface, bitmap->width, bitmap->rows ) )
+    goto Fail;
+
   /* set up the main message queue and spin off the window thread */
   PeekMessage( &msg, (HWND)-1, WM_USER, WM_USER, PM_NOREMOVE );
   surface->host = GetCurrentThreadId();
@@ -571,20 +556,24 @@ gr_win32_surface_init( grWin32Surface*  surface,
   /* listen if window is created */
   if ( GetMessage ( &msg, (HWND)-1, WM_STATUS, WM_STATUS ) < 0 ||
        !msg.wParam )
-    return 0;
+    goto Fail;
 
   /* wrap up */
-  surface->root.done         = (grDoneSurfaceFunc) gr_win32_surface_done;
-  surface->root.refresh_rect = (grRefreshRectFunc) gr_win32_surface_refresh_rectangle;
-  surface->root.set_title    = (grSetTitleFunc)    gr_win32_surface_set_title;
-  surface->root.set_icon     = (grSetIconFunc)     gr_win32_surface_set_icon;
-  surface->root.listen_event = (grListenEventFunc) gr_win32_surface_listen_event;
+  surface->root.done         = gr_win32_surface_done;
+  surface->root.refresh_rect = gr_win32_surface_refresh_rectangle;
+  surface->root.set_title    = gr_win32_surface_set_title;
+  surface->root.set_icon     = gr_win32_surface_set_icon;
+  surface->root.listen_event = gr_win32_surface_listen_event;
 
   LOG(( "Surface initialized: %dx%dx%d\n",
         surface->root.bitmap.width, surface->root.bitmap.rows,
         surface->bmiHeader.biBitCount ));
 
-  return surface;
+  return 1;
+
+Fail:
+  gr_win32_surface_done( &surface->root );
+  return 0;
 }
 
 
@@ -627,39 +616,6 @@ LRESULT CALLBACK Message_Process( HWND handle, UINT mess,
         PostThreadMessage( surface->host, WM_RESIZE, wParam, lParam );
       break;
 
-    case WM_SIZING:
-      {
-        PRECT  r = (PRECT)lParam;
-        RECT   WndRect;
-        int    x, y;
-
-        GetClientRect( handle, &WndRect );
-
-        y = wParam >= 6 ? wParam -= 6, 'B' :
-            wParam >= 3 ? wParam -= 3, 'T' : ' ';
-        x = wParam == 2 ? 'R' :
-            wParam == 1 ? 'L' : ' ';
-
-        LOG(( "WM_SIZING %c%c : ( %d %d %d %d )   "
-              "ClientArea : ( %d %d )\n",
-              y, x, r->left, r->top, r->right, r->bottom,
-              WndRect.right, WndRect.bottom ));
-
-        PostThreadMessage( surface->host, WM_RESIZE, SIZE_RESTORED,
-                           MAKELPARAM( WndRect.right, WndRect.bottom ) );
-      }
-      break;
-
-    case WM_EXITSIZEMOVE:
-      {
-        RECT  WndRect;
-
-        GetClientRect( handle, &WndRect );
-        PostThreadMessage( surface->host, WM_RESIZE, SIZE_RESTORED,
-                           MAKELPARAM( WndRect.right, WndRect.bottom ) );
-      }
-      break;
-
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
       {
@@ -689,11 +645,19 @@ LRESULT CALLBACK Message_Process( HWND handle, UINT mess,
         PAINTSTRUCT  ps;
 
         hDC = BeginPaint ( handle, &ps );
-        SetDIBitsToDevice( hDC, 0, 0,
-                           surface->root.bitmap.width,
-                           surface->root.bitmap.rows,
-                           0, 0, 0,
-                           surface->root.bitmap.rows,
+
+        LOG(( "WM_PAINT : ( %d %d %d %d )\n",
+              ps.rcPaint.left,  ps.rcPaint.top,
+              ps.rcPaint.right, ps.rcPaint.bottom ));
+
+        SetDIBitsToDevice( hDC,
+                           ps.rcPaint.left,
+                           ps.rcPaint.top,
+                           ps.rcPaint.right - ps.rcPaint.left,
+                           ps.rcPaint.bottom - ps.rcPaint.top,
+                           ps.rcPaint.left,
+                           surface->root.bitmap.rows - ps.rcPaint.bottom,
+                           0, surface->root.bitmap.rows,
                            surface->shadow_bitmap.buffer,
                            (LPBITMAPINFO)&surface->bmiHeader,
                            DIB_RGB_COLORS );
@@ -715,22 +679,16 @@ LRESULT CALLBACK Message_Process( HWND handle, UINT mess,
       /* WNDPROC lpfnWndProc  */ Message_Process,
       /* int     cbClsExtra   */ 0,
       /* int     cbWndExtra   */ 0,
-      /* HANDLE  hInstance    */ 0,
-      /* HICON   hIcon        */ 0,
-      /* HCURSOR hCursor      */ 0,
-      /* HBRUSH  hbrBackground*/ 0,
+      /* HANDLE  hInstance    */ GetModuleHandle( NULL ),
+      /* HICON   hIcon        */ NULL,
+      /* HCURSOR hCursor      */ LoadCursor( NULL, IDC_ARROW),
+      /* HBRUSH  hbrBackground*/ NULL,
       /* LPCTSTR lpszMenuName */ NULL,
       /* LPCTSTR lpszClassName*/ "FreeTypeTestGraphicDriver"
     };
 
     /* register window class */
-
-    ourClass.hInstance    = GetModuleHandle( NULL );
-    ourClass.hIcon        = LoadIcon(0, IDI_APPLICATION);
-    ourClass.hCursor      = LoadCursor(0, IDC_ARROW);
-    ourClass.hbrBackground= GetStockObject( LTGRAY_BRUSH );
-
-    if ( RegisterClass(&ourClass) == 0 )
+    if ( RegisterClass( &ourClass ) == 0 )
       return -1;
 
     return 0;
@@ -751,7 +709,7 @@ LRESULT CALLBACK Message_Process( HWND handle, UINT mess,
     gr_win32_device_init,
     gr_win32_device_done,
 
-    (grDeviceInitSurfaceFunc) gr_win32_surface_init,
+    gr_win32_surface_init,
 
     0,
     0

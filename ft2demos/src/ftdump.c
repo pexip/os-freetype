@@ -2,8 +2,11 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2022 by                                              */
+/*  Copyright (C) 1996-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
+/*                                                                          */
+/*                                                                          */
+/*  ftdump: a dumper of basic font information                              */
 /*                                                                          */
 /****************************************************************************/
 
@@ -21,6 +24,7 @@
 #include <freetype/tttags.h>
 #include <freetype/t1tables.h>
 
+#include <freetype/ftcid.h>
 
   /* error messages */
 #undef FTERRORS_H_
@@ -96,22 +100,22 @@
 
 
   static void
-  usage( FT_Library  library,
-         char*       execname )
+  usage( FT_Library   library,
+         const char*  execname )
   {
     FT_Done_FreeType( library );
 
     fprintf( stderr,
       "\n"
       "ftdump: simple font dumper -- part of the FreeType project\n"
-      "-----------------------------------------------------------\n"
+      "----------------------------------------------------------\n"
       "\n"
       "Usage: %s [options] fontname\n"
       "\n",
              execname );
 
     fprintf( stderr,
-      "  -c, -C    Print charmap coverage.\n"
+      "  -c, -C    Print charmap coverage and/or CID coverage.\n"
       "  -n        Print SFNT 'name' table or Type1 font info.\n"
       "  -p        Print TrueType programs.\n"
       "  -t        Print SFNT table list.\n"
@@ -477,6 +481,132 @@
   }
 
 
+  /*
+   * FreeType 2 API supports 32-bit gid, but
+   * the CIDFont does not support 32-bit CID,
+   * because of the 64k limit of the array
+   * and dictionary objects in PostScript.
+   */
+#ifndef FT_CID_MAX
+#define FT_CID_MAX 0xFFFFU
+#endif
+  /*
+   * Print a range specified by 2 integers.
+   */
+  static void
+  Print_UInt_Range( FT_UInt  from,
+                    FT_UInt  to,
+                    char*    is_first )
+  {
+    if (!(*is_first))
+      printf(",");
+
+    if ( from == to )
+      printf( "%d", from );
+    else if ( from < to )
+      printf( "%d-%d", from, to );
+
+    *is_first = 0;
+  }
+
+
+  /*
+   * Print implemented CIDs by calling
+   *   FT_Get_CID_From_Glyph_Index() for all GIDs.
+   *
+   */
+  static void
+  Print_CIDs( FT_Face  face )
+  {
+    FT_UInt  gid = 0, max_gid = FT_UINT_MAX;
+    FT_UInt  cid = 0, rng_from = 0, rng_to = 0;
+    char     is_first_rng = 1;
+    
+
+    if ( face->num_glyphs < 1 )
+      return;
+
+    printf( "\n" );
+    printf( "CID coverage\n" );
+    printf( "   " );
+
+    if ( (FT_ULong)face->num_glyphs < FT_UINT_MAX )
+      max_gid = (FT_UInt)face->num_glyphs;
+
+    for ( gid = 0; gid <= max_gid; gid ++ )
+    {
+      if ( FT_Get_CID_From_Glyph_Index( face, gid, &cid ) )
+        continue;
+
+      if ( FT_CID_MAX < cid )
+      {
+        fprintf( stderr, "gid=%d resulted too large CID=%d, ignore it\n", gid, cid );
+        break;
+      }
+
+      if ( rng_to == cid )
+        continue;
+      else if ( cid < rng_to )
+      {
+        fprintf( stderr, "Unordered GID-CID map is found, please file your issue on "
+                         "https://gitlab.freedesktop.org/groups/freetype/-/issues\n" );
+        exit( 1 );
+      }
+      else if ( rng_to + 1 == cid )
+      {
+        rng_to = cid;
+        continue;
+      }
+
+      /* Found a gap (rng_to + 1 < cid), print the last range */
+      Print_UInt_Range( rng_from, rng_to, &is_first_rng );
+      rng_to = rng_from = cid;
+    }
+
+    Print_UInt_Range( rng_from, rng_to, &is_first_rng );
+
+    printf( "\n" );
+  }
+
+
+  /*
+   * Print_CIDFontInfo_Dictionary() might be conventional,
+   * but other tables, like gcid, can have ROS info too.
+   */
+  static void
+  Print_ROS_From_Face( FT_Face  face )
+  {
+    FT_Bool      is_cid = 0;
+    const char*  r = NULL;
+    const char*  o = NULL;
+    FT_Int       s = -1;
+
+
+    if ( FT_Get_CID_Is_Internally_CID_Keyed( face, &is_cid ) )
+      return;
+
+    if ( !is_cid )
+      return;
+
+    if ( FT_Get_CID_Registry_Ordering_Supplement( face, &r, &o, &s ) )
+      return;
+
+    printf( "\n" );
+    printf( "/CIDSystemInfo dictionary\n" );
+
+    if ( r )
+      printf( "%s%s\n", Name_Field( "Registry" ), r );
+
+    if ( o )
+      printf( "%s%s\n", Name_Field( "Ordering" ), o );
+
+    printf( "%s%d\n", Name_Field( "Supplement" ), s );
+
+    if ( coverage > 0 )
+      Print_CIDs( face );
+  }
+
+
   static void
   Print_FontPrivate_Dictionary( PS_Private  fp )
   {
@@ -557,7 +687,7 @@
       else
         continue;
 
-      printf( "  %2lu: %c%c%c%c %02X%02X%02X%02X...\n", i,
+      printf( "  %2lu: %c%c%c%c   %02X %02X %02X %02X ...\n", i,
                                    (FT_Char)( tag >> 24 ),
                                    (FT_Char)( tag >> 16 ),
                                    (FT_Char)( tag >>  8 ),
@@ -708,18 +838,52 @@
 
 
   static void
-  Print_MM_Axes( FT_Face  face )
+  get_english_name_entry( FT_Face       face,
+                          FT_UInt       strid,
+                          FT_SfntName*  entry )
+  {
+    FT_UInt  num_names = FT_Get_Sfnt_Name_Count( face );
+    FT_UInt  i;
+
+    FT_SfntName  name = { 0, 0, 0, 0, NULL, 0 };
+
+
+    for ( i = 0; i < num_names; i++ )
+    {
+      error = FT_Get_Sfnt_Name( face, i, &name );
+      if ( error )
+        continue;
+
+      if ( name.name_id == strid )
+      {
+        /* XXX we don't have support for Apple's new `ltag' table yet, */
+        /* thus we ignore TT_PLATFORM_APPLE_UNICODE                    */
+        if ( ( name.platform_id == TT_PLATFORM_MACINTOSH &&
+               name.language_id == TT_MAC_LANGID_ENGLISH )        ||
+             ( name.platform_id == TT_PLATFORM_MICROSOFT        &&
+               ( name.language_id & 0xFF )
+                                == TT_MS_LANGID_ENGLISH_GENERAL ) )
+          break;
+      }
+    }
+
+    if ( i < num_names )
+      *entry = name;
+  }
+
+
+  static void
+  Print_MM_Info( FT_Face  face )
   {
     FT_MM_Var*       mm;
     FT_Multi_Master  dummy;
-    FT_UInt          is_GX, i, num_names;
+    FT_SfntName      name;
+    FT_UInt          is_GX, i;
 
 
     /* MM or GX axes */
     error = FT_Get_Multi_Master( face, &dummy );
     is_GX = error ? 1 : 0;
-
-    printf( "%s axes\n", is_GX ? "GX" : "MM" );
 
     error = FT_Get_MM_Var( face, &mm );
     if ( error )
@@ -728,58 +892,132 @@
       return;
     }
 
-    num_names = FT_Get_Sfnt_Name_Count( face );
+    printf( "%s info\n", is_GX ? "GX" : "MM" );
+
+    printf( "  axes (%u)\n", mm->num_axis );
 
     for ( i = 0; i < mm->num_axis; i++ )
     {
-      FT_SfntName  name;
-
-
       name.string = NULL;
 
       if ( is_GX )
-      {
-        FT_UInt  strid = mm->axis[i].strid;
-        FT_UInt  j;
+        get_english_name_entry( face, mm->axis[i].strid, &name );
 
-
-        /* iterate over all name entries        */
-        /* to find an English entry for `strid' */
-
-        for ( j = 0; j < num_names; j++ )
-        {
-          error = FT_Get_Sfnt_Name( face, j, &name );
-          if ( error )
-            continue;
-
-          if ( name.name_id == strid )
-          {
-            /* XXX we don't have support for Apple's new `ltag' table yet, */
-            /* thus we ignore TT_PLATFORM_APPLE_UNICODE                    */
-            if ( ( name.platform_id == TT_PLATFORM_MACINTOSH &&
-                   name.language_id == TT_MAC_LANGID_ENGLISH )        ||
-                 ( name.platform_id == TT_PLATFORM_MICROSOFT        &&
-                   ( name.language_id & 0xFF )
-                                    == TT_MS_LANGID_ENGLISH_GENERAL ) )
-              break;
-          }
-        }
-      }
-
+      printf( "    %u: ", i );
       if ( name.string )
       {
         if ( name.platform_id == TT_PLATFORM_MACINTOSH )
-          put_ascii( name.string, name.string_len, 3 );
+          put_ascii( name.string, name.string_len, 0 );
         else
-          put_unicode_be16( name.string, name.string_len, 3, utf8 );
+          put_unicode_be16( name.string, name.string_len, 0, utf8 );
       }
       else
-        printf( "   %s", mm->axis[i].name );
+        printf( "%s", mm->axis[i].name );
 
-      printf( ": [%g;%g], default %g\n",
+      printf( ", [%g;%g], default %g\n",
               mm->axis[i].minimum / 65536.0,
               mm->axis[i].maximum / 65536.0,
               mm->axis[i].def / 65536.0 );
+    }
+
+    if ( is_GX )
+    {
+      FT_Fixed*    coords;
+      const char*  ps_name;
+
+      FT_UInt              instance_count;
+      FT_UInt              default_named_instance;
+      FT_Var_Named_Style*  named_styles;
+
+
+      /* Show Variation PostScript Name Prefix. */
+
+      coords = (FT_Fixed*)malloc( mm->num_axis * sizeof ( FT_Fixed ) );
+      if ( coords == NULL )
+        return;
+
+      /* We temporarily activate variation font handling.  Because we */
+      /* use the default axes, the now retrieved PS name is identical */
+      /* to the PS name prefix.                                       */
+      FT_Get_Var_Design_Coordinates( face, mm->num_axis, coords );
+      FT_Set_Var_Design_Coordinates( face, mm->num_axis, coords );
+
+      ps_name = FT_Get_Postscript_Name( face );
+      if ( ps_name == NULL )
+        ps_name = "UNAVAILABLE";
+
+      printf( "\n"
+              "  VF PS name prefix: %s\n", ps_name );
+
+      /* Switch off variation font handling. */
+      FT_Set_Var_Design_Coordinates( face, 0, NULL );
+
+      free( coords );
+
+
+      /* Show named instances. */
+
+      instance_count = (FT_UInt)face->style_flags >> 16;
+      named_styles   = mm->namedstyle;
+
+      FT_Get_Default_Named_Instance( face, &default_named_instance );
+      default_named_instance--;   /* `named_styles` is a zero-based array */
+
+      printf( "\n" );
+      printf( "  named instances (%u)\n", instance_count );
+
+      for ( i = 0; i < instance_count; i++ )
+      {
+        int        pos;
+        FT_UInt    j;
+        FT_Bool    semicolon;
+        FT_Fixed*  c;
+
+
+        /* Since FreeType starts the instance numbering with value 1 */
+        /* in `face_index` we report the same here for consistency.  */
+        pos = printf( "    %u: ", i + 1);
+
+        name.string = NULL;
+        get_english_name_entry( face, named_styles[i].strid, &name );
+        if ( name.string )
+        {
+          if ( name.platform_id == TT_PLATFORM_MACINTOSH )
+            put_ascii( name.string, name.string_len, 0 );
+          else
+            put_unicode_be16( name.string, name.string_len, 0, utf8 );
+        }
+        else
+          printf( "UNAVAILABLE" );
+        printf( "%s\n", i == default_named_instance ? " (default)" : "" );
+
+        name.string = NULL;
+        get_english_name_entry( face, named_styles[i].psid, &name );
+        printf( "%*s   PS: ", pos, "" );
+        if ( name.string )
+        {
+          if ( name.platform_id == TT_PLATFORM_MACINTOSH )
+            put_ascii( name.string, name.string_len, 0 );
+          else
+            put_unicode_be16( name.string, name.string_len, 0, utf8 );
+        }
+        else
+          printf( "UNAVAILABLE" );
+        printf( "\n" );
+
+        semicolon = 0;
+        c         = named_styles[i].coords;
+
+        printf( "%*scoord: (", pos, "" );
+        for ( j = 0; j < mm->num_axis; j++ )
+        {
+          printf( "%s%g", semicolon ? ";" : "", c[j] / 65536.0);
+          semicolon = 1;
+        }
+        printf( ")\n" );
+      }
+
+      printf( "\n" );
     }
 
     FT_Done_MM_Var( face->glyph->library, mm );
@@ -1094,9 +1332,9 @@
         continue;
       }
 
-      if ( loc + 1 >= end )
+      if ( end == 0 || loc >= end - 1 )
       {
-        printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
+        printf( "\nglyph %hd: invalid offset (%u)\n", i, loc );
         continue;
       }
 
@@ -1109,7 +1347,7 @@
 
         if ( loc + 1 >= end )
         {
-          printf( "\nglyph %hd: invalid offset (%d)\n", i, loc );
+          printf( "\nglyph %hd: invalid offset (%u)\n", i, loc );
           continue;
         }
 
@@ -1170,15 +1408,14 @@
   {
     int    i, file;
     char   filename[1024];
-    char*  execname;
     int    num_faces;
     int    option;
 
     FT_Library  library;      /* the FreeType library */
     FT_Face     face;         /* the font face        */
 
+    const char*  execname = ft_basename( argv[0] );
 
-    execname = ft_basename( argv[0] );
 
     /* Initialize engine */
     error = FT_Init_FreeType( &library );
@@ -1279,10 +1516,9 @@
     num_faces = face->num_faces;
     FT_Done_Face( face );
 
-    printf( "There %s %d %s in this file.\n",
-            num_faces == 1 ? (char *)"is" : (char *)"are",
-            num_faces,
-            num_faces == 1 ? (char *)"face" : (char *)"faces" );
+    printf( num_faces == 1 ? "There is %d face in %s.\n"
+                           : "There are %d faces in %s.\n",
+            num_faces, ft_basename( filename ) );
 
     for ( i = 0; i < num_faces; i++ )
     {
@@ -1349,10 +1585,15 @@
         Print_Charmaps( face );
       }
 
+      /* FT_IS_CID_KEYED() does not catch an OpenType/CFF,
+       * let Print_ROS_From_Face() catch various cases.
+       */
+      Print_ROS_From_Face( face );
+
       if ( FT_HAS_MULTIPLE_MASTERS( face ) )
       {
         printf( "\n" );
-        Print_MM_Axes( face );
+        Print_MM_Info( face );
       }
 
       FT_Done_Face( face );

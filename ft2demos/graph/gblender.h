@@ -2,7 +2,7 @@
  *
  *  Gamma-correct alpha blending of text
  *
- *  Copyright (C) 2004-2022 by
+ *  Copyright (C) 2004-2024 by
  *  David Turner
  *
  */
@@ -38,11 +38,9 @@
   typedef unsigned int    GBlenderPixel;  /* needs 32-bits here !! */
 
 #ifdef GBLENDER_STORE_BYTES
-  typedef unsigned char   GBlenderCell;
-# define  GBLENDER_CELL_SIZE    3
+  typedef unsigned char   GBlenderCell[3];
 #else
   typedef GBlenderPixel   GBlenderCell;
-# define GBLENDER_CELL_SIZE     1
 #endif
 
 
@@ -64,16 +62,18 @@
 
   typedef struct
   {
-    unsigned short  backfore;  /* (fore << 8) | back               */
-    signed short    index;     /* offset in (unsigned char*)cells  */
+    unsigned short  backfore;  /* (fore << 8) | back    */
+    unsigned short  index;     /* offset in cache units */
 
   } GBlenderChanKeyRec, *GBlenderChanKey;
 
 
+  /* sizeof GBlenderKeyRec is at least 3x sizeof GBlenderChanKeyRec */
+  /* Therefore, we can safely use 3x as many channel keys           */
   typedef struct GBlenderRec_
   {
     GBlenderKeyRec        keys [ GBLENDER_KEY_COUNT ];
-    GBlenderCell          cells[ GBLENDER_KEY_COUNT*GBLENDER_SHADE_COUNT*GBLENDER_CELL_SIZE ];
+    GBlenderCell          cells[ GBLENDER_KEY_COUNT ][ GBLENDER_SHADE_COUNT ];
 
    /* a small cache for normal modes
     */
@@ -107,8 +107,8 @@
 #ifdef GBLENDER_STATS
     long                  stat_hits;    /* number of direct hits             */
     long                  stat_lookups; /* number of table lookups           */
+    long                  stat_clashes; /* number of table clashes           */
     long                  stat_keys;    /* number of table key recomputation */
-    long                  stat_clears;  /* number of table clears            */
 #endif
 
   } GBlenderRec, *GBlender;
@@ -122,12 +122,11 @@
 
  /* clear blender, and reset stats */
   GBLENDER_API( void )
-  gblender_reset( GBlender  blender );
-
+  gblender_clear( GBlender  blender );
 
   GBLENDER_API( void )
-  gblender_use_channels( GBlender  blender,
-                         int       channels );
+  gblender_clear_channels( GBlender  blender );
+
 
  /* lookup a cell range for a given (background,foreground) pair
   */

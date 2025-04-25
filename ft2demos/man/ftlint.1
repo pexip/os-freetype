@@ -1,4 +1,5 @@
-.TH FTLINT 1 "May 2022" "Freetype 2.12.1"
+'\" t
+.TH FTLINT 1 "August 2024" "FreeType 2.13.3"
 .
 .
 .SH NAME
@@ -18,8 +19,10 @@ ftlint \- simple font tester
 .
 .B ftlint
 opens the given font(s), loads and renders glyphs at the given ppem value.
+The shape complexity of outline glyphs are examined based on their taxicab
+perimeters: the higher the number, the more complex the shape.
 For successfully rendered glyphs, it calculates the bitmap MD5 checksum
-for regression testing as well as horizonal (X) and vertical (Y) acutances
+for regression testing as well as horizontal (X) and vertical (Y) acutances
 for quality assessment.  The acutance is equal to 2.0 for monochrome bitmap
 fonts and approaches this value for hinted anti-aliased fonts.
 .

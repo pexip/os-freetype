@@ -141,10 +141,10 @@
             baseline is the horizontal axis.</p>
 
           <div class="figure">
-            <img src="metrics.png"
+            <img src="glyph-metrics-3.svg"
                  alt="horizontal layout"
-                 width=388
-                 height=253>
+                 width="45%"
+                 height="45%">
           </div>
 
           <p>For vertical text layouts, the baseline is vertical,
@@ -153,15 +153,15 @@
             this image.</p>
 
           <div class="figure">
-            <img src="metrics2.png"
+            <img src="glyph-metrics-4.svg"
                  alt="vertical layout"
-                 width=294
-                 height=278>
+                 width="40%"
+                 height="40%">
           </div>
 
           <p>The metrics found
             in <code>face-&gt;glyph-&gt;metrics</code> are normally
-            expressed in 26.6 pixel format (i.e., 1/64th of pixels),
+            expressed in 26.6 pixel format (i.e., 1/64 of pixels),
             unless you use the <code>FT_LOAD_NO_SCALE</code> flag when
             calling <code>FT_Load_Glyph</code>
             or <code>FT_Load_Char</code>.  In this case, the metrics
@@ -193,9 +193,8 @@
               font driver that actually loads the glyph
               image.  <code>linearHoriAdvance</code> is a 16.16
               fixed-point number that gives the value of the original
-              glyph advance width in 1/65536th of pixels.  It can be
-              use to perform pseudo device-independent text
-              layouts.</dd>
+              glyph advance width in 1/65536 of pixels.  It can be use
+              to perform pseudo device-independent text layouts.</dd>
 
             <dt>linearVertAdvance</dt>
             <dd>This is the similar to <code>linearHoriAdvance</code>
@@ -1444,12 +1443,12 @@ for ( n = 0; n &lt; num_glyphs; n++ )
 
             <dt>x_scale</dt>
             <dd>This is a 16.16 fixed-point scale to directly scale
-              horizontal distances from design space to 1/64th of
-              device pixels.</dd>
+              horizontal distances from design space to 1/64 of device
+              pixels.</dd>
 
             <dt>y_scale</dt>
             <dd>This is a 16.16 fixed-point scale to directly scale
-              vertical distances from design space to 1/64th of device
+              vertical distances from design space to 1/64 of device
               pixels.</dd>
           </dl>
 
@@ -1459,7 +1458,7 @@ for ( n = 0; n &lt; num_glyphs; n++ )
             function.</p>
 
           <pre>
-<span class="comment">/* convert design distances to 1/64th of pixels */</span>
+<span class="comment">/* convert design distances to 1/64 of pixels */</span>
 pixels_x = FT_MulFix( design_x, face-&gt;size-&gt;metrics.x_scale );
 pixels_y = FT_MulFix( design_y, face-&gt;size-&gt;metrics.y_scale );</pre>
 
@@ -1517,7 +1516,7 @@ pixels_y = design_y * y_scale;</pre>
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 16-Jan-2021</p>
+          <p>Last update: 24-Oct-2022</p>
         </div>
       </div>
     </div>

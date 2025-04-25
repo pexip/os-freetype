@@ -1,10 +1,9 @@
 Description: Use a button for donations instead of an image
- of the documentation. Commenting out the relevant <li> tag prevents lintian
- from raising several privacy-breach-donation errors.
+ of the documentation.
 Author: Paul Wise
 Bug-Debian: https://bugs.debian.org/873432
 Forwarded: not-needed
-Last-Update: 2021-12-28
+Last-Update: 2024-09-05
 
 --- a/ft2docs/docs/design/design-1.html
 +++ b/ft2docs/docs/design/design-1.html
@@ -138,7 +137,7 @@ Last-Update: 2021-12-28
        </form>
 --- a/ft2docs/docs/glyphs/glyphs-2.html
 +++ b/ft2docs/docs/glyphs/glyphs-2.html
-@@ -408,8 +408,8 @@
+@@ -406,8 +406,8 @@
          <input type="hidden"
                 name="hosted_button_id"
                 value="SK827YKEALMT4">
@@ -151,7 +150,7 @@ Last-Update: 2021-12-28
        </form>
 --- a/ft2docs/docs/glyphs/glyphs-3.html
 +++ b/ft2docs/docs/glyphs/glyphs-3.html
-@@ -456,8 +456,8 @@
+@@ -458,8 +458,8 @@
          <input type="hidden"
                 name="hosted_button_id"
                 value="SK827YKEALMT4">
@@ -203,7 +202,7 @@ Last-Update: 2021-12-28
        </form>
 --- a/ft2docs/docs/glyphs/glyphs-7.html
 +++ b/ft2docs/docs/glyphs/glyphs-7.html
-@@ -361,8 +361,8 @@
+@@ -358,8 +358,8 @@
          <input type="hidden"
                 name="hosted_button_id"
                 value="SK827YKEALMT4">
@@ -255,7 +254,7 @@ Last-Update: 2021-12-28
        </form>
 --- a/ft2docs/docs/tutorial/step1.html
 +++ b/ft2docs/docs/tutorial/step1.html
-@@ -1029,8 +1029,8 @@
+@@ -1031,8 +1031,8 @@
          <input type="hidden"
                 name="hosted_button_id"
                 value="SK827YKEALMT4">
@@ -268,7 +267,7 @@ Last-Update: 2021-12-28
        </form>
 --- a/ft2docs/docs/tutorial/step2.html
 +++ b/ft2docs/docs/tutorial/step2.html
-@@ -1545,8 +1545,8 @@
+@@ -1544,8 +1544,8 @@
          <input type="hidden"
                 name="hosted_button_id"
                 value="SK827YKEALMT4">

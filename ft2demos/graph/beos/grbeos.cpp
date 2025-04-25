@@ -6,7 +6,7 @@
  *  used by the graphics utility of the FreeType test suite.
  *
  *  Written by Michael Pfeiffer.
- *  Copyright (C) 2001-2022 by
+ *  Copyright (C) 2001-2024 by
  *  Michael Pfeiffer
  *
  *  This file is part of the FreeType project, and may only be used
@@ -167,7 +167,7 @@ grDevice  gr_beos_device =
   init_device,
   done_device,
 
-  (grDeviceInitSurfaceFunc) Window::init_surface,
+  Window::init_surface,
 
   0,
   0

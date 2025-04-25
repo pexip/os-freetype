@@ -73,7 +73,7 @@
 
           <p>Each arc is described through a series of start, end, and
             control points.  Each point of the outline has a specific
-            tag which indicates whether it is describes a line segment
+            tag which indicates whether it describes a line segment
             or an arc.  The tags can take the following values:</p>
 
           <table>
@@ -120,6 +120,13 @@
             <li>
               <p>Two successive &lsquo;on&rsquo; points indicate a
                 line segment joining them.</p>
+
+              <p align="center">
+                <img src="outlines-1.svg"
+                     height="40%"
+                     width="40%"
+                     alt="segment example">
+              </p>
             </li>
             <li>
               <p>One conic &lsquo;off&rsquo; point between two
@@ -127,6 +134,13 @@
                 B&eacute;zier arc, the &lsquo;off&rsquo; point being
                 the control point, and the &lsquo;on&rsquo; ones the
                 start and end points.</p>
+
+              <p align="center">
+                <img src="outlines-2.svg"
+                     height="40%"
+                     width="40%"
+                     alt="conic arc example">
+              </p>
             </li>
             <li>
               <p>Two successive cubic &lsquo;off&rsquo; points between
@@ -136,6 +150,13 @@
                 each cubic arc (using a single cubic &lsquo;off&rsquo;
                 point between two &lsquo;on&rsquo; points is
                 forbidden, for example).</p>
+
+              <p align="center">
+                <img src="outlines-3.svg"
+                     height="40%"
+                     width="40%"
+                     alt="cubic arc example">
+              </p>
             </li>
             <li>
               <p>Two successive conic &lsquo;off&rsquo; points force
@@ -146,6 +167,13 @@
                 successive conic B&eacute;zier arcs.  Moreover, it is
                 the way outlines are described in the TrueType
                 specification.</p>
+
+              <p align="center">
+                <img src="outlines-4.svg"
+                     height="40%"
+                     width="40%"
+                     alt="cubic arc with virtual 'on' point">
+              </p>
             </li>
             <li>
               <p>The last point in a contour uses the first as an end
@@ -171,37 +199,6 @@
           <p>Note that it is possible to mix conic and cubic arcs in a
             single contour, however, no font driver of FreeType
             produces such outlines currently.</p>
-
-          <table class="vertical-space">
-            <tr>
-              <td>
-                <img src="points_segment.png"
-                     height="166"
-                     width="221"
-                     alt="segment example">
-              </td>
-              <td>
-                <img src="points_conic.png"
-                     height="183"
-                     width="236"
-                     alt="conic arc example">
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <img src="points_cubic.png"
-                     height="162"
-                     width="214"
-                     alt="cubic arc example">
-              </td>
-              <td>
-                <img src="points_conic2.png"
-                     height="204"
-                     width="225"
-                     alt="cubic arc with virtual 'on' point">
-              </td>
-            </tr>
-          </table>
 
 
           <h4>b. The <code>FT_Outline</code> descriptor</h4>
@@ -262,7 +259,7 @@
           <p>Here, <code>points</code> is a pointer to an array of
             <a href="../reference/ft2-basic_types.html#ft_vector"><code>FT_Vector</code></a>
             records, used to store the vectorial coordinates of each
-            outline point.  These are expressed in 1/64th of a pixel,
+            outline point.  These are expressed in 1/64 of a pixel,
             which is also known as the <em>26.6&nbsp;fixed-point
             format</em>.</p>
 
@@ -312,24 +309,27 @@
             the bbox, and the two boxes are identical in most
             cases.</p>
 
-          <p>Unlike the bbox, the cbox is much faster to compute.</p>
+          <p>Unlike the bbox, the cbox can be computed very
+            quickly.</p>
 
-          <table class="vertical-space">
-            <tr>
-              <td>
-                <img src="bbox1.png"
-                     height="264"
-                     width="228"
-                     alt="a glyph with different bbox and cbox">
-              </td>
-              <td>
-                <img src="bbox2.png"
-                     height="229"
-                     width="217"
-                     alt="a glyph with identical bbox and cbox">
-              </td>
-            </tr>
-          </table>
+          <p>The following image shows B&eacute;zier curves where the
+            bbox and the cbox differ.</p>
+
+          <p align="center">
+            <img src="outlines-5.svg"
+                 height="40%"
+                 width="40%"
+                 alt="a glyph with different bbox and cbox">
+          </p>
+
+          <p>Adding points at the curve extrema avoids that.</p>
+
+          <p align="center">
+            <img src="outlines-6.svg"
+                 height="40%"
+                 width="40%"
+                 alt="a glyph with identical bbox and cbox">
+          </p>
 
           <p>Control and bounding boxes can be computed automatically
             using the
@@ -353,7 +353,7 @@
             grid-fitting</h3>
 
           <p>An outline point's vectorial coordinates are expressed in
-            the 26.6&nbsp;format, i.e., in 1/64th of a pixel, hence the
+            the 26.6&nbsp;format, i.e., in 1/64 of a pixel, hence the
             coordinates &lsquo;(1.0,-2.5)&rsquo; is stored as the
             integer pair &lsquo;(64,-160)&rsquo;, to name an
             example.</p>
@@ -434,7 +434,7 @@ height = (ymax - ymin)/64</pre>
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 15-Jan-2021</p>
+          <p>Last update: 23-Oct-2022</p>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2002-2022 by                                              */
+/*  Copyright (C) 2002-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftbench: bench some common FreeType call paths                          */
@@ -29,18 +29,19 @@
 #include <freetype/ftdriver.h>
 #include <freetype/ftglyph.h>
 #include <freetype/ftlcdfil.h>
+#include <freetype/ftmm.h>
 #include <freetype/ftmodapi.h>
 #include <freetype/ftoutln.h>
 #include <freetype/ftstroke.h>
 #include <freetype/ftsynth.h>
+
+#define MAX_MM_AXES 16
 
 #ifdef UNIX
 #include <unistd.h>
 #else
 #include "mlgetopt.h"
 #endif
-
-#include "common.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -107,6 +108,11 @@
   static FTC_SBitCache     sbit_cache;
   static FTC_ImageTypeRec  font_type;
 
+  static FT_MM_Var*    multimaster   = NULL;
+  static FT_Fixed      design_pos   [MAX_MM_AXES];
+  static FT_Fixed      requested_pos[MAX_MM_AXES];
+  static unsigned int  requested_cnt = 0;
+  static unsigned int  used_num_axes = 0;
 
   enum {
     FT_BENCH_LOAD_GLYPH,
@@ -151,6 +157,8 @@
   static int  last_index  = INT_MAX;
   static int  incr_index  = 1;
 
+  static int  cmap_index  = -1;
+
 #define FOREACH( i )  for ( i = first_index ;                          \
                             ( first_index <= i && i <= last_index ) || \
                             ( first_index >= i && i >= last_index ) ;  \
@@ -159,7 +167,7 @@
   static FT_Render_Mode  render_mode = FT_RENDER_MODE_NORMAL;
   static FT_Int32        load_flags  = FT_LOAD_DEFAULT;
 
-  static unsigned int  tt_interpreter_versions[3];
+  static unsigned int  tt_interpreter_versions[2];
   static int           num_tt_interpreter_versions;
   static unsigned int  dflt_tt_interpreter_version;
 
@@ -172,7 +180,7 @@
 
 
   /*
-   * Dummy face requester (the face object is already loaded)
+   * Face requester for cache testing
    */
 
   static FT_Error
@@ -183,10 +191,9 @@
   {
     FT_UNUSED( face_id );
     FT_UNUSED( library );
+    FT_UNUSED( request_data );
 
-    *aface = (FT_Face)request_data;
-
-    return FT_Err_Ok;
+    return get_face( aface );
   }
 
 
@@ -269,13 +276,6 @@
 
     if ( test->cache_first )
     {
-      if ( !cache_man )
-      {
-        printf( "  %-25s no cache manager\n", test->title );
-
-        return;
-      }
-
       TIMER_RESET( &timer );
       test->bench( &timer, face, test->user_data );
     }
@@ -444,10 +444,9 @@
 
     FOREACH( i )
     {
-      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
-        continue;
-
-      if ( FT_Get_Glyph( face->glyph, &glyph ) )
+      if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags )  ||
+           face->glyph->format != FT_GLYPH_FORMAT_OUTLINE ||
+           FT_Get_Glyph( face->glyph, &glyph )            )
         continue;
 
       TIMER_START( timer );
@@ -533,7 +532,6 @@
                  void*      user_data )
   {
     FT_BBox    bbox;
-    FT_Matrix  rot30 = { 0xDDB4, -0x8000, 0x8000, 0xDDB4 };
 
     int  i, done = 0;
 
@@ -542,19 +540,11 @@
 
     FOREACH( i )
     {
-      FT_Outline*  outline;
-
-
       if ( FT_Load_Glyph( face, (FT_UInt)i, load_flags ) )
         continue;
 
-      outline = &face->glyph->outline;
-
-      /* rotate outline by 30 degrees */
-      FT_Outline_Transform( outline, &rot30 );
-
       TIMER_START( timer );
-      FT_Outline_Get_BBox( outline, &bbox );
+      FT_Outline_Get_BBox( &face->glyph->outline, &bbox );
       TIMER_STOP( timer );
 
       done++;
@@ -598,19 +588,13 @@
     FT_UNUSED( face );
 
 
-    if ( !cmap_cache )
-    {
-      if ( FTC_CMapCache_New( cache_man, &cmap_cache ) )
-        return 0;
-    }
-
     TIMER_START( timer );
 
     for ( i = 0; i < charset->size; i++ )
     {
       if ( FTC_CMapCache_Lookup( cmap_cache,
                                  font_type.face_id,
-                                 0,
+                                 cmap_index,
                                  charset->code[i] ) )
         done++;
     }
@@ -633,12 +617,6 @@
     FT_UNUSED( face );
     FT_UNUSED( user_data );
 
-
-    if ( !image_cache )
-    {
-      if ( FTC_ImageCache_New( cache_man, &image_cache ) )
-        return 0;
-    }
 
     TIMER_START( timer );
 
@@ -671,12 +649,6 @@
     FT_UNUSED( user_data );
 
 
-    if ( !sbit_cache )
-    {
-      if ( FTC_SBitCache_New( cache_man, &sbit_cache ) )
-        return 0;
-    }
-
     TIMER_START( timer );
 
     FOREACH( i )
@@ -702,6 +674,7 @@
   {
     FT_UInt   idx;
     FT_ULong  charcode;
+    int       done;
 
     FT_UNUSED( user_data );
 
@@ -709,12 +682,14 @@
     TIMER_START( timer );
 
     charcode = FT_Get_First_Char( face, &idx );
+    done = ( idx != 0 );
+
     while ( idx != 0 )
       charcode = FT_Get_Next_Char( face, charcode, &idx );
 
     TIMER_STOP( timer );
 
-    return 1;
+    return done;
   }
 
 
@@ -824,6 +799,77 @@
   }
 
 
+  static void
+  header( FT_Face  face )
+  {
+    const FT_String*  targets[FT_RENDER_MODE_MAX] =
+      { "normal", "light", "mono", "lcd", "lcd-v", "sdf" };
+    const FT_String*  module_name = FT_FACE_DRIVER_NAME( face );
+    const FT_String*  hinting_engine = "";
+    FT_UInt           prop;
+
+
+    if ( !FT_IS_SCALABLE( face ) )
+      hinting_engine = "bitmap";
+
+    else if ( load_flags & FT_LOAD_NO_SCALE )
+      hinting_engine = "unscaled";
+
+    else if ( load_flags & FT_LOAD_NO_HINTING )
+      hinting_engine = "unhinted";
+
+    else if ( render_mode == FT_RENDER_MODE_LIGHT )
+      hinting_engine = "auto";
+
+    else if ( load_flags == FT_LOAD_FORCE_AUTOHINT )
+      hinting_engine = "auto";
+
+    else if ( !FT_Property_Get( lib, module_name,
+                                     "interpreter-version", &prop ) )
+    {
+      switch ( prop )
+      {
+      case TT_INTERPRETER_VERSION_35:
+        hinting_engine = "v35";
+        break;
+      case TT_INTERPRETER_VERSION_40:
+        hinting_engine = "v40";
+        break;
+      }
+    }
+
+    else if ( !FT_Property_Get( lib, module_name,
+                                     "hinting-engine", &prop ) )
+    {
+      switch ( prop )
+      {
+      case FT_HINTING_FREETYPE:
+        hinting_engine = "FT";
+        break;
+      case FT_HINTING_ADOBE:
+        hinting_engine = "Adobe";
+        break;
+      }
+    }
+
+    printf( "\n"
+            "family: %s\n"
+            " style: %s\n"
+            "driver: %s %s\n"
+            "target: %s\n"
+            " flags: 0x%X\n"
+            "  cmap: %d\n"
+            "glyphs: %ld\n",
+            face->family_name,
+            face->style_name,
+            module_name, hinting_engine,
+            targets[render_mode],
+            load_flags,
+            FT_Get_Charmap_Index( face->charmap ),
+            face->num_glyphs );
+  }
+
+
   static FT_Error
   get_face( FT_Face*  face )
   {
@@ -882,6 +928,49 @@
     if ( error )
       fprintf( stderr, "couldn't load font resource\n");
 
+    /* Set up MM_Var. */
+    if ( requested_cnt != 0 )
+    {
+      unsigned int  n;
+
+
+      error = FT_Get_MM_Var( *face, &multimaster );
+      if ( error )
+      {
+        fprintf( stderr, "couldn't load MultiMaster info\n" );
+        return error;
+      }
+
+      used_num_axes = multimaster->num_axis;
+
+      for ( n = 0; n < used_num_axes; n++ )
+      {
+        FT_Var_Axis*  a = multimaster->axis + n;
+
+
+        design_pos[n] = n < requested_cnt ? requested_pos[n] : a->def;
+
+        if ( design_pos[n] < a->minimum )
+          design_pos[n] = a->minimum;
+        else if ( design_pos[n] > a->maximum )
+          design_pos[n] = a->maximum;
+
+        if ( !FT_IS_SFNT( *face ) )
+          design_pos[n] = FT_RoundFix( design_pos[n] );
+      }
+
+      error = FT_Set_Var_Design_Coordinates( *face,
+                                             used_num_axes,
+                                             design_pos );
+      if ( error )
+      {
+        fprintf( stderr, "couldn't set design coordinates\n" );
+        return error;
+      }
+
+      FT_Done_MM_Var( lib, multimaster );
+    }
+
     return error;
   }
 
@@ -895,17 +984,15 @@
 
 
     /* we expect that at least one interpreter version is available */
-    if ( num_tt_interpreter_versions == 2 )
+    if ( num_tt_interpreter_versions == 1 )
+      snprintf( interpreter_versions, sizeof ( interpreter_versions ),
+                "%u",
+                tt_interpreter_versions[0]);
+    else
       snprintf( interpreter_versions, sizeof ( interpreter_versions ),
                 "%u and %u",
                 tt_interpreter_versions[0],
                 tt_interpreter_versions[1] );
-    else
-      snprintf( interpreter_versions, sizeof ( interpreter_versions ),
-                "%u, %u, and %u",
-                tt_interpreter_versions[0],
-                tt_interpreter_versions[1],
-                tt_interpreter_versions[2] );
 
     /* we expect that at least one hinting engine is available */
     if ( num_ps_hinting_engines == 1 )
@@ -926,9 +1013,13 @@
       "\n"
       "Usage: ftbench [options] fontname\n"
       "\n"
+      "  -a \"axis1 axis2 ...\"\n"
+      "            Specify the design coordinates for each, if any,\n"
+      "            Multiple Master axis at start-up.\n"
       "  -C        Compare with cached version (if available).\n"
       "  -c N      Use at most N iterations for each test\n"
       "            (0 means time limited).\n"
+      "  -e E      Set specific charmap index E.\n"
       "  -f L      Use hex number L as load flags (see `FT_LOAD_XXX').\n"
       "  -H NAME   Use PS hinting engine NAME.\n"
       "            Available versions are %s; default is `%s'.\n"
@@ -981,6 +1072,21 @@
 #define TEST( x ) ( !test_string || strchr( test_string, (x) ) )
 
 
+  static void
+  parse_design_coords( char  *s )
+  {
+    for ( requested_cnt = 0;
+          requested_cnt < MAX_MM_AXES && *s;
+          requested_cnt++ )
+    {
+      requested_pos[requested_cnt] = (FT_Fixed)( strtod( s, &s ) * 65536.0 );
+
+      while ( *s==' ' )
+        ++s;
+    }
+  }
+
+
   int
   main( int     argc,
         char**  argv )
@@ -993,12 +1099,9 @@
     unsigned int   size           = FACE_SIZE;
     int            max_iter       = 0;
     double         max_time       = BENCH_TIME;
-    int            compare_cached = 0;
-    size_t         i;
     int            j;
 
-    unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
-                                  TT_INTERPRETER_VERSION_38,
+    unsigned int  versions[2] = { TT_INTERPRETER_VERSION_35,
                                   TT_INTERPRETER_VERSION_40 };
     unsigned int  engines[2]  = { FT_HINTING_FREETYPE,
                                   FT_HINTING_ADOBE };
@@ -1025,7 +1128,7 @@
     FT_Property_Get( lib,
                      "truetype",
                      "interpreter-version", &dflt_tt_interpreter_version );
-    for ( j = 0; j < 3; j++ )
+    for ( j = 0; j < 2; j++ )
     {
       error = FT_Property_Set( lib,
                                "truetype",
@@ -1067,25 +1170,37 @@
       int  opt;
 
 
-      opt = getopt( argc, argv, "b:Cc:f:H:I:i:l:m:pr:s:t:v" );
+      opt = getopt( argc, argv, "a:b:Cc:e:f:H:I:i:l:m:pr:s:t:v" );
 
       if ( opt == -1 )
         break;
 
       switch ( opt )
       {
+      case 'a':
+        parse_design_coords( optarg );
+        break;
+
       case 'b':
         test_string = optarg;
         break;
 
       case 'C':
-        compare_cached = 1;
+        FTC_Manager_New( lib,
+                         0, 0, max_bytes,
+                         face_requester,
+                         NULL,
+                         &cache_man );
         break;
 
       case 'c':
         max_iter = atoi( optarg );
         if ( max_iter < 0 )
           max_iter = -max_iter;
+        break;
+
+      case 'e':
+        cmap_index = atoi( optarg );
         break;
 
       case 'f':
@@ -1140,7 +1255,7 @@
         {
           int  fi, li;
 
-          if ( sscanf( optarg, "%d%*[,:-]%d", &fi, &li ) == 2 )
+          if ( sscanf( optarg, "%i%*[,:-]%i", &fi, &li ) == 2 )
           {
             first_index = fi < 0 ? 0 : fi;
             last_index  = li < 0 ? 0 : li;
@@ -1242,6 +1357,27 @@
     if ( get_face( &face ) )
       goto Exit;
 
+    j = printf( "\n"
+                "ftbench results for font `%s'\n",
+                filename ) - 2;
+    while ( j-- )
+      putchar( '-' );
+    putchar( '\n' );
+
+    if ( cmap_index >= face->num_charmaps )
+      cmap_index = -1;
+    if ( cmap_index >= 0 )
+      face->charmap = face->charmaps[cmap_index];
+
+    /* sync target and mode */
+    load_flags |= FT_LOAD_TARGET_( render_mode );
+    render_mode = (FT_Render_Mode)( ( load_flags & 0xF0000 ) >> 16 );
+
+    header( face );
+
+    if ( !face->num_glyphs )
+      goto Exit;
+
     if ( first_index >= face->num_glyphs )
       first_index = face->num_glyphs - 1;
     if ( last_index >= face->num_glyphs )
@@ -1268,62 +1404,28 @@
       }
     }
 
-    FTC_Manager_New( lib,
-                     0,
-                     0,
-                     max_bytes,
-                     face_requester,
-                     face,
-                     &cache_man );
-
-    font_type.face_id = (FTC_FaceID)1;
-    font_type.width   = size;
-    font_type.height  = size;
-    font_type.flags   = load_flags;
+    if ( cache_man )
+    {
+      font_type.face_id = (FTC_FaceID)1;
+      font_type.width   = size;
+      font_type.height  = size;
+      font_type.flags   = load_flags;
+    }
 
     printf( "\n"
-            "ftbench results for font `%s'\n"
-            "---------------------------",
-            filename );
-    for ( i = 0; i < strlen( filename ); i++ )
-      putchar( '-' );
-    putchar( '\n' );
+            "font preloading into memory: %s\n"
+            "maximum cache size: %lu KiByte\n",
+            preload ? "yes" : face->stream->base ? "mapped" : "no",
+            max_bytes / 1024 );
 
     printf( "\n"
-            "family: %s\n"
-            " style: %s\n"
-            "\n",
-            face->family_name,
-            face->style_name );
-
+            "testing glyph indices from %d to %d at %u ppem\n"
+            "number of seconds for each test: %s%g\n",
+            first_index, last_index, size,
+            max_iter ? "at most " : "", max_time );
     if ( max_iter )
       printf( "number of iterations for each test: at most %d\n",
               max_iter );
-    printf( "number of seconds for each test: %s%f\n",
-             max_iter ? "at most " : "",
-             max_time );
-
-    printf( "\n"
-            "glyph indices: from %d to %d\n"
-            "face size: %uppem\n"
-            "font preloading into memory: %s\n",
-            first_index,
-            last_index,
-            size,
-            preload ? "yes" : "no" );
-
-    printf( "\n"
-            "load flags: 0x%X\n"
-            "render mode: %u\n",
-            load_flags,
-            render_mode );
-    printf( "\n"
-            "CFF hinting engine set to `%s'\n"
-            "TrueType interpreter set to version %d\n"
-            "maximum cache size: %luKiByte\n",
-            engine,
-            version,
-            max_bytes / 1024 );
 
     printf( "\n"
             "executing tests:\n" );
@@ -1349,20 +1451,26 @@
         test.bench = test_load;
         benchmark( face, &test, max_iter, max_time );
 
-        if ( compare_cached )
+        if ( cache_man )
         {
           test.cache_first = 1;
 
-          test.title = "Load (image cached)";
-          test.bench = test_image_cache;
-          benchmark( face, &test, max_iter, max_time );
-
-          test.title = "Load (sbit cached)";
-          test.bench = test_sbit_cache;
-          if ( size )
+          if ( !FTC_ImageCache_New( cache_man, &image_cache ) )
+          {
+            test.title = "Load (image cached)";
+            test.bench = test_image_cache;
             benchmark( face, &test, max_iter, max_time );
-          else
-            printf( "  %-25s disabled (size = 0)\n", test.title );
+          }
+
+          if ( !FTC_SBitCache_New( cache_man, &sbit_cache ) )
+          {
+            test.title = "Load (sbit cached)";
+            test.bench = test_sbit_cache;
+            if ( size )
+              benchmark( face, &test, max_iter, max_time );
+            else
+              printf( "  %-25s disabled (size = 0)\n", test.title );
+          }
         }
         break;
 
@@ -1409,7 +1517,15 @@
       case FT_BENCH_GET_BBOX:
         test.title = "Get_BBox";
         test.bench = test_get_bbox;
-        benchmark( face, &test, max_iter, max_time );
+        {
+          FT_Matrix  rot30 = { 0xDDB4, -0x8000, 0x8000, 0xDDB4 };
+
+
+          /* rotate outlines by 30 degrees so that CBox and BBox differ */
+          FT_Set_Transform( face, &rot30, NULL );
+          benchmark( face, &test, max_iter, max_time );
+          FT_Set_Transform( face, NULL, NULL );
+        }
         break;
 
       case FT_BENCH_CMAP:
@@ -1428,7 +1544,8 @@
 
             benchmark( face, &test, max_iter, max_time );
 
-            if ( compare_cached )
+            if ( cache_man                                    &&
+                 !FTC_CMapCache_New( cache_man, &cmap_cache ) )
             {
               test.cache_first = 1;
 
@@ -1480,25 +1597,11 @@
       }
     }
 
-  Exit:
-    /* The following is a bit subtle: When we call FTC_Manager_Done, this
-     * normally destroys all FT_Face objects that the cache might have
-     * created by calling the face requester.
-     *
-     * However, this little benchmark uses a tricky face requester that
-     * doesn't create a new FT_Face through FT_New_Face but simply passes a
-     * pointer to the one that was previously created.
-     *
-     * If the cache manager has been used before, the call to
-     * FTC_Manager_Done discards our single FT_Face.
-     *
-     * In the case where no cache manager is in place, or if no test was
-     * run, the call to FT_Done_FreeType releases any remaining FT_Face
-     * object anyway.
-     */
     if ( cache_man )
       FTC_Manager_Done( cache_man );
 
+  Exit:
+    /* releases any remaining FT_Face object too */
     FT_Done_FreeType( lib );
 
     return 0;

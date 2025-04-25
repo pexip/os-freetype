@@ -17,7 +17,8 @@ dep_ver := $(shell echo $(DEB_VERSION_UPSTREAM) | cut -d '.' -f -2)
 udeb_dir := debian/udeb
 udeb_builddir := $(udeb_dir)/build
 udeb_installdir := $(udeb_dir)/install
-configure_flags := --without-bzip2 --without-harfbuzz
+configure_flags := --without-harfbuzz
+udeb_configure_flags := $(configure_flags) --without-brotli --without-bzip2 --without-librsvg
 doc_dir := debian/freetype2-doc/usr/share/doc/libfreetype-dev
 
 %:
@@ -28,7 +29,7 @@ override_dh_autoreconf:
 
 override_dh_auto_configure:
 ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
-	dh_auto_configure --builddir=$(udeb_builddir) -- $(configure_flags) --without-brotli --without-librsvg
+	dh_auto_configure --builddir=$(udeb_builddir) -- $(udeb_configure_flags)
 endif
 	dh_auto_configure -- $(configure_flags)
 
@@ -59,7 +60,7 @@ endif
 
 override_dh_installdocs-indep:
 	dh_installdocs -p freetype2-doc --doc-main-package=libfreetype-dev \
-	    -Xreference/assets/images
+	    -Xreference/sitemap.xml.gz -Xreference/assets/images
 	cp docs/CHANGES $(doc_dir)/NEWS
 	cp src/pcf/README $(doc_dir)/pcf/
 	sed -i 's@\.\./\.\./js@js@' \

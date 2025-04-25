@@ -1,4 +1,4 @@
-.TH FTVIEW 1 "May 2022" "FreeType 2.12.1"
+.TH FTVIEW 1 "August 2024" "FreeType 2.13.3"
 .
 .
 .SH NAME
@@ -10,7 +10,8 @@ ftview \- simple glyph viewer
 .
 .B ftview
 .RI [ options ]
-.I pt font
+.RI [ pt ]
+.I font .\|.\|.
 .
 .
 .SH DESCRIPTION
@@ -67,7 +68,7 @@ Common values:
 .B ADOB
 (Adobe standard),
 .B ADBC
-(Adobe custom).
+(Adobe custom), or a numeric charmap index.
 .
 .TP
 .BI \-m \ text
@@ -80,6 +81,7 @@ for rendering.
 Set start-up rendering mode (0 <=
 .I mode
 <= 6).
+This corresponds to the keystrokes 'A' to 'G' within the program.
 .
 .TP
 .BI \-L \ W1 , W2 , W3 , W4 , W5
