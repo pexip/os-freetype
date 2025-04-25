@@ -2,19 +2,24 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2022 by                                              */
+/*  Copyright (C) 1996-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  gblblit.c: Alpha blending with gamma correction and caching.            */
 /*                                                                          */
 /****************************************************************************/
 
+/* Color gradients between background and foreground are cached to quickly
+ * look up the blended color for a given glyph pixel coverage (alpha).
+ * They are calculated with gamma correction and stored with 8-bit depth
+ * per channel, in the range [0-255]. Other supported color representations
+ * require scaling to utilize the cache. This file contains the color
+ * conversion and blending routines.
+ */
 
 #include "grobjs.h"
 #include "gblblit.h"
-
-/* blitting gray glyphs
- */
+#include <stdlib.h>
 
 /* generic macros
  */
@@ -106,11 +111,11 @@
 #define  GDST_PIX(p,d)            unsigned int  p = *(GBlenderPixel*)(d) & 0xFFFFFF
 #define  GDST_COPY(d)             *(GBlenderPixel*)(d) = color.value
 #define  GDST_STOREP(d,cells,a)   *(GBlenderPixel*)(d) = (cells)[(a)]
-#define  GDST_STOREB(d,cells,a)              \
-  {                                          \
-    GBlenderCell*  _g = (cells) + (a)*3;     \
-                                             \
-    GDST_STOREC(d,_g[0],_g[1],_g[2]);        \
+#define  GDST_STOREB(d,cells,a)                 \
+  {                                             \
+    GBlenderCell*  _g = (cells) + (a);          \
+                                                \
+    GDST_STOREC(d,(*_g)[0],(*_g)[1],(*_g)[2]);  \
   }
 #define  GDST_STOREC(d,r,g,b)     *(GBlenderPixel*)(d) = GRGB_PACK(r,g,b)
 
@@ -128,13 +133,13 @@
 #define  GDST_COPY(d)              GDST_STORE3(d,color.chroma[0],color.chroma[1],color.chroma[2])
 #define  GDST_STOREC(d,r,g,b)      GDST_STORE3(d,r,g,b)
 
-#define  GDST_STOREB(d,cells,a)                \
-    {                                          \
-      GBlenderCell*  _g = (cells) + (a)*3;     \
-                                               \
-      (d)[0] = _g[0];                          \
-      (d)[1] = _g[1];                          \
-      (d)[2] = _g[2];                          \
+#define  GDST_STOREB(d,cells,a)           \
+    {                                     \
+      GBlenderCell*  _g = (cells) + (a);  \
+                                          \
+      (d)[0] = (*_g)[0];                  \
+      (d)[1] = (*_g)[1];                  \
+      (d)[2] = (*_g)[2];                  \
     }
 
 #define  GDST_STOREP(d,cells,a)                 \
@@ -158,11 +163,11 @@
 #define  GDST_PIX(p,d)           unsigned int  p = GRGB565_TO_RGB24(*(unsigned short*)(d))
 #define  GDST_COPY(d)            *(unsigned short*)(d) = (unsigned short)color.value
 
-#define  GDST_STOREB(d,cells,a)                                   \
-    {                                                             \
-      GBlenderCell*  _g = (cells) + (a)*3;                        \
-                                                                  \
-      *(unsigned short*)(d) = GRGB_TO_RGB565(_g[0],_g[1],_g[2]);  \
+#define  GDST_STOREB(d,cells,a)                                            \
+    {                                                                      \
+      GBlenderCell*  _g = (cells) + (a);                                   \
+                                                                           \
+      *(unsigned short*)(d) = GRGB_TO_RGB565((*_g)[0],(*_g)[1],(*_g)[2]);  \
     }
 
 #define  GDST_STOREP(d,cells,a)                         \
@@ -187,11 +192,11 @@
 #define  GDST_PIX(p,d)           unsigned int  p = GRGB555_TO_RGB24(*(unsigned short*)(d))
 #define  GDST_COPY(d)            *(unsigned short*)(d) = (unsigned short)color.value
 
-#define  GDST_STOREB(d,cells,a)                                   \
-    {                                                             \
-      GBlenderCell*  _g = (cells) + (a)*3;                        \
-                                                                  \
-      *(unsigned short*)(d) = GRGB_TO_RGB555(_g[0],_g[1],_g[2]);  \
+#define  GDST_STOREB(d,cells,a)                                            \
+    {                                                                      \
+      GBlenderCell*  _g = (cells) + (a);                                   \
+                                                                           \
+      *(unsigned short*)(d) = GRGB_TO_RGB555((*_g)[0],(*_g)[1],(*_g)[2]);  \
     }
 
 #define  GDST_STOREP(d,cells,a)                         \
@@ -206,7 +211,7 @@
 
 #include "gblany.h"
 
-/* Gray8 blitting routines
+/* Gray8 blitting routines, only 8-bit gray is supported
  */
 #define  GDST_TYPE               gray8
 #define  GDST_INCR               1
@@ -216,11 +221,11 @@
 #define  GDST_PIX(p,d)           unsigned int  p = GGRAY8_TO_RGB24(*(unsigned char*)(d))
 #define  GDST_COPY(d)            *(d) = (unsigned char)color.value
 
-#define  GDST_STOREB(d,cells,a)                 \
-    {                                           \
-      GBlenderCell*  _g = (cells) + (a)*3;      \
-                                                \
-      *(d) = GRGB_TO_GRAY8(_g[0],_g[1],_g[2]);  \
+#define  GDST_STOREB(d,cells,a)                          \
+    {                                                    \
+      GBlenderCell*  _g = (cells) + (a);                 \
+                                                         \
+      *(d) = GRGB_TO_GRAY8((*_g)[0],(*_g)[1],(*_g)[2]);  \
     }
 
 #define  GDST_STOREP(d,cells,a)           \
@@ -237,6 +242,29 @@
 
 /* */
 
+/* works best to convert from 4 or 16 grays to 256 grays,
+ * needs aligned buffers and clean padding
+ */
+static void
+gblender_glyph_upgray( grBitmap*  glyph )
+{
+  int        i, size = abs( glyph->pitch ) * glyph->rows;
+  uint32_t*  buf = (uint32_t*)glyph->buffer;
+  uint32_t   scale = 255U / (uint32_t)( glyph->grays - 1 );
+
+
+  /* four bytes at a time */
+  for ( i = 0; i <= size - 4; i += 4, buf++ )
+    *buf *= scale;
+
+  /* remaining bytes */
+  for ( ; i < size; i++ )
+    glyph->buffer[i] *= scale;
+
+  glyph->grays = 256;
+}
+
+
 static int
 gblender_blit_init( GBlenderBlit           blit,
                     int                    dst_x,
@@ -244,52 +272,70 @@ gblender_blit_init( GBlenderBlit           blit,
                     grSurface*             surface,
                     grBitmap*              glyph )
 {
-  int               src_x = 0;
-  int               src_y = 0;
-  int               delta;
+  grBitmap*  target = &surface->bitmap;
+  GBlender   blender = surface->gblender;
 
-  grBitmap*  target = (grBitmap*)surface;
-
-  GBlenderSourceFormat   src_format;
-  const unsigned char*   src_buffer = glyph->buffer;
-  const int              src_pitch  = glyph->pitch;
-  int                    src_width  = glyph->width;
-  int                    src_height = glyph->rows;
-  unsigned char*         dst_buffer = target->buffer;
-  const int              dst_pitch  = target->pitch;
-  const int              dst_width  = target->width;
-  const int              dst_height = target->rows;
+  GBlenderSourceFormat  src_format;
+  int                   src_x = 0;
+  int                   src_y = 0;
+  int                   delta;
+  const unsigned char*  src_buffer = glyph->buffer;
+  int                   src_pitch  = glyph->pitch;
+  int                   src_width  = glyph->width;
+  int                   src_height = glyph->rows;
+  unsigned char*        dst_buffer = target->buffer;
+  const int             dst_pitch  = target->pitch;
+  const int             dst_width  = target->width;
+  const int             dst_height = target->rows;
 
 
   switch ( glyph->mode )
   {
-  case gr_pixel_mode_gray:  src_format = GBLENDER_SOURCE_GRAY8;
-    gblender_use_channels( surface->gblender, 0 );
+  case gr_pixel_mode_gray:
+    src_format = GBLENDER_SOURCE_GRAY8;
+    if ( glyph->grays != 256 )
+      gblender_glyph_upgray( glyph );
+    if ( blender->channels )
+      gblender_clear( blender );
     break;
-  case gr_pixel_mode_lcd:   src_format = GBLENDER_SOURCE_HRGB;
+  case gr_pixel_mode_lcd:
+    src_format = GBLENDER_SOURCE_HRGB;
     src_width /= 3;
-    gblender_use_channels( surface->gblender, 1 );
+    if ( !blender->channels )
+      gblender_clear_channels( blender );
     break;
-  case gr_pixel_mode_lcd2:  src_format = GBLENDER_SOURCE_HBGR;
+  case gr_pixel_mode_lcd2:
+    src_format = GBLENDER_SOURCE_HBGR;
     src_width /= 3;
-    gblender_use_channels( surface->gblender, 1 );
+    if ( !blender->channels )
+      gblender_clear_channels( blender );
     break;
-  case gr_pixel_mode_lcdv:  src_format = GBLENDER_SOURCE_VRGB;
+  case gr_pixel_mode_lcdv:
+    src_format  = GBLENDER_SOURCE_VRGB;
     src_height /= 3;
-    gblender_use_channels( surface->gblender, 1 );
+    src_pitch  *= 3;
+    if ( !blender->channels )
+      gblender_clear_channels( blender );
     break;
-  case gr_pixel_mode_lcdv2: src_format = GBLENDER_SOURCE_VBGR;
+  case gr_pixel_mode_lcdv2:
+    src_format  = GBLENDER_SOURCE_VBGR;
     src_height /= 3;
-    gblender_use_channels( surface->gblender, 1 );
+    src_pitch  *= 3;
+    if ( !blender->channels )
+      gblender_clear_channels( blender );
     break;
-  case gr_pixel_mode_bgra:  src_format = GBLENDER_SOURCE_BGRA;
+  case gr_pixel_mode_bgra:
+    src_format = GBLENDER_SOURCE_BGRA;
     break;
-  case gr_pixel_mode_mono:  src_format = GBLENDER_SOURCE_MONO;
+  case gr_pixel_mode_mono:
+    src_format = GBLENDER_SOURCE_MONO;
     break;
   default:
     grError = gr_err_bad_source_depth;
     return -2;
   }
+
+  blit->blender = blender;
 
   switch ( target->mode )
   {
@@ -313,7 +359,10 @@ gblender_blit_init( GBlenderBlit           blit,
     return -2;
   }
 
-  blit->blender   = surface->gblender;
+  if ( src_pitch < 0 )
+    src_buffer -= src_pitch * ( src_height - 1 );
+  if ( dst_pitch < 0 )
+    dst_buffer -= dst_pitch * ( dst_height - 1 );
 
   if ( dst_x < 0 )
   {
@@ -346,14 +395,10 @@ gblender_blit_init( GBlenderBlit           blit,
   blit->height    = src_height;
 
   blit->src_pitch = src_pitch;
-  if ( src_pitch < 0 )
-    src_y -= glyph->rows - 1;
   blit->src_line  = src_buffer + src_pitch * src_y;
   blit->src_x     = src_x;
 
   blit->dst_pitch = dst_pitch;
-  if ( dst_pitch < 0 )
-    dst_y -= dst_height - 1;
   blit->dst_line  = dst_buffer + dst_pitch * dst_y;
   blit->dst_x     = dst_x;
 
@@ -376,6 +421,7 @@ grSetTargetPenBrush( grSurface*  surface,
                      grColor     color )
 {
   grBitmap*  target = &surface->bitmap;
+  GBlender   blender = surface->gblender;
 
 
   surface->origin = target->buffer;
@@ -413,7 +459,8 @@ grSetTargetPenBrush( grSurface*  surface,
 
   surface->color = color;
 
-  gblender_use_channels( surface->gblender, 0 );
+  if ( blender->channels )
+    gblender_clear( blender );
 }
 
 
@@ -424,20 +471,14 @@ grBlitGlyphToSurface( grSurface*  surface,
                       grPos       y,
                       grColor     color )
 {
-  GBlenderBlitRec       gblit[1];
+  GBlenderBlitRec  gblit[1];
 
 
   /* check arguments */
-  if ( !surface || !glyph )
+  if ( !surface || !glyph || !glyph->buffer )
   {
     grError = gr_err_bad_argument;
     return -1;
-  }
-
-  if ( !glyph->rows || !glyph->width )
-  {
-    /* nothing to do */
-    return 0;
   }
 
   switch ( gblender_blit_init( gblit, x, y, surface, glyph ) )

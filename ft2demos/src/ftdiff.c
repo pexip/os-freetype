@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2007-2022 by                                              */
+/*  Copyright (C) 2007-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -29,7 +29,7 @@
 
 
   static void
-  usage( char*  execname )
+  usage( const char*  execname )
   {
     fprintf( stderr,
       "\n"
@@ -181,7 +181,7 @@
     unsigned int   cff_hinting_engine;
     unsigned int   type1_hinting_engine;
     unsigned int   t1cid_hinting_engine;
-    unsigned int   tt_interpreter_versions[3];
+    unsigned int   tt_interpreter_versions[2];
     int            num_tt_interpreter_versions;
     int            tt_interpreter_version_idx;
 
@@ -229,14 +229,13 @@
     FT_UInt  type1_hinting_engine;
     FT_UInt  t1cid_hinting_engine;
 
-    unsigned int  tt_interpreter_versions[3]  = { 0, 0, 0 };
+    unsigned int  tt_interpreter_versions[2]  = { 0, 0 };
     int           num_tt_interpreter_versions = 0;
     int           tt_interpreter_version_idx  = 0;
 
     unsigned int  dflt_tt_interpreter_version;
     int           i;
-    unsigned int  versions[3] = { TT_INTERPRETER_VERSION_35,
-                                  TT_INTERPRETER_VERSION_38,
+    unsigned int  versions[2] = { TT_INTERPRETER_VERSION_35,
                                   TT_INTERPRETER_VERSION_40 };
 
 
@@ -267,7 +266,7 @@
     FT_Property_Get( library,
                      "truetype",
                      "interpreter-version", &dflt_tt_interpreter_version );
-    for ( i = 0; i < 3; i++ )
+    for ( i = 0; i < 2; i++ )
     {
       error = FT_Property_Set( library,
                                "truetype",
@@ -295,8 +294,6 @@
       tt_interpreter_versions[0];
     state->columns[0].tt_interpreter_versions[1] =
       tt_interpreter_versions[1];
-    state->columns[0].tt_interpreter_versions[2] =
-      tt_interpreter_versions[2];
     state->columns[0].num_tt_interpreter_versions =
       num_tt_interpreter_versions;
     state->columns[0].tt_interpreter_version_idx =
@@ -381,7 +378,7 @@
   static void
   render_state_set_files( RenderState  state,
                           char**       files,
-                          char*        execname )
+                          const char*  execname )
   {
     FontFace      faces     = NULL;
     unsigned int  num_faces = 0;
@@ -509,20 +506,20 @@
         return -1;
 
       {
-        unsigned int  len = strlen( filepath );
+        unsigned int  len = strlen( filepath ) + 1;
         char*         p;
 
 
-        if ( len + 1 > sizeof ( state->filepath0 ) )
+        if ( len > sizeof ( state->filepath0 ) )
         {
-          state->filepath = (const char*)malloc( len + 1 );
+          state->filepath = (const char*)malloc( len );
           if ( state->filepath == NULL )
           {
             state->filepath = state->filepath0;
             return -1;
           }
         }
-        memcpy( (char*)state->filepath, filepath, len + 1 );
+        memcpy( (char*)state->filepath, filepath, len );
         p = (char*)strrchr( state->filepath, '\\' );
         if ( p == NULL )
           p = (char*)strrchr( state->filepath, '/' );
@@ -844,9 +841,6 @@
           {
           case TT_INTERPRETER_VERSION_35:
             extra = " (TT v35)";
-            break;
-          case TT_INTERPRETER_VERSION_38:
-            extra = " (TT v38)";
             break;
           case TT_INTERPRETER_VERSION_40:
             extra = " (TT v40)";
@@ -1454,8 +1448,8 @@
     const char*     textfile   = NULL;
     char*           text       = (char*)default_text;
 
-    char*  execname;
-    int    option;
+    const char*  execname;
+    int          option;
 
 
     execname  = ft_basename( argv[0] );
@@ -1627,9 +1621,10 @@
                          column_width, column_height );
 
       write_global_info( state );
-      grRefreshSurface( adisplay->surface );
 
+      grRefreshSurface( adisplay->surface );
       grListenSurface( adisplay->surface, 0, &event );
+
       if ( event.type == gr_event_resize )
       {
         width  = event.x;

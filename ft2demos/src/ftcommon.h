@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2005-2022 by                                              */
+/*  Copyright (C) 2005-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -47,6 +47,10 @@
 #endif
 
 
+  const FT_String*
+  FTDemo_Error_String( FT_Error  err );
+
+
   /*************************************************************************/
   /*************************************************************************/
   /*****                                                               *****/
@@ -86,7 +90,8 @@
 
   FTDemo_Display*
   FTDemo_Display_New( const char*  device,
-                      const char*  dims );
+                      const char*  dims,
+                      const char*  title );
 
 
   void
@@ -213,6 +218,7 @@
     int             use_sbits;         /* do we use embedded bitmaps?     */
     int             use_color;         /* do we use coloured glyphs?      */
     int             use_layers;        /* do we use color-layered glyphs? */
+    int             use_svg;           /* do we use SVG glyphs?           */
     int             autohint;          /* force auto-hinting              */
     int             lcd_mode;          /* mono, aa, light, vrgb, ...      */
     int             preload;           /* force font file preloading      */

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 2005-2022 by                                              */
+/*  Copyright (C) 2005-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -24,12 +24,6 @@
 #include <freetype/ftfntfmt.h>
 #include <freetype/ftmodapi.h>
 
-
-  /* error messages */
-#undef FTERRORS_H_
-#define FT_ERROR_START_LIST     {
-#define FT_ERRORDEF( e, v, s )  case v: str = s; break;
-#define FT_ERROR_END_LIST       default: str = "unknown error"; }
 
 #include "common.h"
 #include "strbuf.h"
@@ -72,17 +66,30 @@
 #endif /* NODEBUG */
 
 
+  /* error messages */
+#undef FTERRORS_H_
+#define FT_ERROR_START_LIST     {
+#define FT_ERRORDEF( e, v, s )  case v: str = s; break;
+#define FT_ERROR_END_LIST       default: str = "unknown error"; }
+
+  const FT_String*
+  FTDemo_Error_String( FT_Error  err )
+  {
+    const FT_String  *str;
+
+    switch ( err )
+    #include <freetype/fterrors.h>
+
+    return str;
+  }
+
+
   /* PanicZ */
   void
   PanicZ( const char*  message )
   {
-    const FT_String  *str;
-
-
-    switch( error )
-    #include <freetype/fterrors.h>
-
-    fprintf( stderr, "%s\n  error = 0x%04x, %s\n", message, error, str );
+    fprintf( stderr, "%s\n  error = 0x%04x, %s\n", message, error,
+                                            FTDemo_Error_String( error ) );
     exit( 1 );
   }
 
@@ -98,7 +105,8 @@
 
   FTDemo_Display*
   FTDemo_Display_New( const char*  device,
-                      const char*  dims )
+                      const char*  dims,
+                      const char*  title )
   {
     FTDemo_Display*  display;
     grPixelMode      mode;
@@ -164,6 +172,9 @@
     display->gamma = GAMMA;
 
     grSetTargetGamma( display->surface, display->gamma );
+
+    if ( title )
+      grSetTitle( display->surface, title );
 
     return display;
   }
@@ -289,7 +300,8 @@
         size_t  path_len      = strlen( font->filepathname );
         char*   suffix        = (char *)strrchr( font->filepathname, '.' );
         int     has_extension = suffix                                 &&
-                                ( strcasecmp( suffix, ".pfa" ) == 0 ||
+                                ( strcasecmp( suffix, ".t1"  ) == 0 ||
+                                  strcasecmp( suffix, ".pfa" ) == 0 ||
                                   strcasecmp( suffix, ".pfb" ) == 0 );
 
         size_t  ext_path_len;
@@ -298,8 +310,8 @@
 
         if ( has_extension )
         {
-          /* Ignore `.pfa' or `.pfb' extension in the original font path. */
-          path_len -= 4;
+          /* Ignore `.t1' `.pfa',`.pfb' extension in the original path. */
+          path_len = (size_t)( suffix - font->filepathname );
         }
 
         ext_path_len = path_len + 5;       /* 4 bytes extension + '\0' */
@@ -377,6 +389,7 @@
     handle->use_sbits  = 1;
     handle->use_color  = 1;
     handle->use_layers = 1;
+    handle->use_svg    = 1;
     handle->autohint   = 0;
     handle->lcd_mode   = LCD_MODE_AA;
 
@@ -455,8 +468,9 @@
   icon_span( int              y,
              int              count,
              const FT_Span*   spans,
-             grBitmap*        icon )
+             void*            user )
   {
+    grBitmap*       icon = (grBitmap*)user;
     FT_UInt32*      dst_line;
     FT_UInt32*      dst;
     FT_UInt32       color = 0xFF7F00;
@@ -478,25 +492,26 @@
   FTDemo_Icon( FTDemo_Handle*   handle,
                FTDemo_Display*  display )
   {
-    FT_Vector   p[] = { { 4, 8}, { 4,10}, { 8,12}, { 8,52}, { 4,54},
-                        { 4,56}, {60,56}, {60,44}, {58,44}, {56,52},
-                        {44,52}, {44,12}, {48,10}, {48, 8}, {32, 8},
-                        {32,10}, {36,12}, {36,52}, {16,52}, {16,36},
-                        {24,36}, {26,40}, {28,40}, {28,28}, {26,28},
-                        {24,32}, {16,32}, {16,12}, {20,10}, {20, 8} };
-    char        t[] = { 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1,
-                        1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1 };
-    short       c[] = {29};
-    FT_Outline  FT  = { sizeof ( c ) / sizeof ( c[0] ),
-                        sizeof ( p ) / sizeof ( p[0] ),
-                        p, t, c, FT_OUTLINE_NONE };
-    grBitmap    icon = { 0 };
-    grBitmap*   picon = NULL;
-    int         size, i;
+    FT_Vector       p[] = { { 4, 8}, { 4,10}, { 8,12}, { 8,52}, { 4,54},
+                            { 4,56}, {60,56}, {60,44}, {58,44}, {56,52},
+                            {44,52}, {44,12}, {48,10}, {48, 8}, {32, 8},
+                            {32,10}, {36,12}, {36,52}, {16,52}, {16,36},
+                            {24,36}, {26,40}, {28,40}, {28,28}, {26,28},
+                            {24,32}, {16,32}, {16,12}, {20,10}, {20, 8} };
+    unsigned char   t[] = { 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1,
+                            1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1 };
+    unsigned short  c[] = { 29 };
+    FT_Outline      FT  = { sizeof ( c ) / sizeof ( c[0] ),
+                            sizeof ( p ) / sizeof ( p[0] ),
+                            p, t, c, FT_OUTLINE_NONE };
+
+    grBitmap   icon  = { 0, 0, 0, gr_pixel_mode_none, 0, NULL };
+    grBitmap*  picon = NULL;
+    int        size, i;
 
     FT_Raster_Params  params = { NULL, NULL,
                                  FT_RASTER_FLAG_AA | FT_RASTER_FLAG_DIRECT,
-                                 (FT_SpanFunc)icon_span, NULL, NULL, NULL,
+                                 icon_span, NULL, NULL, NULL,
                                  &icon, { 0, 0, 0, 0 } };
 
 
@@ -587,9 +602,10 @@
 
         font->face_index = ( j << 16 ) + i;
 
-        if ( handle-> encoding != FT_ENCODING_ORDER                      &&
-             FT_Select_Charmap( face, (FT_Encoding)handle->encoding ) ==
-                                                               FT_Err_Ok )
+        if ( handle->encoding < (unsigned long)face->num_charmaps )
+          font->cmap_index = handle->encoding;
+        else if ( handle->encoding != FT_ENCODING_ORDER                     &&
+                  !FT_Select_Charmap( face, (FT_Encoding)handle->encoding ) )
           font->cmap_index = FT_Get_Charmap_Index( face->charmap );
         else
           font->cmap_index = face->num_charmaps;  /* FT_ENCODING_ORDER */
@@ -874,6 +890,9 @@
     if ( handle->use_color )
       flags |= FT_LOAD_COLOR;
 
+    if ( !handle->use_svg )
+      flags |= FT_LOAD_NO_SVG;
+
     if ( handle->hinted )
     {
       target = 0;
@@ -969,26 +988,20 @@
     if ( error                                       ||
          !FT_IS_SCALABLE( face )                     ||
          !handle->hinted                             ||
+         handle->autohint                            ||
          handle->lcd_mode == LCD_MODE_LIGHT          ||
          handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL )
       return 0;  /* do nothing */
 
     module_name = FT_FACE_DRIVER_NAME( face );
 
-    if ( !handle->autohint                                         &&
-         !FT_Property_Get( library, module_name,
+    if ( !FT_Property_Get( library, module_name,
                                     "interpreter-version", &prop ) )
     {
       switch ( prop )
       {
       S1:
       case TT_INTERPRETER_VERSION_35:
-        prop = TT_INTERPRETER_VERSION_38;
-        if ( !FT_Property_Set( library, module_name,
-                                        "interpreter-version", &prop ) )
-          break;
-        /* fall through */
-      case TT_INTERPRETER_VERSION_38:
         prop = TT_INTERPRETER_VERSION_40;
         if ( !FT_Property_Set( library, module_name,
                                         "interpreter-version", &prop ) )
@@ -1071,9 +1084,6 @@
       case TT_INTERPRETER_VERSION_35:
         hinting_engine = "\372v35";
         break;
-      case TT_INTERPRETER_VERSION_38:
-        hinting_engine = "\372v38";
-        break;
       case TT_INTERPRETER_VERSION_40:
         hinting_engine = "\372v40";
         break;
@@ -1145,7 +1155,7 @@
     const char*  encoding;
 
     int          line = 0;
-    int          x;
+    int          x, y;
 
 
     error = FTC_Manager_LookupFace( handle->cache_manager,
@@ -1160,21 +1170,29 @@
 
     /* font and file name */
     strbuf_init( buf, buffer, sizeof ( buffer ) );
-    x = strbuf_format( buf, "%.50s %.50s", face->family_name,
-                       face->style_name );
+    x = strbuf_format( buf, "%.50s %.50s",
+                       face->family_name, face->style_name );
     grWriteCellString( display->bitmap, 0, line * HEADER_HEIGHT,
                        strbuf_value( buf ), display->fore_color );
 
     basename = ft_basename( handle->current_font->filepathname );
-    x = display->bitmap->width - 8 * (int)strlen( basename ) > 8 * x + 8 ?
-        display->bitmap->width - 8 * (int)strlen( basename ) : 8 * x + 8;
+    strbuf_reset( buf );
+    y = strbuf_format( buf, face->num_faces > 1 ? "%.50s:%ld" : "%.50s",
+                       basename, face->face_index );
+    x = display->bitmap->width - 8 * y > 8 * x + 8 ?
+        display->bitmap->width - 8 * y : 8 * x + 8;
     grWriteCellString( display->bitmap, x, line++ * HEADER_HEIGHT,
-                       basename, display->fore_color );
+                       strbuf_value( buf ), display->fore_color );
 
     /* ppem, pt and dpi, instance */
-    ppem = FT_IS_SCALABLE( face ) ? FT_MulFix( face->units_per_EM,
-                                               face->size->metrics.y_scale )
-                                  : face->size->metrics.y_ppem * 64;
+    if ( face->size )
+    {
+      ppem = FT_IS_SCALABLE( face )
+             ? FT_MulFix( face->units_per_EM, face->size->metrics.y_scale )
+             : face->size->metrics.y_ppem * 64;
+    }
+    else
+      ppem = 0;
 
     strbuf_reset( buf );
     if ( res == 72 )
@@ -1191,9 +1209,13 @@
     grWriteCellString( display->bitmap, 0, line * HEADER_HEIGHT,
                        strbuf_value( buf ), display->fore_color );
 
-    if ( abs( ptsize * res / 64 - face->size->metrics.y_ppem * 72 ) > 36 ||
-         error_code                                                      )
+    /* The demo programs are mainly investigation tools.  Normal          */
+    /* applications don't need all the extra validity checks to display   */
+    /* something for invalid fonts; instead, they can simply reject them. */
+    if ( abs( ptsize * res / 72 - ppem ) > 32 ||
+         error_code                           )
     {
+      x = 8 * strbuf_len( buf ) + 16;
       strbuf_reset( buf );
 
       switch ( error_code )
@@ -1210,7 +1232,7 @@
       default:
         strbuf_format( buf, "Error 0x%04x", (FT_UShort)error_code );
       }
-      grWriteCellString( display->bitmap, 8 * x + 16, line * HEADER_HEIGHT,
+      grWriteCellString( display->bitmap, x, line * HEADER_HEIGHT,
                          strbuf_value( buf ), display->warn_color );
     }
 
@@ -1683,24 +1705,15 @@
   {
     const char*    p = string;
     const char*    end = p + strlen( string );
-    unsigned long  codepoint;
     int            ch;
-    int            expect;
     PGlyph         glyph = handle->string;
 
 
     handle->string_length = 0;
-    codepoint = expect = 0;
 
-    for (;;)
+    while ( ( ch = utf8_next( &p, end ) ) >= 0 )
     {
-      ch = utf8_next( &p, end );
-      if ( ch < 0 )
-        break;
-
-      codepoint = (unsigned long)ch;
-
-      glyph->glyph_index = FTDemo_Get_Index( handle, codepoint );
+      glyph->glyph_index = FTDemo_Get_Index( handle, (FT_UInt32)ch );
 
       glyph++;
       handle->string_length++;
@@ -1769,9 +1782,7 @@
                                   (FT_Fixed)handle->scaler.width << 10,
                                   -sc->kerning_degree,
                                   &track_kern ) )
-        track_kern = (FT_Pos)(
-                       ( track_kern / 1024.0 * handle->scaler.x_res ) /
-                       72.0 );
+        track_kern = ( track_kern >> 10 ) * (FT_Long)handle->scaler.x_res / 72;
     }
 
     for ( prev = handle->string + length, glyph = handle->string, i = 0;
@@ -2021,13 +2032,12 @@
     unsigned long  l = 0;
 
 
-    for ( i = 0; i < 4; i++ )
-    {
-      if ( !s[i] )
-        break;
-      l <<= 8;
-      l  += (unsigned long)s[i];
-    }
+    for ( i = 0; i < 4 && s[i]; i++ )
+      l = ( l << 8 ) | (unsigned char)s[i];
+
+    /* interpret numerically if too short for a tag */
+    if ( i < 4 && !sscanf( s, "%lu", &l ) )
+      l = FT_ENCODING_ORDER;
 
     return l;
   }

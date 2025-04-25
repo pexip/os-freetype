@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright (C) 1996-2022 by                                              */
+/*  Copyright (C) 1996-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -44,10 +44,10 @@
   struct  AF_GlyphHintsRec_;
   typedef struct AF_GlyphHintsRec_*  AF_GlyphHints;
 
-  extern int            _af_debug_disable_horz_hints;
-  extern int            _af_debug_disable_vert_hints;
-  extern int            _af_debug_disable_blue_hints;
-  extern AF_GlyphHints  _af_debug_hints;
+  extern int            af_debug_disable_horz_hints_;
+  extern int            af_debug_disable_vert_hints_;
+  extern int            af_debug_disable_blue_hints_;
+  extern AF_GlyphHints  af_debug_hints_;
 
 #ifdef __cplusplus
   extern "C" {
@@ -64,11 +64,11 @@
   extern FT_Error
   af_glyph_hints_get_num_segments( AF_GlyphHints  hints,
                                    FT_Int         dimension,
-                                   FT_Int*        num_segments );
+                                   FT_UInt*       num_segments );
   extern FT_Error
   af_glyph_hints_get_segment_offset( AF_GlyphHints  hints,
                                      FT_Int         dimension,
-                                     FT_Int         idx,
+                                     FT_UInt        idx,
                                      FT_Pos        *offset,
                                      FT_Bool       *is_blue,
                                      FT_Pos        *blue_offset );
@@ -277,8 +277,8 @@
 
     for ( dimension = 1; dimension >= 0; dimension-- )
     {
-      FT_Int  num_seg;
-      FT_Int  count;
+      FT_UInt  num_seg;
+      FT_UInt  count;
 
 
       af_glyph_hints_get_num_segments( hints, dimension, &num_seg );
@@ -342,7 +342,7 @@
                FT_F26Dot6      radius )
   {
     FT_Outline*  outline;
-    char*        tag;
+    FT_Byte*     tag;
     FT_Vector*   vec;
     FT_F26Dot6   disp = (FT_F26Dot6)( radius * 0.5523 );
     /* so that Bézier curve touches circle at 0, 45, and 90 degrees */
@@ -408,8 +408,12 @@
                            : -bit->pitch;
     width = bit->width;
 
-    line = (unsigned char*)malloc( (size_t)( pitch * bit->rows *
-                                             scale * scale ) );
+    /* limit bitmap size */
+    if ( pitch * scale <= 0xFFFF && bit->rows * scale <= 0xFFFF )
+      line = (unsigned char*)malloc( (size_t)( pitch * bit->rows *
+                                               scale * scale ) );
+    else
+      line = NULL;
 
     bit->buffer = line;  /* the bitmap now owns this buffer */
 
@@ -542,9 +546,9 @@
     glyph_idx = FTDemo_Get_Index( handle, (FT_UInt32)st->Num );
 
 #ifdef FT_DEBUG_AUTOFIT
-    _af_debug_disable_horz_hints = !st->do_horz_hints;
-    _af_debug_disable_vert_hints = !st->do_vert_hints;
-    _af_debug_disable_blue_hints = !st->do_blue_hints;
+    af_debug_disable_horz_hints_ = !st->do_horz_hints;
+    af_debug_disable_vert_hints_ = !st->do_vert_hints;
+    af_debug_disable_blue_hints_ = !st->do_blue_hints;
 #endif
 
     if ( FT_Load_Glyph( size->face, glyph_idx, handle->load_flags ) )
@@ -585,10 +589,12 @@
       grBitmap  bitg;
 
 
-      FT_Get_Glyph( slot, &glyph );
-      error  = FTDemo_Glyph_To_Bitmap( handle, glyph, &bitg, &left, &top,
-                                       &x_advance, &y_advance, &glyf);
+      err = FT_Get_Glyph( slot, &glyph );
+      if ( err )
+        return;
 
+      error = FTDemo_Glyph_To_Bitmap( handle, glyph, &bitg, &left, &top,
+                                      &x_advance, &y_advance, &glyf);
       if ( !error )
       {
         bitmap_scale( st, &bitg, scale );
@@ -616,7 +622,7 @@
 #ifdef FT_DEBUG_AUTOFIT
       /* Draw segment before drawing glyph. */
       if ( status.do_segment && handle->load_flags & FT_LOAD_FORCE_AUTOHINT )
-        grid_hint_draw_segment( &status, size, _af_debug_hints );
+        grid_hint_draw_segment( &status, size, af_debug_hints_ );
 #endif
 
       /* scale the outline */
@@ -633,7 +639,10 @@
       /* stroke then draw it */
       if ( st->work & DO_OUTLINE )
       {
-        FT_Get_Glyph( slot, &glyph );
+        err = FT_Get_Glyph( slot, &glyph );
+        if ( err )
+          return;
+
         FT_Glyph_Stroke( &glyph, st->stroker, 1 );
 
         error = FTDemo_Sketch_Glyph_Color( handle, display, glyph,
@@ -660,9 +669,9 @@
       if ( st->work & DO_DOTNUMBERS )
       {
         FT_Vector*  points   = gimage->points;
-        FT_Short*   contours = gimage->contours;
-        char*       tags     = gimage->tags;
-        short       c, n;
+        FT_UShort*  contours = gimage->contours;
+        FT_Byte*    tags     = gimage->tags;
+        int         c, n;
         char        number_string[10];
         size_t      number_string_len = sizeof ( number_string );
 
@@ -676,7 +685,7 @@
         {
           for (;;)
           {
-            short      prev, next;
+            int        prev, next;
             FT_Vector  in, out, middle;
             FT_Fixed   in_len, out_len, middle_len;
             int        num_digits;
@@ -874,7 +883,7 @@
     grWriteln( "G           toggle grid display         if Multiple Master or GX font:      " );
     grWriteln( "C           change color palette          F2        cycle through axes      " );
     grWriteln( "                                          F3, F4    adjust current axis by  " );
-    grWriteln( "F5, F6      cycle through                            1/50th of its range    " );
+    grWriteln( "F5, F6      cycle through                            1/50 of its range      " );
     grWriteln( "             anti-aliasing modes                                            " );
     grWriteln( "L           cycle through LCD           P           print PNG file          " );
     grWriteln( "             filters                    q, ESC      quit ftgrid             " );
@@ -1282,9 +1291,9 @@
     if ( !err )
     {
       int  xmin = 0;
-      int  ymin = size->metrics.descender;
-      int  xmax = size->metrics.max_advance;
-      int  ymax = size->metrics.ascender;
+      int  ymin = size->metrics.y_ppem * -14;
+      int  xmax = size->metrics.x_ppem * 64;
+      int  ymax = size->metrics.y_ppem * 60;
 
       float  x_scale, y_scale;
 
@@ -1340,6 +1349,7 @@
       event.key = grKEY( *status.keys++ );
     else
     {
+      grRefreshSurface( display->surface );
       grListenSurface( display->surface, 0, &event );
 
       if ( event.type == gr_event_resize )
@@ -1398,7 +1408,7 @@
              handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL ) )
       {
         status.header = "dumping glyph edges to stdout";
-        af_glyph_hints_dump_edges( _af_debug_hints, 1 );
+        af_glyph_hints_dump_edges( af_debug_hints_, 1 );
       }
       break;
 
@@ -1409,7 +1419,7 @@
              handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL ) )
       {
         status.header = "dumping glyph segments to stdout";
-        af_glyph_hints_dump_segments( _af_debug_hints, 1 );
+        af_glyph_hints_dump_segments( af_debug_hints_, 1 );
       }
       break;
 
@@ -1420,7 +1430,7 @@
              handle->lcd_mode == LCD_MODE_LIGHT_SUBPIXEL ) )
       {
         status.header = "dumping glyph points to stdout";
-        af_glyph_hints_dump_points( _af_debug_hints, 1 );
+        af_glyph_hints_dump_points( af_debug_hints_, 1 );
       }
       break;
 #endif /* FT_DEBUG_AUTOFIT */
@@ -1645,13 +1655,11 @@
       grWriteCellString( display->bitmap, 0, 4 * HEADER_HEIGHT,
                          status.header, display->fore_color );
     }
-
-    grRefreshSurface( display->surface );
   }
 
 
   static void
-  usage( char*  execname )
+  usage( const char*  execname )
   {
     fprintf( stderr,
       "\n"
@@ -1659,7 +1667,7 @@
       "----------------------------------------------------------------\n"
       "\n" );
     fprintf( stderr,
-      "Usage: %s [options] pt font ...\n"
+      "Usage: %s [options] [pt] font ...\n"
       "\n",
              execname );
     fprintf( stderr,
@@ -1682,7 +1690,8 @@
       "  -f index  Specify first index to display (default: 0).\n"
       "  -e enc    Specify encoding tag (default: no encoding).\n"
       "            Common values: `unic' (Unicode), `symb' (symbol),\n"
-      "            `ADOB' (Adobe standard), `ADBC' (Adobe custom).\n"
+      "            `ADOB' (Adobe standard), `ADBC' (Adobe custom),\n"
+      "            or a numeric charmap index.\n"
       "  -a \"axis1 axis2 ...\"\n"
       "            Specify the design coordinates for each\n"
       "            Multiple Master axis at start-up.  Implies `-n'.\n"
@@ -1699,13 +1708,11 @@
   parse_cmdline( int*    argc,
                  char**  argv[] )
   {
-    char*  execname;
-    int    option;
-    int    have_encoding = 0;
-    int    have_index    = 0;
+    int          option;
+    int          have_encoding = 0;
+    int          have_index    = 0;
+    const char*  execname = ft_basename( (*argv)[0] );
 
-
-    execname = ft_basename( (*argv)[0] );
 
     while ( 1 )
     {
@@ -1746,8 +1753,7 @@
         break;
 
       case 'f':
-        status.Num = atoi( optarg );
-        have_index = 1;
+        have_index = sscanf( optarg, "%i", &status.Num );
         break;
 
       case 'k':
@@ -1788,18 +1794,20 @@
     *argc -= optind;
     *argv += optind;
 
-    if ( *argc <= 1 )
+    if ( *argc == 0 )
       usage( execname );
+
+    if ( *argc > 1                                                 &&
+         ( status.ptsize = (int)( atof( *argv[0] ) * 64.0 ) ) != 0 )
+    {
+      (*argc)--;
+      (*argv)++;
+    }
+    else
+      status.ptsize = 32 * 64 ;
 
     if ( have_encoding && !have_index )
       status.Num = 0x20;
-
-    status.ptsize = (int)( atof( *argv[0] ) * 64.0 );
-    if ( status.ptsize == 0 )
-      status.ptsize = 64 * 10;
-
-    (*argc)--;
-    (*argv)++;
   }
 
 
@@ -1832,12 +1840,11 @@
     if ( handle->num_fonts == 0 )
       Fatal( "could not find/open any font file" );
 
-    display = FTDemo_Display_New( status.device, status.dims );
+    display = FTDemo_Display_New( status.device, status.dims,
+                        "FreeType Glyph Grid Viewer - press ? for help" );
     if ( !display )
       Fatal( "could not allocate display surface" );
 
-    grSetTitle( display->surface,
-                "FreeType Glyph Grid Viewer - press ? for help" );
     FTDemo_Icon( handle, display );
 
     grid_status_display( &status, display );

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright (C) 1996-2022 by                                              */
+/*  Copyright (C) 1996-2024 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftlint: a simple font tester. This program tries to load all the        */
@@ -15,6 +15,7 @@
 
 #include <ft2build.h>
 #include <freetype/freetype.h>
+#include <freetype/ftoutln.h>
 #include <freetype/ftbitmap.h>
 
 
@@ -37,6 +38,9 @@
   static FT_Face         face;
   static FT_Render_Mode  render_mode = FT_RENDER_MODE_NORMAL;
   static FT_Int32        load_flags  = FT_LOAD_DEFAULT;
+
+  static const FT_String*  modes[FT_RENDER_MODE_MAX] =
+    { "normal", "light", "mono", "lcd", "lcd-v", "sdf" };
 
   static int           ptsize;
 
@@ -64,20 +68,138 @@
 
 
   static void
-  Usage( char*  name )
+  Usage( const char*  name )
   {
-    printf( "ftlint: simple font tester -- part of the FreeType project\n" );
-    printf( "----------------------------------------------------------\n" );
-    printf( "\n" );
-    printf( "Usage: %s [options] ppem fontname [fontname2..]\n",
-            name );
-    printf( "\n" );
-    printf( "  -f L    Use hex number L as load flags (see `FT_LOAD_XXX')\n" );
-    printf( "  -r N    Set render mode to N\n" );
-    printf( "  -i I-J  Range of glyph indices to use (default: all)\n" );
-    printf( "  -q      Quiet mode without the rendering analysis\n" );
+    fprintf( stderr,
+      "\n"
+      "ftlint: simple font tester -- part of the FreeType project\n"
+      "----------------------------------------------------------\n"
+      "\n"
+      "Usage: %s [options] ppem fontname [fontname2..]\n",
+             name );
+    fprintf( stderr,
+      "\n"
+      "  -f L    Use hex number L as load flags (see `FT_LOAD_XXX')\n"
+      "  -r N    Set render mode to N\n"
+      "  -i I-J  Range of glyph indices to use (default: all)\n"
+      "  -q      Quiet mode without the rendering analysis\n"
+      "\n" );
 
     exit( 1 );
+  }
+
+
+#define SIGN( x )  ( ( x > 0 ) - ( x < 0 ) )
+
+  static void
+  Explore( FT_GlyphSlot  slot )
+  {
+    unsigned long  format = slot->format;
+    FT_Outline*    outline = &slot->outline;
+    int            c, p, first, last;
+    FT_Vector      d, v;
+    int            dx, dy, bx, by, sx, sy;
+
+
+    if ( format != FT_GLYPH_FORMAT_OUTLINE )
+    {
+      fputs( "   +    ", stdout );
+      return;
+    }
+
+    sx = sy = 0;
+    last = -1;
+    for ( c = 0; c < outline->n_contours; c++ )
+    {
+      first = last + 1;
+      last = outline->contours[c];
+
+      bx = by = 0;
+      d = outline->points[last];
+      for ( p = first; p <= last; p++ )
+      {
+        v    = outline->points[p];
+        d.x -= v.x;
+        d.y -= v.y;
+
+        if ( d.x )
+        {
+          dx  = SIGN( d.x );
+          sx += ( dx == -bx );  /* count turns */
+          bx  = dx;
+        }
+
+        if ( d.y )
+        {
+          dy  = SIGN( d.y );
+          sy += ( dy == -by );  /* count turns */
+          by  = dy;
+        }
+
+        d = v;
+      }
+
+      /* counts must be even unless the first turn was missed  */
+      /* so make them even and proceed to the next contour     */
+      sx += sx & 1;
+      sy += sy & 1;
+    }
+
+    printf( "%3d+%-3d ", sx, sy );
+  }
+
+
+  static void
+  Examine( FT_GlyphSlot  slot )
+  {
+    unsigned long  format = slot->format;
+    FT_Outline*    outline = &slot->outline;
+    int            c, p, first, last;
+    FT_Vector      d, v;
+    FT_Pos         taxi;
+    FT_BBox        cbox;
+
+
+    if ( format != FT_GLYPH_FORMAT_OUTLINE )
+    {
+      putchar( ' ' );
+      putchar( ( format >> 24 ) & 0xFF );
+      putchar( ( format >> 16 ) & 0xFF );
+      putchar( ( format >>  8 ) & 0xFF );
+      putchar( ( format       ) & 0xFF );
+      putchar( ' ' );
+      return;
+    }
+
+    taxi = 0;
+    last = -1;
+    for ( c = 0; c < outline->n_contours; c++ )
+    {
+      first = last + 1;
+      last = outline->contours[c];
+
+      d = outline->points[last];
+      for ( p = first; p <= last; p++ )
+      {
+        v    = outline->points[p];
+        d.x -= v.x;
+        d.y -= v.y;
+
+        taxi += d.x < 0 ? -d.x : d.x;
+        taxi += d.y < 0 ? -d.y : d.y;
+
+        d = v;
+      }
+    }
+
+    if ( taxi )
+    {
+      FT_Outline_Get_CBox( outline, &cbox );
+      printf( "%5.2f ", 0.5 * taxi /
+                        ( cbox.xMax - cbox.xMin + cbox.yMax - cbox.yMin ) );
+    }
+    else
+      printf( " void " );
   }
 
 
@@ -109,7 +231,10 @@
       s1 += (unsigned long)d1;
     }
 
-    printf( "%.4lf ", s1 ? (double)s2 / s1 : 2.0 );
+    if ( s1 )
+      printf( "%.4lf ", (double)s2 / s1 );
+    else
+      printf( "  void " );
 
     /* Y-acutance */
     for ( s1 = s2 = 0, j = 0; j < bitmap->width; j++ )
@@ -130,7 +255,10 @@
       s1 += (unsigned long)d1;
     }
 
-    printf( "%.4lf ", s1 ? (double)s2 / s1 : 2.0 );
+    if ( s1 )
+      printf( "%.4lf ", (double)s2 / s1 );
+    else
+      printf( "  void " );
   }
 
 
@@ -158,7 +286,7 @@
         char**  argv )
   {
     int           file_index, face_index;
-    char*         execname;
+    const char*   execname;
     char*         fname;
     int           opt;
     unsigned int  first_index = 0;
@@ -167,9 +295,6 @@
 
 
     execname = ft_basename( argv[0] );
-
-    if ( argc < 3 )
-      Usage( execname );
 
     while ( ( opt =  getopt( argc, argv, "f:r:i:q") ) != -1)
     {
@@ -223,9 +348,12 @@
     argc -= optind;
     argv += optind;
 
-
-    if( sscanf( argv[0], "%d", &ptsize) != 1 )
+    if ( argc < 2 || sscanf( argv[0], "%d", &ptsize) != 1 )
       Usage( execname );
+
+    /* sync target and mode */
+    load_flags |= FT_LOAD_TARGET_( render_mode );
+    render_mode = (FT_Render_Mode)( ( load_flags & 0xF0000 ) >> 16 );
 
     error = FT_Init_FreeType( &library );
     if ( error )
@@ -248,19 +376,25 @@
       error = FT_New_Face( library, fname, face_index, &face );
       if ( error )
       {
-        Error( "  " );
+        Error( "  opening " );
         continue;
       }
 
-      printf( quiet ? "  %s %s:" : "  %s %s\n\n",
-              face->family_name, face->style_name );
+      printf( "  %s %s, %d ppem, %08X, %s%c",
+              face->family_name, face->style_name,
+              ptsize, load_flags, modes[render_mode],
+              quiet ? ':' : '\n' );
 
       error = FT_Set_Char_Size( face, ptsize << 6, ptsize << 6, 72, 72 );
       if ( error )
       {
-        Error( "  " );
+        Error( "  sizing " );
         goto Finalize;
       }
+
+      /* nothing to do */
+      if ( !face->num_glyphs )
+        goto Finalize;
 
       fi = first_index > 0 ? first_index : 0;
       li = last_index < (unsigned int)face->num_glyphs ?
@@ -268,9 +402,9 @@
 
       if ( !quiet )
       {
-        /*      "NNNNN AAAxBBBB X.XXXX Y.YYYY MMDD55MMDD55MMDD55MMDD55MMDD55MM" */
-        printf( " GID  imgsize  Xacut  Yacut  MD5 hashsum\n" );
-        printf( "-------------------------------------------------------------\n" );
+        /*        "NNNNN SS.SS XXX+YYY WWWxHHHH X.XXXX Y.YYYY MMDD55MMDD55MMDD55MMDD55MMDD55MM" */
+        printf( "\n GID  shape X+Yturn imgsize  Xacut  Yacut  MD5 hashsum" );
+        printf( "\n-------------------------------------------------------------------\n" );
       }
 
       Fail = 0;
@@ -296,8 +430,11 @@
 
         printf( "%5u ", id );
 
+        Examine( face->glyph );
+        Explore( face->glyph );
+
         error = FT_Render_Glyph( face->glyph, render_mode );
-        if ( error && error != FT_Err_Cannot_Render_Glyph )
+        if ( error && face->glyph->format != FT_GLYPH_FORMAT_BITMAP )
         {
           Error( "rendering " );
           Fail++;

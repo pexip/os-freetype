@@ -94,9 +94,9 @@
 	    is&nbsp;10.</p>
 
 	  <p align="center">
-	    <img src="grid_1.png"
-		 height="390"
-		 width="402"
+	    <img src="bitmaps-1.svg"
+		 height="50%"
+		 width="50%"
 		 alt="bitmap and vector grid">
 	  </p>
 
@@ -179,37 +179,34 @@
 
 	  <p>Remember that FreeType uses the <em>Y&nbsp;upwards</em>
 	    convention in the 2D plane, which means that a coordinate
-	    of (0,&nbsp;0) always refer to the <em>lower-left
+	    of (0,&nbsp;0) always refers to the <em>lower-left
 	    corner</em> of a bitmap.</p>
 
 	  <p>If the pitch is positive, the rows are stored in
 	    decreasing vertical position; the first bytes of the pixel
 	    buffer are part of the <em>upper</em> bitmap row.</p>
 
+	  <p align="center">
+	    <img src="bitmaps-2.svg"
+		 height="40%"
+		 width="40%"
+		 alt="positive 'pitch'">
+          </p>
+
 	  <p>On the opposite, if the pitch is negative, the first
 	    bytes of the pixel buffer are part of the <em>lower</em>
 	    bitmap row.</p>
 
+	  <p align="center">
+	    <img src="bitmaps-3.svg"
+		 height="40%"
+		 width="40%"
+		 alt="negative 'pitch'">
+          </p>
+
 	  <p>In all cases, one can see the pitch as the byte increment
 	    needed to skip to the <em>next lower scanline</em> in a
 	    given bitmap buffer.</p>
-
-	  <table class="vertical-space">
-	    <tr>
-	      <td>
-		<img src="up_flow.png"
-		     height="261"
-		     width="275"
-		     alt="negative 'pitch'">
-	      </td>
-	      <td>
-		<img src="down_flow.png"
-		     height="263"
-		     width="273"
-		     alt="positive 'pitch'">
-	      </td>
-	    </tr>
-	  </table>
 
 	  <p>The &lsquo;positive pitch&rsquo; convention is very often
 	    used, though some systems might need the other.</p>
@@ -235,7 +232,7 @@
               <p>The glyph loader and hinter always places the outline
 		in the 2D plane so that (0,&nbsp;0) matches its
 		character origin.  This means that the glyph's outline
-		(and corresponding bounding box), can be placed
+		(and corresponding bounding box) can be placed
 		anywhere in the 2D plane (see the graphics in
 		section&nbsp;III).</p>
 	    </li>
@@ -279,9 +276,9 @@
 	    </ul>
 
 	    <p align="center">
-              <img src="clipping.png"
-		   height="151"
-		   width="539"
+              <img src="bitmaps-4.svg"
+		   height="80%"
+		   width="80%"
 		   alt="clipping algorithm">
 	    </p>
 	  </ul>
@@ -333,7 +330,7 @@
         <!-- ************************************************** -->
 
         <div class="updated">
-          <p>Last update: 13-Feb-2018</p>
+          <p>Last update: 23-Oct-2022</p>
         </div>
       </div>
     </div>

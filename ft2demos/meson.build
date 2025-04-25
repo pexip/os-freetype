@@ -2,7 +2,7 @@
 # Meson project file for FreeType 2 test programs
 #
 
-# Copyright (C) 2021-2022 by
+# Copyright (C) 2021-2024 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -17,7 +17,7 @@
 # possible since the subproject might not be cloned yet, so we have to
 # hard-code the string.
 project('freetype-demos', 'c', 'cpp',
-  version: '2.12.1')
+  version: '2.13.3')
 
 
 # Access to the FreeType 2 source tree is required, since some of the demo
@@ -32,7 +32,7 @@ libpng_dep = dependency('libpng',
 
 librsvg_dep = dependency('librsvg-2.0',
   version: '>= 2.46.0',
-  required: true)
+  required: get_option('librsvg'))
 
 
 cc = meson.get_compiler('c')
@@ -70,6 +70,12 @@ output_lib = static_library('output',
   dependencies: libfreetype2_dep
 )
 
+ftcommon_lib_c_args = []
+
+if librsvg_dep.found()
+  ftcommon_lib_c_args += '-DHAVE_LIBRSVG'
+endif
+
 ftcommon_lib = static_library('ftcommon',
   [
     'src/ftcommon.c',
@@ -78,7 +84,7 @@ ftcommon_lib = static_library('ftcommon',
     'src/rsvg-port.c',
     'src/rsvg-port.h',
   ],
-  c_args: '-DHAVE_LIBRSVG',
+  c_args: ftcommon_lib_c_args,
   dependencies: [libpng_dep, librsvg_dep, libfreetype2_dep],
   include_directories: graph_include_dir,
   link_with: [common_lib, graph_lib],

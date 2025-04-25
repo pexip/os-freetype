@@ -5,7 +5,7 @@
  *   Librsvg-based hook functions for OT-SVG rendering in FreeType
  *   (implementation).
  *
- * Copyright (C) 2022 by
+ * Copyright (C) 2022-2024 by
  * David Turner, Robert Wilhelm, Werner Lemberg, and Moazin Khatti.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -194,6 +194,9 @@
     float vertBearingX, vertBearingY;
     float tmpf;
 
+    char  *id;
+    char  str[32];
+
 
     /* If `cache` is `TRUE` we store calculations in the actual port */
     /* state variable, otherwise we just create a dummy variable and */
@@ -241,12 +244,29 @@
     {
       dimension_svg.width  = (int)out_width.length; /* XXX rounding? */
       dimension_svg.height = (int)out_height.length;
+
+      /*
+       * librsvg 2.53+ behavior, on SVG doc without explicit width/height.
+       * See `rsvg_handle_get_intrinsic_dimensions` section in
+       * the `librsvg/rsvg.h` header file.
+       */
+      if ( out_width.length  == 1 &&
+           out_height.length == 1 )
+      {
+        dimension_svg.width  = units_per_EM;
+        dimension_svg.height = units_per_EM;
+      }
     }
     else
     {
-      /* If neither `ViewBox` nor `width`/`height` are present, the */
-      /* `units_per_EM` in SVG coordinates must be the same as      */
-      /* `units_per_EM` of the TTF/CFF outlines.                    */
+      /*
+       * If neither `ViewBox` nor `width`/`height` are present, the
+       * `units_per_EM` in SVG coordinates must be the same as
+       * `units_per_EM` of the TTF/CFF outlines.
+       *
+       * librsvg up to 2.52 behavior, on SVG doc without explicit
+       * width/height.
+       */
       dimension_svg.width  = units_per_EM;
       dimension_svg.height = units_per_EM;
     }
@@ -303,29 +323,43 @@
     /* If the document contains only one glyph, `start_glyph_id` and */
     /* `end_glyph_id` have the same value.  Otherwise `end_glyph_id` */
     /* is larger.                                                    */
-    if ( start_glyph_id == end_glyph_id )
+    if ( start_glyph_id < end_glyph_id )
     {
-      /* Render the whole document to the recording surface. */
-      ret = rsvg_handle_render_cairo ( handle, rec_cr );
-      if ( ret == FALSE )
-      {
-        error = FT_Err_Invalid_SVG_Document;
-        goto CleanCairo;
-      }
-    }
-    else if ( start_glyph_id < end_glyph_id )
-    {
-      char  str[32] = "#glyph";
-
-
       /* Render only the element with its ID equal to `glyph<ID>`. */
-      sprintf( str + 6, "%u", slot->glyph_index );
-      ret = rsvg_handle_render_cairo_sub( handle, rec_cr, str );
-      if ( ret == FALSE )
+      sprintf( str, "#glyph%u", slot->glyph_index );
+      id = str;
+    }
+    else
+    {
+      /* NULL = Render the whole document */
+      id = NULL;
+    }
+
+#if LIBRSVG_CHECK_VERSION( 2, 52, 0 )
+    {
+      RsvgRectangle  viewport =
       {
-        error = FT_Err_Invalid_SVG_Document;
-        goto CleanCairo;
-      }
+        .x = 0,
+        .y = 0,
+        .width  = (double)dimension_svg.width,
+        .height = (double)dimension_svg.height,
+      };
+
+
+      ret = rsvg_handle_render_layer( handle,
+                                      rec_cr,
+                                      id,
+                                      &viewport,
+                                      NULL );
+    }
+#else
+    ret = rsvg_handle_render_cairo_sub( handle, rec_cr, id );
+#endif
+
+    if ( ret == FALSE )
+    {
+      error = FT_Err_Invalid_SVG_Document;
+      goto CleanCairo;
     }
 
     /* Get the bounding box of the drawing. */
@@ -381,7 +415,7 @@
     /* If a render call is to follow, just destroy the context for the */
     /* recording surface since no more drawing will be done on it.     */
     /* However, keep the surface itself for use by the render hook.    */
-    if ( cache == TRUE )
+    if ( cache )
     {
       cairo_destroy( rec_cr );
       goto CleanLibrsvg;

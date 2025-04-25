@@ -6,7 +6,7 @@
  *  used by the graphics utility of the FreeType test suite.
  *
  *  Largely written by Just van Rossum, but derived from grwin32.c.
- *  Copyright (C) 1999-2022 by
+ *  Copyright (C) 1999-2024 by
  *  Just van Rossum, Antoine Leca,
  *  David Turner, Robert Wilhelm, and Werner Lemberg.
  *
@@ -154,9 +154,9 @@
   }
 
   static
-  void listen_event( grSurface*  surface,
-                     int         event_mask,
-                     grEvent*    grevent )
+  int listen_event( grSurface*  surface,
+                    int         event_mask,
+                    grEvent*    grevent )
   {
     grEvent  our_grevent;
     EventRecord mac_event;
@@ -200,7 +200,7 @@
               /* destroy the window here, since done_surface() doesn't get called */
               done_window();
             *grevent = our_grevent;
-            return;
+            return 1;
           case updateEvt:
             if ( theWindow && (WindowPtr)mac_event.message == theWindow )
             {
@@ -243,7 +243,7 @@
                     our_grevent.type = gr_event_key;
                     our_grevent.key = grKeyEsc;
                     *grevent = our_grevent;
-                    return;
+                    return 1;
                   }
                 }
                 else if (part == inContent)
@@ -265,6 +265,7 @@
           }
         }
     }
+    return 0;
   }
 
 
@@ -359,10 +360,10 @@ grSurface*  init_surface( grSurface*  surface,
   theWindow = NewCWindow(NULL, &bounds, "\p???", 1, 0, (WindowRef)-1, 1, 0);
 
   /* fill in surface interface */
-  surface->done         = (grDoneSurfaceFunc) done_surface;
-  surface->refresh_rect = (grRefreshRectFunc) refresh_rectangle;
-  surface->set_title    = (grSetTitleFunc)    set_title;
-  surface->listen_event = (grListenEventFunc) listen_event;
+  surface->done         = done_surface;
+  surface->refresh_rect = refresh_rectangle;
+  surface->set_title    = set_title;
+  surface->listen_event = listen_event;
 
   return surface;
 }
@@ -386,7 +387,7 @@ grSurface*  init_surface( grSurface*  surface,
     init_device,
     done_device,
 
-    (grDeviceInitSurfaceFunc) init_surface,
+    init_surface,
 
     0,
     0
