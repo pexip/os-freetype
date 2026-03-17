@@ -2,3 +2,4 @@ enable-gxvalid-otvalid.patch
 ftoption.patch
 no-web-fonts.patch
 hide-donations-information.patch
+CVE-2026-23865.patch
