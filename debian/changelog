@@ -1,3 +1,15 @@
+freetype (2.13.3+dfsg-1+pexip25u3+deb13u1) pexip-trixie; urgency=medium
+
+  * New upstream release with security fix
+
+ -- Steve McIntyre <steve.mcintyre@pexip.com>  Thu, 19 Mar 2026 18:02:52 +0000
+
+freetype (2.13.3+dfsg-1+deb13u1) trixie-security; urgency=medium
+
+  * CVE-2026-23865 (Closes: #1129606)
+
+ -- Moritz Mühlenhoff <jmm@debian.org>  Tue, 17 Mar 2026 21:21:54 +0100
+
 freetype (2.13.3+dfsg-1+pexip25u2) pexip-trixie; urgency=medium
 
   * Trixie build for product distribution
